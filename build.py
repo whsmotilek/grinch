@@ -6,11 +6,13 @@
   <!--@js:file.js-->     → <script>…</script>
   <!--@html:file.html--> → содержимое части (маркеры внутри тоже раскрываются)
   <!--@svg:name-->       → содержимое src/svg/name.svg
-  {{img:path}}           → data:URI файла из src/ (jpg/png/avif/webp/svg)
+  {{img:path}}           → data:URI файла из src/ (jpg/png/avif/webp/svg) — для мелочи (иконки, фактуры ≤ ~20 КБ)
+  {{asset:path}}         → файл копируется в dist/assets/, подставляется относительный URL —
+                           для фото и крупных фактур (грузятся отдельно, лениво, не раздувают HTML)
 Всё, что не найдено, — ошибка сборки (не тихий пропуск).
 """
 from __future__ import annotations
-import base64, mimetypes, re, sys, pathlib
+import base64, mimetypes, re, sys, pathlib, shutil
 
 ROOT = pathlib.Path(__file__).parent
 SRC = ROOT / "src"
@@ -39,13 +41,30 @@ def expand(text: str, depth: int = 0) -> str:
             sys.exit(f"build: нет картинки {p}")
         mime = MIME.get(p.suffix.lower()) or mimetypes.guess_type(p.name)[0]
         return f"data:{mime};base64," + base64.b64encode(p.read_bytes()).decode()
-    return re.sub(r"\{\{img:([^}]+)\}\}", img, text)
+    text = re.sub(r"\{\{img:([^}]+)\}\}", img, text)
+    def asset(m: re.Match) -> str:
+        rel = m.group(1).strip()
+        p = SRC / rel
+        if not p.exists():
+            sys.exit(f"build: нет ассета {p}")
+        dst = OUT.parent / "assets" / rel
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(p, dst)
+        return "assets/" + rel
+    return re.sub(r"\{\{asset:([^}]+)\}\}", asset, text)
 
+shutil.rmtree(OUT.parent / "assets", ignore_errors=True)
 html = expand(read("index.html"))
-left = re.findall(r"<!--@\w+:[^>]*-->|\{\{img:[^}]*\}\}", html)
+left = re.findall(r"<!--@\w+:[^>]*-->|\{\{(?:img|asset):[^}]*\}\}", html)
 if left:
     sys.exit(f"build: не раскрыто: {left[:5]}")
 OUT.parent.mkdir(parents=True, exist_ok=True)
 OUT.write_text(html, encoding="utf-8")
+# src/meta целиком: иконки из манифеста адресуются относительно него и в разметке не упоминаются
+meta_dst = OUT.parent / "assets" / "meta"
+meta_dst.mkdir(parents=True, exist_ok=True)
+for f in (SRC / "meta").glob("*"):
+    if f.is_file() and f.name != "head.html":
+        shutil.copyfile(f, meta_dst / f.name)
 kb = OUT.stat().st_size / 1024
 print(f"build: {OUT} — {kb:.0f} КБ")

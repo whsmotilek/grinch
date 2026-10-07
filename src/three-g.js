@@ -312,7 +312,7 @@
     if (!host || !game || typeof game.target !== 'function') { S.hasT = false; if (label) label.hidden = true; return; }
     if (game.isComplete && game.isComplete()) {
       S.hasT = false; label.hidden = false; label.dataset.state = 'done';
-      label.firstChild.textContent = '●'; label.lastChild.textContent = 'точка сбора открыта';
+      label.firstChild.textContent = '●'; label.lastChild.textContent = '5/5';
       return;
     }
     const r = hostRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
@@ -323,11 +323,11 @@
     S.needleT = ang + Math.PI / 4;                 // стрелка G смотрит ↗ (−45°) — доворачиваем от неё
     const vh = innerHeight;
     const onScreen = t.y > 0 && t.y < vh;
-    const where = onScreen ? (Math.hypot(dx, dy) < Math.max(r.width, r.height) ? 'рядом' : 'на экране')
-      : dy > 0 ? (dy > vh * 4 ? 'далеко внизу' : 'ниже') : (dy < -vh * 4 ? 'далеко вверху' : 'выше');
+    const where = onScreen ? (Math.hypot(dx, dy) < Math.max(r.width, r.height) ? 'рядом' : 'тут')
+      : Math.abs(dy) > vh * 4 ? 'далеко' : dy > 0 ? 'ниже' : 'выше';
     label.hidden = false; label.dataset.state = 'play';
     label.firstChild.textContent = ARR[((Math.round(ang / (Math.PI / 4)) % 8) + 8) % 8];
-    label.lastChild.textContent = `метка ${t.n} · ${where}`;
+    label.lastChild.textContent = `метка ${where}`;
   }
 
   // ── цикл ────────────────────────────────────────────────────────────────

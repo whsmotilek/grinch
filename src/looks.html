@@ -1,13 +1,19 @@
 <section id="looks" aria-labelledby="looks-title">
+  <div class="tx-layer tx-layer--paper tx-layer--wall" aria-hidden="true"></div>
   <div class="wrap">
     <div class="sec-head">
-      <p class="eyebrow eyebrow--dark"><span>looks:</span><span>04</span></p>
       <h2 id="looks-title" class="h-poster">Образы</h2>
-      <p class="sec-lead">Четыре маршрута по дропу. Нажми на вещь — откроется карточка.</p>
     </div>
   </div>
   <div class="looks-wall" data-looks>
     <!-- .look рендерит shop.js из GV_LOOKS (разметка по контракту: .look/.look-photo/.look-tape/.look-tag) -->
   </div>
+  <!-- кампейн-кадры бренда для образов: motion.js кладёт их в .look-photo по data-look (грузятся лениво) -->
+  <template id="look-shots">
+    <picture data-look="01"><source type="image/avif" srcset="{{asset:img/street/look-01.avif}}"><img class="look-shot" src="{{asset:img/street/look-01.jpg}}" alt="Зелёная футболка GRINCHIN на вешалке под навесом" width="800" height="1000" loading="lazy" decoding="async"></picture>
+    <picture data-look="02"><source type="image/avif" srcset="{{asset:img/street/look-02.avif}}"><img class="look-shot" src="{{asset:img/street/look-02.jpg}}" alt="Белая футболка GRINCHIN со спины, кадр в лифте" width="800" height="1000" loading="lazy" decoding="async"></picture>
+    <picture data-look="03"><source type="image/avif" srcset="{{asset:img/street/look-03.avif}}"><img class="look-shot" src="{{asset:img/street/look-03.jpg}}" alt="Модель в косухе и джинсах на постере из мятой бумаги" width="800" height="1000" loading="lazy" decoding="async"></picture>
+    <picture data-look="04"><source type="image/avif" srcset="{{asset:img/street/look-04.avif}}"><img class="look-shot" src="{{asset:img/street/look-04.jpg}}" alt="Модель в варёном сером дениме на постере из мятой бумаги" width="800" height="1000" loading="lazy" decoding="async"></picture>
+  </template>
   <span class="gm-slot" data-mark-slot="3"></span>
 </section>

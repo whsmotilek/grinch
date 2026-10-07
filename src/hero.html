@@ -1,23 +1,22 @@
 <section id="hero" aria-labelledby="hero-title">
-  <div class="hero-bg" aria-hidden="true"></div>
+  <!-- улица: наружка pres_11 — мятая бумага, вертикальный знак, модель в дениме, теги поверх -->
+  <div class="hero-bg" aria-hidden="true">
+    <div class="hero-word"><!--@svg:logo-letters--></div>
+    <img class="hero-model" src="{{asset:img/street/model-hero.webp}}" alt="" width="880" height="1100" decoding="async" fetchpriority="high">
+    <span class="hero-graf hero-graf--a"></span>
+    <span class="hero-graf hero-graf--b"></span>
+  </div>
   <div id="g3d" aria-hidden="true"></div>
   <div class="hero-copy">
-    <p class="eyebrow eyebrow--dark"><span>drop: 01</span><span>осень — зима 26</span></p>
-    <h1 id="hero-title">
-      <span class="ht-pre">Одежда для тех, кто</span>
-      <span class="ht-big">не идёт по <span class="ht-strike">заданному</span> маршруту.</span>
-    </h1>
-    <p class="hero-sub">Жизнь внутри ограничений. Свой путь — снаружи.</p>
-    <div class="hero-cta">
-      <a class="btn btn--accent" href="#drop" data-nav="drop">Смотреть дроп <span aria-hidden="true">↓</span></a>
-      <a class="btn btn--ghost" href="#gather" data-nav="gather">Точка сбора</a>
-    </div>
+    <h1 id="hero-title">Одежда для тех, кто не&nbsp;идёт по <span class="ht-strike">заданному</span> маршруту.</h1>
+    <a class="btn btn--accent hero-btn" href="#drop" data-nav="drop">Смотреть дроп <span aria-hidden="true">↓</span></a>
   </div>
-  <dl class="hero-tag" aria-label="Коротко о дропе">
-    <div><dt>drop:</dt><dd>01</dd></div>
-    <div><dt>вещей:</dt><dd>08</dd></div>
-    <div><dt>предзаказ:</dt><dd>до 30.11</dd></div>
-    <div><dt>отправка:</dt><dd>с 01.12</dd></div>
-  </dl>
+  <!-- куски настоящей ленты: держат «плакат» и перекрещивают стык с дропом -->
+  <span class="tp-piece hero-pin hero-pin--tl" aria-hidden="true"></span>
+  <span class="tp-piece hero-pin hero-pin--tr" aria-hidden="true"></span>
   <span class="gm-slot" data-mark-slot="1"></span>
 </section>
+<div class="x-tapes x-tapes--hero" aria-hidden="true">
+    <div class="tp tp--brand"><span class="tp-txt">GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN</span></div>
+    <div class="tp tp--brand"><span class="tp-txt">GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN</span></div>
+</div>

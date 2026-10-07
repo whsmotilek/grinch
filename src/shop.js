@@ -31,9 +31,9 @@
   function inStock(p, s) { return (p.sizes[s] || 0) > 0; }
   function anyStock(p) { return sizesOf(p).some(function (s) { return inStock(p, s); }); }
   function stateText(p) {
-    if (p.state === "soldout") return "разобрали · ждём перезапуск";
-    if (p.state === "preorder") return 'предзаказ · <span class="m-hide">отправка </span>с ' + DROP.shipFrom;
-    return 'новинка · <span class="m-hide">отправка </span>с ' + DROP.shipFrom;
+    if (p.state === "soldout") return "разобрали — ждём перезапуск";
+    if (p.state === "preorder") return "предзаказ · отправка с " + DROP.shipFrom;
+    return "отправка с " + DROP.shipFrom;
   }
   var BADGE = { "new": "NEW", drop: "DROP 01", preorder: "ПРЕДЗАКАЗ", soldout: "SOLD OUT" };
   function badges(p) {
@@ -57,7 +57,8 @@
   if (toastEl) toastEl.addEventListener("click", function () {
     if (!toastAct) return;
     toastEl.classList.remove("is-on", "is-action");
-    GV.navigate(toastAct); toastAct = null;
+    var a = toastAct; toastAct = null;
+    if (typeof a === "function") a(); else GV.navigate(a);
   });
 
   /* ---------- корзина (в памяти + localStorage в try/catch) ---------- */
@@ -138,9 +139,6 @@
       '<div class="card-body">' +
       '<h3 class="card-name"><button type="button" class="card-open" data-open-product="' + p.id + '">' + esc(p.name) + "</button></h3>" +
       '<p class="card-price">' + money(p.price) + "</p>" +
-      '<p class="card-marker">' + esc(p.marker) + "</p>" +
-      '<p class="card-meta">' + stateText(p) + "</p>" +
-      (soldout ? '<button type="button" class="card-notify" data-open-product="' + p.id + '" data-notify>Сообщить о поступлении <span aria-hidden="true">→</span></button>' : "") +
       "</div></article>";
   }
   if (grid) grid.innerHTML = P.map(cardHTML).join("");
@@ -178,9 +176,8 @@
         "</div>" +
         '<figcaption class="look-cap">' +
         '<p class="look-title"><span class="look-k">’' + l.n + "</span> " + esc(l.title) + "</p>" +
-        '<p class="look-note">' + esc(l.note) + "</p>" +
         '<ul class="look-items">' + ps.map(function (p) {
-          return '<li><button type="button" data-open-product="' + p.id + '"><span>' + esc(p.name) + "</span><i>К товару →</i></button></li>";
+          return '<li><button type="button" data-open-product="' + p.id + '"><span>' + esc(p.name) + '</span><i aria-hidden="true">→</i></button></li>';
         }).join("") + "</ul></figcaption></figure>";
     }).join("");
   }
@@ -190,10 +187,10 @@
   var sheetState = { id: null, size: null };
   function accHTML(p) {
     var rows = [
-      ["Детали", "<ul>" + p.details.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "<li>Посадка: " + esc(p.fit.toLowerCase()) + "</li></ul>"],
+      ["Детали", "<p>" + esc(p.desc) + "</p><ul>" + p.details.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "<li>Посадка: " + esc(p.fit.toLowerCase()) + "</li></ul>"],
       ["Состав и уход", "<p>" + esc(p.composition) + ".</p><p>" + esc(p.care) + ".</p>"],
-      ["Доставка и предзаказ", "<p>Предзаказ открыт до " + DROP.preorderTill + ", отправка с " + DROP.shipFrom + ". По России — СДЭК и Почта, 2–7 дней после отправки. Если в заказе есть предзаказ, отправим всё одной посылкой.</p>"],
-      ["Возврат", "<p>14 дней с получения, если вещь не носили и бирка на месте. Обмен размера — бесплатно один раз.</p>"]
+      ["Доставка и предзаказ", "<p>Предзаказ до " + DROP.preorderTill + ", отправка с " + DROP.shipFrom + ". СДЭК или Почта, 2–7 дней. Весь заказ — одной посылкой.</p>"],
+      ["Возврат", "<p>14 дней, если не носил и бирка на месте. Обмен размера — бесплатно.</p>"]
     ];
     return rows.map(function (r) { return '<details class="acc"><summary>' + r[0] + "</summary><div class=\"acc-body\">" + r[1] + "</div></details>"; }).join("");
   }
@@ -214,7 +211,6 @@
       '<div class="tape-badges ps-badges">' + badges(p) + "</div>" +
       "</div>" +
       '<div class="ps-info">' +
-      '<p class="eyebrow eyebrow--paper"><span>' + p.sku + "</span><span>" + esc(p.type) + "</span></p>" +
       '<h2 id="ps-title" class="ps-title">' + esc(p.name) + "</h2>" +
       '<p class="ps-marker">' + esc(p.marker) + "</p>" +
       '<p class="ps-ship"><i aria-hidden="true"></i>' + stateText(p) + "</p>" +
@@ -226,7 +222,7 @@
         return '<button type="button" class="sz' + (ok ? "" : " is-out") + '" data-size="' + s + '" aria-pressed="false"' +
           (ok ? "" : ' aria-label="' + s + ' — нет в наличии, можно подписаться"') + ">" + s + "</button>";
       }).join("") + "</div>" +
-      '<p class="ps-model">' + esc(p.model) + " · посадка: " + esc(p.fit.toLowerCase()) + "</p>" +
+      '<p class="ps-model">' + esc(p.model) + "</p>" +
       '<div class="ps-notify" data-ps-notify hidden>' +
       '<p class="ps-notify-big">Этот маршрут закрыт. Сообщить, когда откроется?</p>' +
       '<form class="ps-notify-form" data-notify-form novalidate><label class="vh" for="ps-notify-input">Ник в Telegram или почта</label>' +
@@ -234,15 +230,13 @@
       '<button type="submit" class="btn btn--dark">Сообщить</button></form>' +
       '<p class="field-err" data-notify-err></p></div>' +
       '<div class="ps-buy">' +
-      '<button type="button" class="btn btn--accent btn--wide ps-add" data-ps-add aria-disabled="true">' + (soldout ? "Сообщить о поступлении" : "Выберите размер") + "</button>" +
+      '<button type="button" class="btn btn--accent btn--wide ps-add" data-ps-add aria-disabled="true">' + (soldout ? "Сообщить о поступлении" : "Выбери размер") + "</button>" +
       '<button type="button" class="link ps-gocart" data-open="cart" hidden>Открыть корзину →</button>' +
       "</div>" +
-      '<ul class="ps-promises"><li><b>доставка:</b> по России, 2–7 дней</li><li><b>возврат:</b> 14 дней</li><li><b>оплата:</b> картой или СБП, к старту продаж</li></ul>' +
-      '<p class="ps-desc">' + esc(p.desc) + "</p>" +
       '<div class="ps-acc">' + accHTML(p) + "</div>" +
       "</div>" +
       (pairs.length ?
-        '<div class="ps-more"><h3 class="ps-more-title">Дополните образ</h3><div class="ps-more-grid">' +
+        '<div class="ps-more"><h3 class="ps-more-title">С этим носят</h3><div class="ps-more-grid">' +
         pairs.map(function (q) {
           return '<button type="button" class="mini" data-open-product="' + q.id + '"><img src="' + q.img[0] + '" alt="" width="800" height="1000"><span class="mini-name">' + esc(q.name) + '</span><span class="mini-price">' + money(q.price) + "</span></button>";
         }).join("") + "</div></div>" : "") +
@@ -263,7 +257,7 @@
     if (!btn) return;
     var s = sheetState.size;
     var out = s && !inStock(p, s);
-    if (!s) { btn.textContent = anyStock(p) ? "Выберите размер" : "Сообщить о поступлении"; btn.setAttribute("aria-disabled", anyStock(p) ? "true" : "false"); }
+    if (!s) { btn.textContent = anyStock(p) ? "Выбери размер" : "Сообщить о поступлении"; btn.setAttribute("aria-disabled", anyStock(p) ? "true" : "false"); }
     else if (out) { btn.textContent = "Сообщить о поступлении"; btn.setAttribute("aria-disabled", "false"); }
     else { btn.textContent = "В корзину · " + money(p.price); btn.setAttribute("aria-disabled", "false"); }
     btn.dataset.mode = !s ? (anyStock(p) ? "pick" : "notify") : out ? "notify" : "add";
@@ -318,10 +312,10 @@
       if (!f) return;
       e.preventDefault();
       var v = $("input", f).value.trim(), err = $("[data-notify-err]", sheetBody);
-      if (!isTg(v) && !isMail(v)) { err.textContent = "Нужен ник в Telegram (от 5 символов) или почта."; $("input", f).setAttribute("aria-invalid", "true"); return; }
+      if (!isTg(v) && !isMail(v)) { err.textContent = "Нужен ник в Telegram или почта."; $("input", f).setAttribute("aria-invalid", "true"); return; }
       err.textContent = "";
       var box = $("[data-ps-notify]", sheetBody);
-      box.innerHTML = '<p class="ps-notify-big">Есть. Напишем, если вернётся.</p><p class="ps-notify-small">Разобрали — значит ищем щель.</p>';
+      box.innerHTML = '<p class="ps-notify-big">Есть. Напишем, если вернётся.</p>';
     });
   }
 
@@ -352,8 +346,8 @@
         var p = byId[i.id], k = keyOf(i);
         return '<li class="cart-item">' +
           '<button type="button" class="ci-thumb" data-open-product="' + p.id + '" aria-label="Открыть: ' + esc(p.name) + '"><img src="' + p.img[0] + '" alt="" width="800" height="1000"></button>' +
-          '<div class="ci-info"><p class="ci-name">' + esc(p.name) + '</p><p class="ci-meta">' + esc(p.marker) + " · size: " + i.size + "</p>" +
-          (p.state === "preorder" ? '<p class="ci-pre">предзаказ · отправка с ' + DROP.shipFrom + "</p>" : "") +
+          '<div class="ci-info"><p class="ci-name">' + esc(p.name) + '</p><p class="ci-meta">size: ' + i.size + "</p>" +
+          (p.state === "preorder" ? '<p class="ci-pre">предзаказ · с ' + DROP.shipFrom + "</p>" : "") +
           '<div class="ci-row"><div class="qty" role="group" aria-label="Количество: ' + esc(p.name) + '">' +
           '<button type="button" data-qty="-1" data-key="' + k + '" aria-label="Меньше"' + (i.qty <= 1 ? " disabled" : "") + ">−</button>" +
           '<output aria-live="polite">' + i.qty + "</output>" +
@@ -362,16 +356,15 @@
           '<p class="ci-price">' + money(p.price * i.qty) + "</p></li>";
       }).join("") + "</ul>" +
       (up ? '<div class="cart-up"><p class="mono-label">дополни маршрут:</p><button type="button" class="cu-card" data-open-product="' + up.id + '"><img src="' + up.img[0] + '" alt="" width="800" height="1000">' +
-        '<span class="cu-name">' + esc(up.name) + '</span><span class="cu-price">' + money(up.price) + '</span><span class="cu-go">Смотреть →</span></button></div>' : "") +
+        '<span class="cu-name">' + esc(up.name) + '</span><span class="cu-price">' + money(up.price) + '</span><span class="cu-go" aria-hidden="true">→</span></button></div>' : "") +
       '<div class="cart-foot">' +
-      (pre ? '<p class="cart-pre">В корзине есть предзаказ — отправим всё одной посылкой с ' + DROP.shipFrom + ".</p>" : "") +
-      '<dl class="cart-sum"><div><dt>вещей: ' + count() + "</dt><dd>" + money(total()) + "</dd></div><div><dt>доставка:</dt><dd>при оформлении</dd></div>" +
+      (pre ? '<p class="cart-pre">Отправим всё вместе с ' + DROP.shipFrom + ".</p>" : "") +
+      '<dl class="cart-sum"><div><dt>доставка:</dt><dd>при оформлении</dd></div>' +
       '<div class="cart-total"><dt>итого:</dt><dd>' + money(total()) + "</dd></div></dl>" +
       (cartDemo ?
-        '<div class="cart-demo" tabindex="-1"><p class="cart-demo-big">Это демо.</p><p>Оплата появится к старту продаж. Корзина сохранится — вернись, когда откроется предзаказ.</p>' +
-        '<button type="button" class="btn btn--ghost-dark btn--wide" data-nav="next">Узнать о старте →</button></div>' :
-        '<button type="button" class="btn btn--accent btn--wide" data-checkout>Оформить заказ · ' + money(total()) + "</button>" +
-        '<p class="cart-fine">Цены — пример. Оплата частями появится к старту продаж.</p>') +
+        '<div class="cart-demo" tabindex="-1"><p class="cart-demo-big">Это демо.</p><p>Оплата — к старту продаж. Корзина сохранится.</p>' +
+        '<button type="button" class="btn btn--ghost-dark btn--wide" data-nav="next">Сообщить о старте →</button></div>' :
+        '<button type="button" class="btn btn--accent btn--wide" data-checkout>Оформить · ' + money(total()) + "</button>") +
       "</div>";
   }
   if (cartBody) {
@@ -392,7 +385,7 @@
   }
 
   /* ---------- оверлеи: стек, фокус-ловушка, Esc, блокировка скролла ---------- */
-  var OV = { product: "product-sheet", cart: "cart-drawer", sizes: "size-modal", "404": "page-404", menu: "mobile-menu" };
+  var OV = { product: "product-sheet", cart: "cart-drawer", sizes: "size-modal", "404": "page-404", menu: "mobile-menu", game: "game-help" };
   var STACKABLE = { sizes: 1 }; // размерная сетка ложится поверх карточки
   var stack = [];
   var FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select, textarea, summary, [tabindex]:not([tabindex="-1"])';
@@ -446,6 +439,7 @@
       if (opts.notify) { showNotify(true, false); }
     }
     if (name === "cart") renderCart();
+    if (name === "game" && toastEl) toastEl.classList.remove("is-on", "is-action"); // окно само говорит, что случилось
     var opener = d.activeElement;
     var at = stack.map(function (s) { return s.name; }).indexOf(name);
     if (at > -1) {
@@ -533,8 +527,8 @@
   if (sub) {
     var inp = $("[data-sub-input]", sub), lab = $("[data-sub-label]", sub), err = $("[data-sub-err]", sub);
     var CH = {
-      tg: { label: "ник в Telegram:", ph: "@твой_ник", type: "text", mode: "text", ok: isTg, bad: "Ник — от 5 символов: латиница, цифры и _.", done: "Напишем в Telegram, когда маршрут откроется." },
-      email: { label: "почта:", ph: "имя@почта.ру", type: "email", mode: "email", ok: isMail, bad: "Похоже, в почте опечатка — проверь адрес.", done: "Напишем на почту, когда маршрут откроется." }
+      tg: { label: "ник в Telegram:", ph: "@твой_ник", type: "text", mode: "text", ok: isTg, bad: "Ник — от 5 символов: латиница, цифры, _.", done: "Напишем в Telegram." },
+      email: { label: "почта:", ph: "имя@почта.ру", type: "email", mode: "email", ok: isMail, bad: "Похоже, в почте опечатка.", done: "Напишем на почту." }
     };
     var ch = function () { var r = $('input[name="ch"]:checked', sub); return CH[r ? r.value : "tg"]; };
     sub.addEventListener("change", function (e) {
@@ -559,11 +553,12 @@
   d.addEventListener("grinchin:mark", function (e) {
     var x = e.detail || {};
     var n = Array.isArray(x.found) ? x.found.length : x.n;
-    GV.toast("Метка " + n + "/" + (x.total || 5) + " найдена");
+    if (x.source === "street") GV.toast("Метка с улицы засчитана · " + n + "/" + (x.total || 5), 4200);
+    else if (n < (x.total || 5)) GV.toast("Метка " + n + "/" + (x.total || 5));
   });
   d.addEventListener("grinchin:gather-complete", function () {
     root.dataset.gather = "done";
-    GV.toast("Маршрут сошёлся → к точке сбора", 6000, "gather");
+    GV.toast("5/5. Маршрут сошёлся → забрать код", 6000, "gather");
   });
 
   /* ---------- ?open=… после grinchin:ready (или сразу при shot=1) ---------- */

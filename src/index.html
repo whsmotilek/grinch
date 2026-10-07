@@ -12,6 +12,7 @@ document.documentElement.classList.add("js");})();
 <meta name="description" content="GRINCHIN — мужская одежда для тех, кто не идёт по заданному маршруту. Дроп 01: джинсы, костюм, худи, косуха, футболка и лонгслив. Предзаказ открыт.">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#000000">
+<!--@html:meta/head.html-->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800;900&family=Inter:wght@400;500;600;700&family=Martian+Mono:wght@400;500;700&display=swap">
@@ -28,13 +29,12 @@ document.documentElement.classList.add("js");})();
 </head>
 <body>
 <!--@html:loader.html-->
-<a class="skip" href="#drop">К вещам дропа</a>
+<a class="skip" href="#drop">К вещам</a>
 
 <!-- ============ ПОЛОСА СТАТУСА ============ -->
 <div id="status" role="note" aria-label="Статус дропа">
   <div class="status-track">
-    <span class="status-item">ДРОП 01 <i aria-hidden="true">·</i> ПРЕДЗАКАЗ ОТКРЫТ <i aria-hidden="true">·</i> ОТПРАВКА С 01.12</span>
-    <span class="status-item" aria-hidden="true">ДРОП 01 <i>·</i> ПРЕДЗАКАЗ ОТКРЫТ <i>·</i> ОТПРАВКА С 01.12</span>
+    <span class="status-item">ДРОП 01 <i aria-hidden="true">—</i> ПРЕДЗАКАЗ ОТКРЫТ</span>
   </div>
 </div>
 
@@ -70,7 +70,7 @@ document.documentElement.classList.add("js");})();
       <div class="chips" role="group" aria-label="Категории" data-chips></div>
     </div>
     <div class="grid" data-grid></div>
-    <p class="drop-note"><span>цены, размеры и даты — пример</span><span>фото вещей — скоро</span></p>
+    <p class="demo-note">Демо: цены, даты и фото — пример</p>
   </div>
 </section>
 
@@ -89,15 +89,15 @@ document.documentElement.classList.add("js");})();
 
 <!-- ============ ПЕРЕЗАПУСК ============ -->
 <section id="next" aria-labelledby="next-title">
-  <div class="wrap next-grid">
-    <div>
-      <p class="eyebrow eyebrow--dark"><span>next:</span><span>перезапуск</span></p>
-      <h2 id="next-title" class="h-poster h-poster--md">Разобрали — вернём.</h2>
-      <p class="sec-lead">Дата и место следующего дропа — тем, кто подписан. Одно сообщение, когда маршрут откроется.</p>
+  <div class="tx-layer tx-layer--paper" aria-hidden="true"></div>
+  <div class="wrap next-row">
+    <div class="next-copy">
+      <h2 id="next-title" class="next-title">Разобрали — вернём.</h2>
+      <p class="next-sub">Дата перезапуска — тем, кто подписан.</p>
     </div>
     <form class="sub-form" data-sub novalidate>
       <fieldset class="seg">
-        <legend class="mono-label">куда написать:</legend>
+        <legend class="vh">Куда написать</legend>
         <label><input type="radio" name="ch" value="tg" checked><span>Telegram</span></label>
         <label><input type="radio" name="ch" value="email"><span>Email</span></label>
       </fieldset>
@@ -106,11 +106,10 @@ document.documentElement.classList.add("js");})();
         <input type="text" name="contact" autocomplete="off" placeholder="@твой_ник" data-sub-input aria-describedby="sub-err">
       </label>
       <p class="field-err" id="sub-err" data-sub-err></p>
-      <button class="btn btn--accent btn--wide" type="submit">Сообщить о дропе</button>
-      <p class="sub-fine">Только дропы. Отписаться — одной кнопкой.</p>
+      <button class="btn btn--accent btn--wide" type="submit">Подписаться</button>
       <div class="sub-done" data-sub-done hidden tabindex="-1">
         <p class="sub-done-big">Есть. Ты в списке.</p>
-        <p data-sub-done-text>Напишем в Telegram, когда маршрут откроется.</p>
+        <p data-sub-done-text>Напишем в Telegram.</p>
       </div>
     </form>
   </div>
@@ -155,10 +154,10 @@ document.documentElement.classList.add("js");})();
       <h2 id="sz-title" class="sz-title">Размерная сетка</h2>
       <button class="ov-x" type="button" data-close aria-label="Закрыть размерную сетку">Закрыть</button>
     </div>
-    <p class="sz-lead">Крой свободный. Если ты между размерами — бери меньший, если любишь объём — свой.</p>
+    <p class="sz-lead">Крой свободный. Между размерами — бери меньший.</p>
     <div class="sz-scroll">
       <table class="sz-table">
-        <caption class="mono-label">верх и костюм, см · пример</caption>
+        <caption class="mono-label">верх и костюм, см</caption>
         <thead><tr><th scope="col">Размер</th><th scope="col">RU</th><th scope="col">Рост</th><th scope="col">Грудь</th><th scope="col">Талия</th></tr></thead>
         <tbody>
           <tr><th scope="row">S</th><td>44–46</td><td>168–176</td><td>88–94</td><td>74–80</td></tr>
@@ -171,7 +170,7 @@ document.documentElement.classList.add("js");})();
     </div>
     <dl class="sz-model">
       <div><dt>модель:</dt><dd>187 см, носит L</dd></div>
-      <div><dt>джинсы:</dt><dd>длина в пол, при росте до 175 — подгибай</dd></div>
+      <div><dt>джинсы:</dt><dd>в пол; ниже 175 см — подгибай</dd></div>
     </dl>
   </div>
 </div>
@@ -189,13 +188,23 @@ document.documentElement.classList.add("js");})();
 
 <div id="page-404" class="ov ov--full" role="dialog" aria-modal="true" aria-labelledby="p404-title" hidden>
   <div class="ov-panel p404-panel">
-    <p class="mono-label p404-code">ошибка: 404 · маршрут не найден</p>
+    <p class="mono-label p404-code">404 · маршрута нет</p>
     <div class="p404-sign">
       <h2 id="p404-title" class="p404-title">STOP.<span>Тупик.</span></h2>
       <div class="smirk" data-mood="look"></div>
     </div>
-    <p class="p404-text">Такой страницы нет. Но рядом есть щель.</p>
     <button class="btn btn--accent" type="button" data-close data-home>Через щель — на главную <span aria-hidden="true">→</span></button>
+  </div>
+</div>
+
+<div id="game-help" class="ov ov--modal" role="dialog" aria-modal="true" aria-labelledby="gh-title" hidden>
+  <div class="ov-scrim" data-close></div>
+  <div class="ov-panel sz-panel gh-panel">
+    <div class="sz-top">
+      <h2 id="gh-title" class="sz-title">Точка сбора</h2>
+      <button class="ov-x" type="button" data-close aria-label="Закрыть">Закрыть</button>
+    </div>
+    <div class="gh-body" data-gh-body></div>
   </div>
 </div>
 

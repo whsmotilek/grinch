@@ -81,7 +81,7 @@
         smile = $('.ld-smile', ld), lt = $('.ld-letters', ld), tbox = $('.ld-tape', ld), dot = $('.ld-dot', ld),
         cap = $('.ld-cap', ld), grain = $('.ld-grain', ld), short = mode === 'short';
     var green = css('--c-green') || '#00DB24', white = css('--c-white') || '#fff';
-    tbox.appendChild(makeTape('GRINCHIN', { repeat: 4, seed: 'ld' }));
+    tbox.appendChild(makeTape('GRINCHIN', { repeat: 4, seed: 'ld', tone: 'brand' }));
     var tape = tbox.firstChild, rev = { p: 0 };
     var beak = S.beak || [927, 388];
     var done = false, tl;
@@ -92,7 +92,7 @@
       ld.style.display = 'none';
       ready();
     }
-    function skip() { if (!tl || done) return; tl.pause(); G.to(tl, { progress: 1, duration: .15, ease: 'power1.in', onComplete: finish }); }
+    function skip() { if (!tl || done || skip.on) return; skip.on = 1; tl.pause(); G.to(tl, { progress: 1, duration: .4, ease: 'power2.inOut', onComplete: finish }); }
     // FLIP: куда уезжает знак (лого в шапке), считаем в момент старта шага
     var flip = null;
     function target() {
@@ -107,55 +107,62 @@
     }
     G.set(line, { transformOrigin: '50% 50%' });
     G.set(horns, { drawSVG: '0%' });
+    // итерация 2: медленнее и спокойнее — каждый шаг читается, без вспышек и резких смен цвета;
+    // мягкие кривые (sine/power2), пауза-«вдох» на готовой улыбке, лента идёт ~0,75 с. Полный ≈ 3,1 с, повтор ≈ 1,2 с.
     tl = M.loaderTl = G.timeline({ paused: true, onComplete: finish, defaults: { overwrite: 'auto' } });
-    var t0 = short ? 0 : .15;               // точка → линия
-    var tM = short ? 0 : .45;               // прогиб
-    var tH = short ? .22 : .80;             // рожки
-    var tT = short ? .2 : 1.0;              // лента
-    var tF = short ? .38 : 1.3;             // FLIP + раскрытие
+    var t0 = short ? 0 : .35;               // точка → линия
+    var tM = short ? 0 : .95;               // прогиб в «тело» улыбки
+    var tH = short ? .2 : 1.45;             // улыбка + рожки
+    var tT = short ? .45 : 1.95;            // лента
+    var tF = short ? .78 : 2.68;            // FLIP + раскрытие
     if (!short) {
-      tl.set(dot, { autoAlpha: 0 }, t0 + .02)
-        .fromTo(line, { opacity: 1, scaleX: .004 }, { scaleX: 1, duration: .3, ease: 'power3.inOut' }, t0);
+      tl.fromTo(cap, { autoAlpha: 0 }, { autoAlpha: .8, duration: .6, ease: 'sine.out' }, .2)
+        .to(dot, { autoAlpha: 0, scale: .6, duration: .3, ease: 'sine.in' }, t0)
+        .fromTo(line, { opacity: 1, scaleX: .004 }, { scaleX: 1, duration: .6, ease: 'power2.inOut' }, t0)
+        .to(line, { morphSVG: S.body, duration: .6, ease: 'power2.inOut' }, tM)
+        .to(line, { fill: green, stroke: green, duration: .8, ease: 'sine.inOut' }, tM - .05);
     } else {
-      tl.set(dot, { autoAlpha: 0 }, 0).set(line, { opacity: 1, scaleX: 1 }, 0);
+      // повторный визит: улыбка уже зелёная и собрана, только мягко проявляется
+      tl.set([dot, tbox], { autoAlpha: 0 }, 0)
+        .set(line, { opacity: 1, scaleX: 1, fill: green, stroke: green }, 0)
+        .set(line, { morphSVG: S.body }, 0)
+        .fromTo(smile, { autoAlpha: 0 }, { autoAlpha: 1, duration: .3, ease: 'sine.out' }, 0);
     }
-    tl.to(line, { morphSVG: S.body, duration: short ? .2 : .35, ease: 'back.out(1.7)' }, tM)
-      .to(line, { fill: green, stroke: green, duration: short ? .15 : .22, ease: 'power1.out' }, tM)
-      .to(line, { morphSVG: S.smile, duration: .16, ease: 'back.out(3)' }, tH)
-      .fromTo(smile, { scaleX: 1.04, scaleY: .96, transformOrigin: '50% 100%' }, { scaleX: 1, scaleY: 1, duration: .3, ease: 'elastic.out(1,.45)' }, tH)
-      .fromTo(horns, { autoAlpha: 1, drawSVG: '0%' }, { drawSVG: '100%', duration: .16, ease: 'power2.out' }, tH)
-      .to(horns, { autoAlpha: 0, duration: .2 }, tH + .18);
+    tl.to(line, { morphSVG: S.smile, duration: short ? .3 : .45, ease: 'power2.out' }, tH)
+      .fromTo(horns, { autoAlpha: 1, drawSVG: '0%' }, { drawSVG: '100%', duration: short ? .3 : .5, ease: 'power1.inOut' }, tH)
+      .to(horns, { autoAlpha: 0, duration: .3, ease: 'sine.out' }, tH + (short ? .3 : .5));
     if (!short) {
-      // лента проезжает слева направо, под ней остаётся GRINCHIN (край вскрытия = середина ленты)
-      tl.fromTo(rev, { p: 0 }, { p: 1, duration: .3, ease: 'power2.inOut', onUpdate: function () {
+      // «вдох»: улыбка чуть приподнимается и опускается — пауза перед лентой
+      tl.fromTo(smile, { scale: 1, transformOrigin: '50% 100%' }, { scale: 1.018, duration: .25, ease: 'sine.inOut', yoyo: true, repeat: 1 }, tH + .45);
+      // лента медленно проезжает слева направо; под ней остаётся GRINCHIN с фактурой скотча
+      tl.fromTo(rev, { p: 0 }, { p: 1, duration: .75, ease: 'power1.inOut', onUpdate: function () {
           var c = -38 + rev.p * 175;  // центр ленты, % ширины знака
           G.set(tbox, { xPercent: -120 + rev.p * 380 });
           lt.style.clipPath = 'inset(-20% ' + clamp(0, 100, 100 - c) + '% -20% 0)';
         } }, tT)
-        .to(tape, { rotation: 11, y: -18, duration: .14, ease: 'power2.in' }, tT + .2)
-        .to(tbox, { xPercent: 520, autoAlpha: 0, duration: .22, ease: 'power3.in' }, tT + .3);
+        .to(tape, { rotation: 6, y: -10, duration: .3, ease: 'sine.in' }, tT + .55)
+        .to(tbox, { xPercent: 470, autoAlpha: 0, duration: .35, ease: 'power2.in' }, tT + .6);
     } else {
-      tl.fromTo(lt, { clipPath: 'inset(-20% 100% -20% 0)' }, { clipPath: 'inset(-20% 0% -20% 0)', duration: .2, ease: 'power2.out' }, tT);
+      tl.fromTo(lt, { clipPath: 'inset(-20% 0% -20% 0)', autoAlpha: 0 }, { autoAlpha: 1, duration: .3, ease: 'sine.out' }, tT);
     }
     // FLIP в шапку + сайт раскрывается эллипсом из клюва
-    var fd = short ? .25 : .4;
+    var fd = short ? .45 : .52;
     tl.to(mk, { x: function () { return target().x; }, y: function () { return target().y; }, scale: function () { return target().s; },
-                duration: fd, ease: 'power3.inOut' }, tF)
-      .to([lt, line], { color: function () { return target().col; }, fill: function () { return target().col; }, stroke: 'transparent', duration: fd }, tF)
-      .to([cap, grain], { autoAlpha: 0, duration: .15 }, tF)
+                duration: fd, ease: 'power2.inOut' }, tF)
+      .to([lt, line], { color: function () { return target().col; }, fill: function () { return target().col; }, stroke: 'transparent', duration: fd, ease: 'sine.inOut' }, tF)
+      .to(lt, { '--ld-tx': 0, duration: fd * .8, ease: 'sine.inOut' }, tF)
+      .to([cap, grain], { autoAlpha: 0, duration: .3, ease: 'sine.out' }, tF - .1)
       .fromTo(ld, { '--ld-rx': '0px', '--ld-ry': '0px' }, {
         '--ld-rx': function () { return target().R + 'px'; }, '--ld-ry': function () { return target().R * .8 + 'px'; },
         duration: fd, ease: 'power2.in',
         onStart: function () { var f = target(); ld.style.setProperty('--ld-bx', f.bx + 'px'); ld.style.setProperty('--ld-by', f.by + 'px'); }
-      }, tF + .02)
-      .set(lt, { filter: 'none' }, tF)
-      .set(smile, { filter: 'none' }, tF);
+      }, tF + .04);
     // логотип в шапке становится видимым ровно на приземлении
     tl.call(function () { var l = $('#logo'); if (l) l.style.visibility = 'visible'; }, null, tF + fd - .01)
       .call(function () { var l = $('#logo'); if (l) l.style.visibility = ''; }, null, tF + fd + .05);
     ['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(function (t) { W.addEventListener(t, skip, { capture: true, passive: true }); });
-    setTimeout(function () { if (!done) skip(); }, 4500);   // страховка
-    whenDom(function () { requestAnimationFrame(function () { tl.play(); }); });
+    setTimeout(function () { if (!done) skip(); }, 6000);   // страховка
+    whenDom(function () { heroSplit(); requestAnimationFrame(function () { tl.play(); }); });
   }
 
   /* ================= 2a. ПЕРЕХОД ЛЕНТОЙ ================= */
@@ -164,8 +171,8 @@
     if (wipeEl) return wipeEl;
     wipeEl = D.createElement('div'); wipeEl.className = 'mx-wipe'; wipeEl.setAttribute('aria-hidden', 'true');
     wipeEl.innerHTML = '<div class="mx-wipe-bg"></div>';
-    wipeEl.appendChild(makeTape('GRINCHIN', { repeat: 12, seed: 'a', tone: 'lime' }));
-    wipeEl.appendChild(makeTape('GRINCHIN', { repeat: 12, seed: 'b' }));
+    wipeEl.appendChild(makeTape('GRINCHIN', { repeat: 12, seed: 'a', tone: 'pigment' }));
+    wipeEl.appendChild(makeTape('GRINCHIN', { repeat: 12, seed: 'b', tone: 'brand' }));
     D.body.appendChild(wipeEl);
     return wipeEl;
   }
@@ -271,8 +278,12 @@
       var r = rnd(lk.getAttribute('data-look') || i), rot = (i % 2 ? 1 : -1) * (1 + r() * 1.4);
       lk._mxr = +rot.toFixed(2);
       var phEl = $('.look-photo', lk);
+      // кампейн-кадр бренда из <template id="look-shots"> (looks.html) — вместо плейсхолдеров вещей
+      var tpl = $('#look-shots'), shot = tpl && tpl.content && tpl.content.querySelector('picture[data-look="' + lk.getAttribute('data-look') + '"]');
+      if (phEl && shot && !$('.look-shot', phEl)) { phEl.insertBefore(shot.cloneNode(true), phEl.firstChild); lk.classList.add('has-shot'); }
       if (phEl && !$('.mx-peel', phEl)) { var fl = D.createElement('i'); fl.className = 'mx-peel'; fl.setAttribute('aria-hidden', 'true'); phEl.appendChild(fl); }
-      $$('.look-tape', lk).forEach(function (t, k) { if (!t.firstChild) t.appendChild(makeTape('GRINCHIN', { repeat: 3, seed: i + '-' + k, tone: k ? '' : 'lime' }).firstChild); });
+      // ленты держат фото: кусок белого скотча (скан) + зелёный кусок той же формы
+      $$('.look-tape', lk).forEach(function (t, k) { t.classList.add('tp-piece'); if (k) t.classList.add('tp-piece--green'); });
       var tag = $('.look-tag', lk);
       if (tag && !$('svg', tag)) tag.insertAdjacentHTML('beforeend', qr(lk.getAttribute('data-look') || i));
       if (!FINE.matches) {
@@ -290,7 +301,8 @@
       if (!mark(el, 'r')) return;
       var dir = i % 2 ? 1 : -1;
       el.style.setProperty('--run-r', (dir * 1.6) + 'deg');
-      var w = makeTape('', { edge: false, raw: true }), txt = w.querySelector('.tp-txt');
+      var w = makeTape('', { edge: false, raw: true, tone: ['brand', 'pigment', 'white'][i % 3] }), txt = w.querySelector('.tp-txt');
+      w.firstChild.classList.add('tp--open');
       el.appendChild(w);
       var unit = D.createElement('span'); unit.textContent = el.getAttribute('data-text') + ' • ';
       unit.style.paddingRight = '.4em';
@@ -332,7 +344,7 @@
     var par = box.parentNode; if (par && getComputedStyle(par).position === 'static') par.style.position = 'relative';
     var left = 2;
     ['GRINCHIN', 'ВХОД ЗАКРЫТ'].forEach(function (t, i) {
-      var w = makeTape(t, { repeat: 10, seed: 'ft' + i, tone: i ? '' : 'lime', cls: 'mx-ft' });
+      var w = makeTape(t, { repeat: 10, seed: 'ft' + i, tone: i ? 'pigment' : 'brand', cls: 'mx-ft' });
       w.removeAttribute('aria-hidden');
       w.setAttribute('role', 'button'); w.setAttribute('tabindex', '0');
       w.setAttribute('aria-label', 'Оторвать ленту — под ней контакты');
@@ -365,11 +377,11 @@
 
   /* ================= 3. ИСТОРИЯ ЛОГО ================= */
   var CAPS = [
-    ['Ограничение.', 'город говорит: стоп, только туда или туда'],
-    ['Не все ограничения нужно ломать.', 'стрелки прогибаются — и это уже ухмылка'],
-    ['STOP превращается в ST’ART.', 'одна полоска ленты — и знак говорит другое'],
-    ['Знак собран из настоящего скотча.', 'наклеили, сняли с пигментом, отсканировали'],
-    ['Ограничение — это не только стена.', 'это ещё и повод искать в ней щель']
+    ['Ограничение.', 'стоп. только туда или туда'],
+    ['Не все ограничения нужно ломать.', 'стрелки гнутся в ухмылку'],
+    ['STOP превращается в ST’ART.', 'одна полоска ленты'],
+    ['Знак собран из настоящего скотча.', 'наклеили, сняли, отсканировали'],
+    ['Ограничение — это не только стена.', 'это повод искать щель']
   ];
   function logoStory() {
     var host = $('#logo-story'); if (!host || !mark(host, 's')) return;
@@ -677,7 +689,8 @@
   }
   function revealHead(h) {
     var w = $$('.mx-wi', h);
-    G.fromTo(w, { yPercent: 110 }, { yPercent: 0, duration: .75, stagger: .055, ease: 'power4.out', onComplete: function () { h.setAttribute('data-mx-split', 'done'); G.set(w, { clearProps: 'transform' }); } });
+    // y:0 явно: иначе GSAP подхватывает translateY(110%) из CSS как y в px и слово стоит спрятанным до конца твина
+    G.fromTo(w, { y: 0, yPercent: 110 }, { y: 0, yPercent: 0, duration: .9, stagger: .05, ease: 'power3.out', onComplete: function () { h.setAttribute('data-mx-split', 'done'); G.set(w, { clearProps: 'transform' }); } });
   }
   var headIO = io(function (en) { if (!en.isIntersecting) return; headIO.unobserve(en.target); revealHead(en.target); }, { threshold: .35 });
   function heads() {
@@ -687,9 +700,14 @@
       splitWords(h); h.setAttribute('data-mx-split', 'pending'); headIO.observe(h);
     });
   }
+  // заголовок hero делится на слова ещё под лоадером — иначе он мелькал: виден → спрятан → выезжает
+  function heroSplit() {
+    var h = $('#hero-title'); if (!h || calm() || !mark(h, 'h')) return h && h._mxSplit ? h : null;
+    splitWords(h); h.setAttribute('data-mx-split', 'pending'); h._mxSplit = 1; return h;
+  }
   function heroTitle() {
-    var h = $('#hero-title'); if (!h || calm() || !mark(h, 'h')) return;
-    splitWords(h); h.setAttribute('data-mx-split', 'pending');
+    var h = $('#hero-title'); if (!h || calm() || h._mxShown) return;
+    heroSplit(); if (!h._mxSplit) return; h._mxShown = 1;
     requestAnimationFrame(function () { revealHead(h); });
   }
 

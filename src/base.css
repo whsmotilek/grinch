@@ -103,71 +103,89 @@ section[id],#footer,#main [id]{scroll-margin-top:calc(var(--status-h) + var(--he
   .hd-cart-label{display:inline}
 }
 
-/* ---------- HERO ---------- */
-#hero{position:relative;isolation:isolate;overflow:hidden;background:var(--c-black);display:flex;flex-direction:column;
-  min-height:min(calc(86svh - var(--status-h) - var(--header-h)),760px);padding:0 16px 20px}
-.hero-bg{position:absolute;inset:0;z-index:-1;pointer-events:none;
-  background:
-    radial-gradient(42% 46% at 4% 96%,color-mix(in srgb,var(--c-green) 30%,transparent),transparent 72%),
-    radial-gradient(34% 40% at 98% 4%,color-mix(in srgb,var(--c-acid) 16%,transparent),transparent 70%),
-    var(--c-black)}
-/* «спрей»: зелёные крапины только по углам, как на обложке pres_01 */
-.hero-bg::before{content:"";position:absolute;inset:0;opacity:.85;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 .86 0 0 0 0 .14 0 0 0 11 -6.4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  -webkit-mask-image:radial-gradient(40% 50% at 0% 100%,#000 10%,transparent 75%),radial-gradient(30% 40% at 100% 0%,#000 0,transparent 70%);
-          mask-image:radial-gradient(40% 50% at 0% 100%,#000 10%,transparent 75%),radial-gradient(30% 40% at 100% 0%,#000 0,transparent 70%)}
-/* зерно + царапины мятой бумаги */
-.hero-bg::after{content:"";position:absolute;inset:0;opacity:.07;mix-blend-mode:screen;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E"),
-    linear-gradient(118deg,transparent 49.8%,color-mix(in srgb,var(--c-white) 30%,transparent) 50%,transparent 50.2%),
-    linear-gradient(64deg,transparent 49.85%,color-mix(in srgb,var(--c-white) 22%,transparent) 50%,transparent 50.15%);
-  background-size:200px 200px,100% 100%,100% 100%}
-#g3d{position:relative;height:clamp(200px,30svh,320px);margin-inline:-16px;width:calc(100% + 32px)}
-.hero-copy{position:relative;z-index:2;padding-top:4px}
-.hero-copy .eyebrow{margin-bottom:14px}
-#hero-title{font-family:var(--font-display);color:var(--c-white)}
-.ht-pre{display:block;font-weight:700;font-size:clamp(1rem,1.8vw,1.5rem);letter-spacing:-.01em;color:var(--text-2);margin-bottom:.45em}
-.ht-big{display:block;font-weight:900;font-size:clamp(2.35rem,10.4vw,3.1rem);line-height:.92;letter-spacing:-.05em;text-wrap:balance}
-/* «заданному» перечёркнуто стоп-лентой: маршрут закрыт, идём в обход */
-.ht-strike{position:relative;white-space:nowrap;color:color-mix(in srgb,var(--c-white) 62%,transparent)}
-.ht-strike::after{content:"";position:absolute;left:-.08em;right:-.1em;top:50%;height:.2em;margin-top:-.08em;background:var(--accent);
-  transform:rotate(-4deg);box-shadow:0 0 18px color-mix(in srgb,var(--c-acid) 50%,transparent)}
-.hero-sub{margin-top:18px;max-width:30ch;color:var(--text-2);font-size:var(--fs-base);line-height:1.45}
-.hero-cta{display:flex;gap:8px;margin-top:20px}
-.hero-cta .btn{flex:1 1 0;min-width:0;min-height:50px;padding:0 10px;font-size:.6875rem;letter-spacing:.02em}
-.m-hide{display:none}
-@media (max-width:767px){
-  #hero .eyebrow{display:none}
-  .hero-tag>div:nth-child(2){display:none}
-  .hero-sub{margin-top:14px}
+/* ---------- УЛИЦА: общие фактуры (итерация 2, D) ----------
+   Всё из собственных материалов бренда (src/img/_street.py): мятая бумага наружки pres_11,
+   граффити-слои оттуда же. Цвет — токены; фактура только модулирует яркость. */
+:root{
+  --tx-paper:url("{{asset:img/street/paper.webp}}");
+  --tx-tag-spray:url("{{asset:img/street/tag-spray.webp}}");
+  --tx-tag-scrawl:url("{{asset:img/street/tag-scrawl.webp}}");
+  --c-poster:#1e2b1c;           /* тон наружки pres_11: тёмный лес, почти графит — зелёный остаётся акцентом */
 }
+/* слой бумаги для тёмных разделов: кладётся первым ребёнком, раздел — isolation:isolate */
+.tx-layer{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.tx-layer--paper{background:var(--tx-paper) 0 0/var(--tx-size,620px) auto repeat,var(--tx-base,var(--c-black));background-blend-mode:var(--tx-blend,screen);opacity:var(--tx-o,.22)}
+.tx-layer--paper.is-forest{--tx-base:var(--c-forest);--tx-blend:soft-light;opacity:.5}
+#gather,#next{position:relative;isolation:isolate}
+.tx-layer--paper.is-poster{--tx-base:var(--c-poster);--tx-blend:overlay;opacity:1}
+.tx-graf{position:absolute;display:block;pointer-events:none;background:var(--c-black);aspect-ratio:4/3;
+  -webkit-mask:var(--tx-tag-spray) center/contain no-repeat;mask:var(--tx-tag-spray) center/contain no-repeat}
+.tx-graf--scrawl{-webkit-mask-image:var(--tx-tag-scrawl);mask-image:var(--tx-tag-scrawl)}
 
-/* бирочные ячейки — общая форма (pres_12: «size: | price:» в зелёных линиях) */
-.hero-tag,.reward-tag,.sz-model{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border:1.5px solid var(--accent);font-family:var(--font-mono)}
-.hero-tag>div,.reward-tag>div,.sz-model>div{padding:8px 10px 9px;display:flex;flex-direction:column;gap:6px;min-width:0}
-.hero-tag>div+div,.reward-tag>div+div,.sz-model>div+div{border-left:1.5px solid var(--accent)}
-.hero-tag dt,.reward-tag dt,.sz-model dt{font-size:.625rem;opacity:.7}
-.hero-tag dd,.reward-tag dd,.sz-model dd{font-size:.8125rem;font-weight:500;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hero-tag{position:relative;z-index:2;margin-top:auto;padding-top:0;color:var(--c-white);background:color-mix(in srgb,var(--c-black) 70%,transparent)}
-#hero .hero-copy{margin-bottom:24px}
-
+/* ---------- HERO: наружка на стене ----------
+   Композиция pres_11: зелёная мятая бумага, вертикальный GRINCHIN по краю, модель в дениме,
+   чёрные теги поверх. 3D-G (C) — справа, ему отдана целая колонка. Текста — одна строка и кнопка. */
+#hero{position:relative;isolation:isolate;overflow:hidden;background:var(--c-black);
+  min-height:min(calc(88svh - var(--status-h) - var(--header-h)),820px);min-height:max(560px,min(calc(88svh - var(--status-h) - var(--header-h)),820px))}
+.hero-bg{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden;
+  background:var(--tx-paper) 0 0/560px auto repeat,var(--c-poster);background-blend-mode:overlay}
+/* заломы бумаги поверх печати (и поверх модели) + виньетка: плакат, а не экран */
+.hero-bg::before{content:"";position:absolute;inset:0;z-index:3;background:var(--tx-paper) 0 0/560px auto repeat;mix-blend-mode:overlay;opacity:.4}
+.hero-bg::after{content:"";position:absolute;inset:0;z-index:4;background:radial-gradient(120% 90% at 50% 40%,transparent 45%,color-mix(in srgb,var(--c-black) 70%,transparent)),
+    linear-gradient(0deg,color-mix(in srgb,var(--c-black) 80%,transparent),transparent 45%)}
+.hero-word{position:absolute;left:1.5%;top:3%;bottom:3%;aspect-ratio:390/1854;z-index:1;color:var(--c-green);opacity:.26;mix-blend-mode:screen}
+.hero-word svg{position:absolute;left:0;top:100%;width:calc(100% * 1854 / 390);height:auto;aspect-ratio:1854/390;max-width:none;transform-origin:0 0;transform:rotate(-90deg)}
+.hero-model{position:absolute;z-index:2;bottom:-6%;height:96%;width:auto;max-width:none;left:50%;transform:translateX(-58%);
+  filter:grayscale(.2) contrast(1.06) brightness(.92) drop-shadow(0 30px 40px color-mix(in srgb,var(--c-black) 55%,transparent))}
+.hero-graf{position:absolute;z-index:3;display:block;background:var(--c-black);aspect-ratio:4/3;
+  -webkit-mask:var(--tx-tag-spray) center/contain no-repeat;mask:var(--tx-tag-spray) center/contain no-repeat}
+.hero-graf--a{width:min(92%,620px);left:-6%;bottom:16%;transform:rotate(-7deg);opacity:.9}
+.hero-graf--b{-webkit-mask-image:var(--tx-tag-scrawl);mask-image:var(--tx-tag-scrawl);background:var(--c-paper);width:min(70%,520px);right:-10%;top:-4%;transform:rotate(8deg);opacity:.16}
+#g3d{position:absolute;z-index:2;right:-6%;top:0;width:76%;height:52%}
+.hero-copy{position:absolute;z-index:5;left:16px;right:16px;bottom:calc(28px + env(safe-area-inset-bottom));display:grid;justify-items:start;gap:22px}
+#hero-title{font:900 clamp(1.9rem,8.6vw,2.6rem)/.98 var(--font-display);letter-spacing:-.045em;color:var(--c-white);max-width:13ch;text-wrap:balance;
+  text-shadow:0 2px 24px color-mix(in srgb,var(--c-black) 60%,transparent)}
+/* «заданному» заклеено зелёным скотчем: маршрут закрыт, слово читается сквозь край ленты */
+.ht-strike{position:relative;white-space:nowrap;color:color-mix(in srgb,var(--c-white) 70%,transparent)}
+.ht-strike::after{content:"";position:absolute;left:-.12em;right:-.16em;top:50%;height:.42em;margin-top:-.16em;transform:rotate(-4deg);
+  background:var(--tx-crease) 0 0/auto 100% repeat-x,var(--c-green);background-blend-mode:multiply;
+  -webkit-mask:var(--tx-end-l) left center/auto 100% no-repeat,var(--tx-end-r) right center/auto 100% no-repeat,linear-gradient(#000 0 0) center/calc(100% - .45em) 100% no-repeat;
+          mask:var(--tx-end-l) left center/auto 100% no-repeat,var(--tx-end-r) right center/auto 100% no-repeat,linear-gradient(#000 0 0) center/calc(100% - .45em) 100% no-repeat;
+  filter:drop-shadow(0 2px 2px color-mix(in srgb,var(--c-black) 50%,transparent))}
+.hero-btn{min-height:54px;padding:0 26px}
+.hero-pin{z-index:6;width:clamp(110px,16vw,220px)}
+.hero-pin--tl{left:-34px;top:10px;transform:rotate(-32deg)}
+.hero-pin--tr{right:-30px;top:14px;transform:rotate(28deg) scaleX(-1)}
+#hero .gm-slot{position:absolute;z-index:6;right:18px;bottom:22px}
 @media (min-width:768px){
-  #hero{padding:0 32px 32px}
-  #g3d{margin-inline:-32px;width:calc(100% + 64px);height:clamp(260px,38svh,420px)}
-  .ht-big{font-size:clamp(3rem,8vw,4.6rem)}
-  .hero-cta .btn{flex:0 0 auto;padding:0 24px;font-size:.8125rem;min-height:52px}
-  .m-hide{display:inline}
-  .hero-tag{max-width:600px}
+  #hero{min-height:max(620px,min(calc(86svh - var(--status-h) - var(--header-h)),820px))}
+  .hero-model{height:100%;left:56%}
+  #g3d{right:-2%;width:56%;height:62%}
+  .hero-copy{left:32px;right:auto;bottom:48px;max-width:56%}
+  #hero-title{font-size:clamp(2.4rem,5.2vw,3.4rem)}
 }
 @media (min-width:1100px){
-  #hero{padding:0 48px 40px;justify-content:center;min-height:min(calc(84svh - var(--status-h) - var(--header-h)),820px)}
-  #g3d{position:absolute;margin:0;right:0;top:0;bottom:0;height:auto;width:46%}
-  .hero-copy{width:62%;padding-top:48px}
-  .ht-big{font-size:clamp(3.6rem,6.6vw,7.4rem);line-height:.9}
-  .hero-sub{font-size:var(--fs-md);margin-top:26px}
-  .hero-cta{margin-top:32px}
-  .hero-tag{margin-top:40px}
+  #hero{min-height:max(640px,min(calc(86svh - var(--status-h) - var(--header-h)),860px))}
+  .hero-bg::after{background:radial-gradient(110% 90% at 55% 45%,transparent 50%,color-mix(in srgb,var(--c-black) 68%,transparent)),
+    linear-gradient(90deg,color-mix(in srgb,var(--c-black) 55%,transparent),transparent 42%)}
+  .hero-model{height:104%;bottom:-8%;left:47%;transform:translateX(-50%)}
+  #g3d{right:0;top:0;bottom:0;width:42%;height:auto}
+  .hero-copy{left:clamp(48px,10vw,170px);bottom:clamp(48px,8vh,88px);max-width:min(40%,560px);gap:30px}
+  #hero-title{font-size:clamp(2.6rem,3.9vw,4.1rem);max-width:12ch}
+  .hero-graf--a{width:46%;left:22%;bottom:4%}
+  .hero-graf--b{width:34%;right:auto;left:-4%;top:6%;transform:rotate(-10deg)}
+  #hero .gm-slot{right:40px;bottom:30px}
 }
+
+.m-hide{display:none}
+@media (min-width:768px){.m-hide{display:inline}}
+
+/* бирочные ячейки — общая форма (pres_12: «size: | price:» в зелёных линиях) */
+.reward-tag,.sz-model{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border:1.5px solid var(--accent);font-family:var(--font-mono)}
+.reward-tag>div,.sz-model>div{padding:8px 10px 9px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.reward-tag>div+div,.sz-model>div+div{border-left:1.5px solid var(--accent)}
+.reward-tag dt,.sz-model dt{font-size:.625rem;opacity:.7}
+.reward-tag dd,.sz-model dd{font-size:.8125rem;font-weight:500;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ---------- ДРОП 01 (бумага) ---------- */
 #drop{background:var(--c-paper);color:var(--c-black);padding:28px 0 72px}
@@ -248,7 +266,10 @@ section[id],#footer,#main [id]{scroll-margin-top:calc(var(--status-h) + var(--he
   display:block;white-space:nowrap;font:800 .875rem/46px var(--font-display);letter-spacing:.04em;padding-left:24px}
 
 /* ---------- ОБРАЗЫ ---------- */
-#looks{position:relative;background:var(--c-black);padding:88px 0 96px;overflow:hidden}
+#looks{position:relative;isolation:isolate;background:var(--c-black);padding:88px 0 96px;overflow:hidden}
+/* стена: мятая бумага поверх чёрного — серый «бетон» с заломами, на нём расклеены кадры */
+.tx-layer--wall{--tx-o:.3;--tx-size:720px}
+.tx-layer--wall::after{content:"";position:absolute;inset:0;background:radial-gradient(90% 70% at 50% 55%,transparent 30%,var(--c-black) 100%)}
 .sec-head{margin-bottom:48px}
 .looks-wall{display:flex;gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-inline:16px;padding:28px 16px 32px;scrollbar-width:none}
 .looks-wall::-webkit-scrollbar{display:none}
@@ -259,6 +280,10 @@ section[id],#footer,#main [id]{scroll-margin-top:calc(var(--status-h) + var(--he
 .look-photo::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.22;mix-blend-mode:screen;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E")}
 .look-num{position:absolute;z-index:3;left:12px;bottom:6px;font:900 clamp(3rem,8vw,4.5rem)/1 var(--font-display);letter-spacing:-.06em;color:var(--accent)}
+.look-photo picture{position:absolute;inset:0}
+.look-shot{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.look.has-shot .look-img{display:none}
+.look.has-shot .look-num{left:0;bottom:0;padding:2px 12px 0 10px;background:var(--c-black);font-size:clamp(2rem,4.6vw,3rem)}
 .look-img{position:absolute;width:64%;height:auto;aspect-ratio:4/5;object-fit:cover;box-shadow:0 14px 24px -12px rgba(0,0,0,.7)}
 .look-img--1{left:6%;top:7%;transform:rotate(-3deg)}
 .look-img--2{right:5%;top:30%;transform:rotate(4deg)}
@@ -290,19 +315,44 @@ section[id],#footer,#main [id]{scroll-margin-top:calc(var(--status-h) + var(--he
   .look:nth-child(4){--r:3deg;margin-top:96px}
 }
 
-/* ---------- О БРЕНДЕ ---------- */
-#about{position:relative;background:var(--c-black);padding:96px 0 88px;border-top:1px solid var(--c-line)}
-.about-grid{display:grid;gap:40px}
-.manifest{font:700 clamp(1.375rem,2.7vw,2.375rem)/1.18 var(--font-display);letter-spacing:-.025em;max-width:24ch}
+/* ---------- О БРЕНДЕ: дверь, манифест, как делался знак ---------- */
+#about{position:relative;isolation:isolate;background:var(--c-black);padding:0 0 72px;overflow:hidden}
+#about>.tx-layer--paper{--tx-o:.16}
+.about-door{position:relative;isolation:isolate;background:var(--c-black)}
+.about-door picture,.door-img{display:block;width:100%}
+.door-img{height:auto;aspect-ratio:1448/1086;object-fit:cover}
+.about-door::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(0deg,var(--c-black),transparent 30%),linear-gradient(180deg,color-mix(in srgb,var(--c-black) 60%,transparent),transparent 18%)}
+.about-door-cap{position:relative;z-index:2;margin-top:-56px}
+#about-title{text-shadow:0 2px 30px color-mix(in srgb,var(--c-black) 70%,transparent)}
+.about-grid{display:grid;gap:36px;margin-top:40px}
+.manifest{font:700 clamp(1.25rem,2.4vw,2.1rem)/1.2 var(--font-display);letter-spacing:-.025em;max-width:26ch}
 .manifest em{font-style:normal;color:var(--accent)}
-.manifest--dim{color:var(--text-2);margin-top:.8em}
-.about-points{margin-top:48px;border-top:1px solid var(--c-line)}
-.about-points li{display:grid;gap:6px;padding:18px 0;border-bottom:1px solid var(--c-line);color:var(--text-2);max-width:56ch}
-.ap-k{font:500 .6875rem/1 var(--font-mono);color:var(--accent)}
+.manifest--dim{color:var(--text-2);margin-top:.7em}
+/* пункты — бирки на зелёных кусках скотча, расклеены по стене */
+.about-points{display:grid;gap:14px;align-content:start}
+.about-points li{display:flex;align-items:baseline;gap:14px;color:var(--text-2);font-size:var(--fs-sm);line-height:1.45;max-width:44ch}
+.ap-k{position:relative;flex:0 0 auto;display:inline-block;padding:.45em .9em .4em;color:var(--c-black);font:700 .6875rem/1 var(--font-mono);transform:rotate(-3deg);isolation:isolate}
+.ap-k::before{content:"";position:absolute;inset:-2px -6px;z-index:-1;background:var(--tx-crease) 0 0/auto 100% repeat-x,var(--c-green);background-blend-mode:multiply;
+  -webkit-mask:var(--tx-end-l) left center/auto 100% no-repeat,var(--tx-end-r) right center/auto 100% no-repeat,linear-gradient(#000 0 0) center/calc(100% - 1.2em) 100% no-repeat;
+          mask:var(--tx-end-l) left center/auto 100% no-repeat,var(--tx-end-r) right center/auto 100% no-repeat,linear-gradient(#000 0 0) center/calc(100% - 1.2em) 100% no-repeat}
+.about-points li:nth-child(2) .ap-k{transform:rotate(2deg)}
+.about-making{margin-top:72px;display:grid;gap:14px;justify-items:start}
+.making-pic{position:relative;width:min(100%,920px);transform:rotate(-1.4deg);box-shadow:0 26px 34px -22px rgba(0,0,0,.9)}
+.making-pic img{width:100%;height:auto;filter:grayscale(.15) contrast(1.04)}
+.making-pin{width:clamp(90px,14vw,170px);z-index:2}
+.making-pin--a{left:-4%;top:-9%;transform:rotate(-28deg)}
+.making-pin--b{right:-4%;bottom:-9%;transform:rotate(-24deg) scaleX(-1)}
+.about-making figcaption{opacity:.8;margin-top:22px}
+@media (min-width:768px){
+  .door-img{aspect-ratio:auto;height:min(78svh,760px);object-position:50% 46%}
+  .about-door-cap{position:absolute;left:0;right:0;bottom:36px;margin:0}
+  .about-door::after{background:linear-gradient(0deg,var(--c-black) 2%,transparent 45%),linear-gradient(180deg,var(--c-black),transparent 14%)}
+}
 @media (min-width:1100px){
-  .about-grid{grid-template-columns:5fr 7fr;gap:64px}
-  .about-side{position:sticky;top:calc(var(--status-h) + var(--header-h) + 40px);align-self:start}
-  .about-points li{grid-template-columns:120px 1fr;gap:24px}
+  .about-grid{grid-template-columns:7fr 5fr;gap:80px;margin-top:56px;align-items:start}
+  .about-points{padding-top:8px}
+  .about-making{margin-top:96px;justify-items:end}
 }
 
 /* ---------- ТОЧКА СБОРА ---------- */
@@ -352,7 +402,12 @@ section[id],#footer,#main [id]{scroll-margin-top:calc(var(--status-h) + var(--he
 @media (min-width:1100px){.next-grid{grid-template-columns:6fr 5fr;align-items:end;gap:80px}}
 
 /* ---------- ФУТЕР ---------- */
-#footer{background:var(--c-forest);color:var(--c-white);padding:88px 0 28px;overflow:hidden}
+#footer{position:relative;isolation:isolate;background:var(--c-forest);color:var(--c-white);padding:88px 0 28px;overflow:hidden}
+.ft-head{position:relative;display:inline-block}
+.ft-pin{width:clamp(110px,14vw,200px);right:-10%;bottom:-38%;transform:rotate(-14deg)}
+.ft-soc{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 0}
+.ft-soc .ft-soon+.ft-soon::before{content:" · ";color:color-mix(in srgb,var(--c-white) 45%,transparent)}
+.ft-soon-i{font:400 .625rem var(--font-mono);font-style:normal;color:var(--c-lime);margin-left:8px}
 .ft-motto{font:900 clamp(2.1rem,7vw,6.5rem)/.9 var(--font-display);letter-spacing:-.05em;max-width:14ch}
 .ft-cols{display:grid;gap:36px;margin-top:64px}
 .ft-col ul{margin-top:14px;display:grid;gap:10px}
@@ -368,11 +423,13 @@ section[id],#footer,#main [id]{scroll-margin-top:calc(var(--status-h) + var(--he
 .ft-acc p{padding-top:8px;font-size:var(--fs-sm);color:color-mix(in srgb,var(--c-white) 78%,transparent);max-width:44ch}
 .ft-contacts{position:relative}
 :where(#footer-tape){position:absolute;inset:0;pointer-events:none}
-.ft-logo{margin-top:72px;color:var(--accent)}
-.ft-logo svg{width:100%;height:auto}
+/* лого из ленты: зелёная краска + заломы скана, форма — вектор знака */
+.ft-logo{margin-top:72px;aspect-ratio:1854/390;background:var(--tx-crease) 0 0/auto 34% repeat,var(--c-green);background-blend-mode:multiply;
+  -webkit-mask:url("{{img:svg/logo.svg}}") center/100% 100% no-repeat;mask:url("{{img:svg/logo.svg}}") center/100% 100% no-repeat}
+.ft-logo svg{width:100%;height:auto;visibility:hidden}
 .ft-legal{display:flex;flex-wrap:wrap;gap:6px 24px;margin-top:28px;padding-top:16px;border-top:1px solid color-mix(in srgb,var(--c-white) 18%,transparent);
   font:400 .6875rem/1.4 var(--font-mono);color:color-mix(in srgb,var(--c-white) 70%,transparent)}
-@media (min-width:768px){.ft-cols{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (min-width:768px){.ft-cols{grid-template-columns:repeat(2,minmax(0,1fr));max-width:880px}}
 
 /* ---------- ОВЕРЛЕИ: общее ---------- */
 .ov{position:fixed;inset:0;z-index:var(--z-overlay)}

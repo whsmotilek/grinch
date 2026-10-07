@@ -10,34 +10,68 @@
 :root {
   /* фактура скотча: мелкое зерно + продольные заломы (процедурно, без картинок) */
   --tp-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  --tp-crease: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='120'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='turbulence' baseFrequency='.012 .09' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 1.6 0 0 0 -.95'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23c)'/%3E%3C/svg%3E");
   --tp-shadow: drop-shadow(0 2px 1px color-mix(in srgb, var(--c-black) 55%, transparent));
   --mx-glow: drop-shadow(0 0 18px color-mix(in srgb, var(--c-acid) 45%, transparent));
   --tp-edge: polygon(4px 0, calc(100% - 3px) 0, 100% 18%, calc(100% - 5px) 37%, calc(100% - 1px) 55%, calc(100% - 6px) 78%, calc(100% - 2px) 100%, 5px 100%, 0 83%, 6px 64%, 1px 46%, 5px 27%, 0 9%);
 }
 
-/* ---------------- ЛЕНТА (общий материал) ---------------- */
+/* ---------------- ЛЕНТА (общий материал) ----------------
+   Фактура — НАСТОЯЩИЙ скотч бренда (итерация 2): заломы сняты со скана мятой ленты (old/p-009-058),
+   рваные концы — его же натуральные края, «пигмент» — полоса буквы I из скотча (old/p-019-128).
+   Варианты: --brand (зелёная GRINCHIN, как на пакете pres_20), --white (белая мятая), --pigment (тёмная, ограждение). */
+:root {
+  --tx-crease: url("{{img:img/tape/crease.webp}}");
+  --tx-end-l: url("{{img:img/tape/end-l.png}}");
+  --tx-end-r: url("{{img:img/tape/end-r.png}}");
+  --tx-pigment: url("{{asset:img/tape/pigment.webp}}");
+  --tx-piece: url("{{asset:img/tape/white.webp}}");
+}
 .tp {
+  --tp-end: calc(var(--tp-h, 44px) * .6);
   position: relative; overflow: hidden; display: flex; align-items: center;
-  height: var(--tp-h, 44px); background: var(--tp-bg, var(--c-green)); color: var(--c-black);
-  font: 800 calc(var(--tp-h, 44px) * .44)/1 var(--font-display); letter-spacing: .04em; text-transform: uppercase;
-  white-space: nowrap; clip-path: var(--tp-clip, var(--tp-edge));
+  height: var(--tp-h, 44px); background: var(--tp-bg, var(--c-green)); color: var(--tp-ink, var(--c-black));
+  font: 800 calc(var(--tp-h, 44px) * .42)/1 var(--font-display); letter-spacing: .04em; text-transform: uppercase;
+  white-space: nowrap;
+  -webkit-mask: var(--tx-end-l) left center / auto 100% no-repeat, var(--tx-end-r) right center / auto 100% no-repeat,
+    linear-gradient(#000 0 0) center / calc(100% - var(--tp-end) * 2 + 4px) 100% no-repeat;
+          mask: var(--tx-end-l) left center / auto 100% no-repeat, var(--tx-end-r) right center / auto 100% no-repeat,
+    linear-gradient(#000 0 0) center / calc(100% - var(--tp-end) * 2 + 4px) 100% no-repeat;
 }
-.tp::before, .tp::after { content: ""; position: absolute; inset: 0; pointer-events: none; }
-.tp::before { background: var(--tp-grain); mix-blend-mode: multiply; opacity: .45; }
-.tp::after {
-  background:
-    linear-gradient(97deg, transparent 18%, color-mix(in srgb, var(--c-white) 34%, transparent) 19.5%, transparent 22%,
-      transparent 61%, color-mix(in srgb, var(--c-white) 22%, transparent) 62%, transparent 64.5%),
-    linear-gradient(180deg, color-mix(in srgb, var(--c-white) 22%, transparent), transparent 35%, transparent 70%, color-mix(in srgb, var(--c-black) 14%, transparent)),
-    var(--tp-crease);
-  background-size: 100% 100%, 100% 100%, 420px 100%;
-  mix-blend-mode: soft-light; opacity: .9;
-}
-.tp-txt { position: relative; z-index: 1; display: inline-block; padding-left: .6em; will-change: auto; }
+.tp--open { -webkit-mask: none; mask: none; }
+.tp::before, .tp::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+/* заломы скана поверх краски и текста — буквы мнутся вместе с лентой */
+.tp::after { background: var(--tx-crease) var(--tp-cx, 0px) 0 / auto 100% repeat-x; mix-blend-mode: multiply; opacity: var(--tp-co, .95); }
+/* мягкий блик плёнки — без бликов-вспышек, только объём */
+.tp::before { background: linear-gradient(180deg, color-mix(in srgb, var(--c-white) 22%, transparent), transparent 38%, transparent 72%, color-mix(in srgb, var(--c-black) 16%, transparent)); mix-blend-mode: soft-light; }
+.tp-txt { position: relative; z-index: 1; display: inline-block; padding-left: .6em; opacity: .9; }
 .tp-w { filter: var(--tp-shadow); }
+.tp--brand, .tp--lime, .tp--acid { --tp-bg: var(--c-green); }
 .tp--lime { --tp-bg: var(--c-lime); }
-.tp--acid { --tp-bg: var(--c-acid); }
+.tp--white { --tp-bg: var(--c-paper); --tp-ink: var(--c-black); }
+.tp--white .tp-txt { opacity: .82; }
+/* тёмная лента с пигментом — «ограждение» в цветах бренда: скан скотча + зелёная надпись + кромки */
+.tp--pigment { --tp-bg: #111; --tp-ink: var(--c-green); background: var(--tx-pigment) 0 50% / auto 100% repeat-x, var(--c-black);
+  box-shadow: inset 0 3px 0 -1px color-mix(in srgb, var(--c-green) 70%, transparent), inset 0 -3px 0 -1px color-mix(in srgb, var(--c-green) 70%, transparent); }
+.tp--pigment .tp-txt { opacity: 1; text-shadow: 0 0 1px var(--c-black); }
+.tp--pigment::after { filter: invert(1); mix-blend-mode: screen; opacity: .16; }
+.tp--pigment::before { background: linear-gradient(90deg, color-mix(in srgb, var(--c-black) 55%, transparent), transparent 18%, transparent 82%, color-mix(in srgb, var(--c-black) 55%, transparent)); mix-blend-mode: normal; opacity: .55; }
+
+/* кусок настоящей белой ленты целиком (скан) — держит фото, заклеивает текст */
+.tp-piece { display: block; position: absolute; aspect-ratio: 900 / 269; background: var(--tx-piece) center / 100% 100% no-repeat;
+  filter: drop-shadow(0 1px 1px color-mix(in srgb, var(--c-black) 40%, transparent)); opacity: .96; pointer-events: none; }
+/* тот же кусок, но зелёный: форма и заломы — из скана, цвет — бренда */
+.tp-piece--green { background: var(--c-green); -webkit-mask: var(--tx-piece) center / 100% 100% no-repeat; mask: var(--tx-piece) center / 100% 100% no-repeat; filter: none; }
+.tp-piece--green::after { content: ""; position: absolute; inset: 0; background: var(--tx-piece) center / 100% 100% no-repeat; mix-blend-mode: multiply; }
+
+/* крест-накрест на стыке разделов, как на пакете pres_20 */
+/* полоса-контейнер с реальной высотой и overflow:hidden — ленты не дают горизонтального скролла нигде (и в старом Safari) */
+.x-tapes { position: relative; z-index: 7; height: 340px; margin: -170px 0; overflow: hidden; pointer-events: none; }
+.x-tapes .tp { position: absolute; --tp-h: clamp(34px, 3.4vw, 50px); filter: var(--tp-shadow); }
+.x-tapes .tp:nth-child(1) { left: -6%; width: 112%; transform: rotate(-2.2deg); top: calc(50% - var(--tp-h) * .85); }
+/* вторая — короткий кусок поперёк, как перехлёст на пакете */
+.x-tapes .tp:nth-child(2) { right: 6%; width: min(52%, 640px); transform: rotate(13deg); --tp-cx: -230px; top: calc(50% - var(--tp-h) * 1.1); }
+@media (max-width: 767px) { .x-tapes .tp:nth-child(2) { right: -26%; width: 60%; transform: rotate(12deg); top: calc(50% - var(--tp-h) * .9); } }
+.x-tapes .tp-txt { word-spacing: .4em; }
 
 /* утилита для A: полоса ограждения (404, ошибки форм) */
 .hazard-tape {
@@ -55,23 +89,29 @@ html[data-loader="off"] .ld, html[data-loader="done"] .ld { display: none; }
   -webkit-mask-image: radial-gradient(ellipse var(--ld-rx, 0px) var(--ld-ry, 0px) at var(--ld-bx, 50%) var(--ld-by, 50%), transparent 97%, #000 100%);
           mask-image: radial-gradient(ellipse var(--ld-rx, 0px) var(--ld-ry, 0px) at var(--ld-bx, 50%) var(--ld-by, 50%), transparent 97%, #000 100%);
 }
-.ld-grain { position: absolute; inset: -20%; width: 140%; height: 140%; opacity: .14; pointer-events: none; animation: ld-grain .5s steps(6) infinite; }
-@keyframes ld-grain { 0%{transform:translate(0,0)} 20%{transform:translate(-3%,2%)} 40%{transform:translate(2%,-3%)} 60%{transform:translate(-2%,-1%)} 80%{transform:translate(3%,3%)} 100%{transform:translate(0,0)} }
+/* зерно стоит на месте: мерцающий шум читался как «блики» */
+.ld-grain { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .07; pointer-events: none; }
+.ld::before { content: ""; position: absolute; inset: 0; background: var(--tx-paper) 0 0 / 620px auto; mix-blend-mode: screen; opacity: .08; pointer-events: none; }
 .ld-mark { position: relative; width: min(78vw, 860px); aspect-ratio: 1854 / 390; transform-origin: 0 0; }
 .ld-mark > svg, .ld-letters, .ld-letters svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; }
-.ld-smile { filter: var(--mx-glow); }
+.ld-smile { filter: none; }
 .ld-line { fill: transparent; stroke: var(--c-white); stroke-width: 4px; vector-effect: non-scaling-stroke; stroke-linejoin: round; opacity: 0; }
-.ld-horn { fill: none; stroke: var(--c-acid); stroke-width: 3px; vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round; opacity: 0; }
-.ld-letters { color: var(--c-green); clip-path: inset(0 100% 0 0); filter: var(--mx-glow); }
+.ld-horn { fill: none; stroke: var(--c-green); stroke-width: 3px; vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round; opacity: 0; }
+.ld-letters { color: var(--c-green); clip-path: inset(0 100% 0 0); filter: none; --ld-tx: 1; }
+/* буквы под лентой — с фактурой настоящего скотча: заломы скана поверх заливки, по форме букв */
+.ld-letters::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: var(--ld-tx);
+  background: var(--tx-crease) 0 0 / auto 38% repeat; mix-blend-mode: multiply;
+  -webkit-mask: url("{{img:svg/logo-letters.svg}}") center / 100% 100% no-repeat; mask: url("{{img:svg/logo-letters.svg}}") center / 100% 100% no-repeat; }
 .ld-dot {
   position: absolute; left: 50%; top: 49.7%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%;
-  background: var(--c-acid); box-shadow: var(--glow-green); animation: ld-pop .15s var(--ease-snap) both, ld-breath 1.1s .2s ease-in-out infinite;
+  background: var(--c-green); animation: ld-pop .5s var(--ease-out) both, ld-breath 2.4s .5s ease-in-out infinite;
 }
-@keyframes ld-pop { from { transform: scale(0); } 70% { transform: scale(1.2); } to { transform: scale(1); } }
-@keyframes ld-breath { 50% { transform: scale(1.35); opacity: .75; } }
+@keyframes ld-pop { from { transform: scale(.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes ld-breath { 50% { transform: scale(1.18); } }
 .ld-tape { position: absolute; left: -6%; top: 4%; width: 46%; height: 64%; transform: translateX(-120%) rotate(-4deg); pointer-events: none; }
 .ld-tape .tp-w { height: 100%; }
-.ld-tape .tp { height: 100%; font-size: clamp(16px, 3.6vw, 44px); }
+.ld-tape .tp { height: 100%; --tp-h: calc(min(78vw, 860px) * .1346); font-size: clamp(16px, 3.6vw, 44px); }
+@media (max-width: 767px) { .ld-tape .tp { --tp-h: calc(86vw * .1346); } }
 .ld-cap {
   position: absolute; left: 0; right: 0; bottom: max(28px, 7vh); margin: 0; text-align: center;
   font: 400 var(--fs-xs)/1 var(--font-mono); letter-spacing: .14em; text-transform: lowercase; color: var(--c-ink-2); opacity: .8;
@@ -81,7 +121,7 @@ html[data-loader="off"] .ld, html[data-loader="done"] .ld { display: none; }
 .mx-wipe { position: fixed; inset: 0; z-index: var(--z-wipe); pointer-events: none; overflow: hidden; visibility: hidden; }
 .mx-wipe.is-on { visibility: visible; pointer-events: auto; }
 .mx-wipe-bg { position: absolute; inset: 0; background: var(--c-black); opacity: 0; }
-.mx-wipe-bg::after { content: ""; position: absolute; inset: 0; background: var(--tp-grain); opacity: .25; }
+.mx-wipe-bg::after { content: ""; position: absolute; inset: 0; background: var(--tx-paper, var(--tp-grain)) 0 0 / 520px auto; opacity: .2; mix-blend-mode: screen; }
 .mx-wipe .tp-w { position: absolute; left: 50%; top: 50%; width: 190vmax; margin-left: -95vmax; --tp-h: clamp(64px, 13vmin, 136px); margin-top: calc(var(--tp-h) / -2); }
 
 /* ---------------- БЕЙДЖИ-ЛЕНТЫ ---------------- */
@@ -93,7 +133,7 @@ html[data-loader="off"] .ld, html[data-loader="done"] .ld { display: none; }
   clip-path: polygon(3px 0, calc(100% - 2px) 0, 100% 22%, calc(100% - 4px) 48%, calc(100% - 1px) 70%, 100% calc(100% - var(--peel)), calc(100% - var(--peel) - 3px) 100%, 4px 100%, 0 78%, 4px 52%, 1px 26%);
   filter: var(--tp-shadow); transition: --peel .25s var(--ease-out);
 }
-.tape-badge::before { content: ""; position: absolute; inset: 0; background: var(--tp-grain); mix-blend-mode: multiply; opacity: .4; pointer-events: none; }
+.tape-badge::before { content: ""; position: absolute; inset: 0; background: var(--tx-crease) 0 0 / auto 100% repeat-x; mix-blend-mode: multiply; opacity: .9; pointer-events: none; }
 .tape-badge::after { /* отогнутый уголок — изнанка ленты */
   content: ""; position: absolute; right: 0; bottom: 0; width: var(--peel); height: var(--peel);
   background: linear-gradient(135deg, color-mix(in srgb, var(--c-white) 70%, var(--tb-bg)) 30%, color-mix(in srgb, var(--c-black) 25%, var(--tb-bg)));
@@ -158,10 +198,11 @@ html.mx-js:not([data-shot="1"]) .tape-badge:not(.is-slapped) { opacity: 0; }
   clip-path: polygon(0 0, 100% 0, 0 100%);
   filter: drop-shadow(-4px -4px 5px color-mix(in srgb, var(--c-black) 35%, transparent));
 }
-.look-tape { position: absolute; z-index: 4; width: 38%; height: 26px; top: -10px; left: -6%; bottom: auto; right: auto;
-  transform: rotate(-22deg); pointer-events: none; background: none; box-shadow: none; }
-.look-tape + .look-tape { left: auto; right: -6%; transform: rotate(19deg); }
-.look-tape .tp { height: 26px; --tp-h: 26px; font-size: 9px; opacity: .94; }
+.look-tape { position: absolute; z-index: 4; width: 42%; height: auto; aspect-ratio: 900 / 269; top: -4%; left: -9%; bottom: auto; right: auto;
+  transform: rotate(-24deg); pointer-events: none; box-shadow: none; }
+.look-tape + .look-tape { left: auto; right: -9%; top: auto; bottom: -3%; width: 34%; transform: rotate(-30deg); }
+.look-tape.tp-piece:not(.tp-piece--green) { background: var(--tx-piece) center / 100% 100% no-repeat; }
+.look-tape .tp { display: none; }
 .look-tag {
   top: auto; left: auto; right: 2%; bottom: 2%; z-index: 1; width: min(46%, 170px); padding: 10px;
   align-items: flex-end; text-align: right;
@@ -190,7 +231,15 @@ html.mx-js:not([data-shot="1"]) .tape-badge:not(.is-slapped) { opacity: 0; }
 
 /* ---------------- ИСТОРИЯ ЛОГО ---------------- */
 #logo-story { position: relative; }
-.ls { position: relative; height: 100vh; height: 100svh; display: grid; grid-template-rows: auto 1fr auto; overflow: hidden; color: var(--c-white); }
+.ls { position: relative; height: 100vh; height: 100svh; display: grid; grid-template-rows: auto 1fr auto; overflow: hidden; color: var(--c-white); isolation: isolate; }
+/* знак стоит на улице: кадр кампании (old/p-016-114), утоплен в тень и зелень, чтобы знак читался */
+.ls::before, .ls-comic::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(180deg, var(--c-black), transparent 22%, transparent 70%, var(--c-black)),
+    url("{{asset:img/street/street.jpg}}") 50% 60% / cover no-repeat;
+  background: linear-gradient(180deg, var(--c-black), transparent 22%, transparent 70%, var(--c-black)),
+    image-set(url("{{asset:img/street/street.avif}}") type("image/avif"), url("{{asset:img/street/street.jpg}}") type("image/jpeg")) 50% 60% / cover no-repeat;
+  filter: grayscale(.55) brightness(.42) contrast(1.1); }
+.ls-comic { position: relative; isolation: isolate; }
 .ls-steps { display: flex; gap: 18px; padding: 18px var(--ls-pad, 24px) 0; font: 500 var(--fs-xs)/1 var(--font-mono); color: var(--c-muted); }
 .ls-steps span { transition: color .2s; }
 .ls-steps span.is-on { color: var(--c-green); }
@@ -203,7 +252,7 @@ html.mx-js:not([data-shot="1"]) .tape-badge:not(.is-slapped) { opacity: 0; }
 .ls-mark { fill: none; stroke: var(--c-lime); stroke-width: 9; stroke-linejoin: round; stroke-linecap: round; }
 /* статичный комикс (reduced-motion / ?shot=1) */
 .ls-comic { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; padding: 24px clamp(16px, 3vw, 48px); }
-.ls-panel { margin: 0; border: 1px solid var(--c-line); background: var(--c-black); }
+.ls-panel { margin: 0; border: 1px solid color-mix(in srgb, var(--c-white) 14%, transparent); background: color-mix(in srgb, var(--c-black) 72%, transparent); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
 .ls-panel svg { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; padding: 10px; overflow: hidden; }
 .ls-panel figcaption { padding: 10px 12px 14px; font: 600 var(--fs-sm)/1.3 var(--font-text); color: var(--c-white); }
 .ls-panel figcaption span { display: block; font: 500 var(--fs-xs)/1 var(--font-mono); color: var(--c-green); margin-bottom: 6px; }

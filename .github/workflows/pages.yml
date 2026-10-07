@@ -29,7 +29,8 @@ jobs:
         run: |
           python3 build.py
           mkdir -p _site
-          cp dist/grinchin.html _site/index.html
+          cp -R dist/. _site/
+          mv _site/grinchin.html _site/index.html
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

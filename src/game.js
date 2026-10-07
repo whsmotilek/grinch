@@ -47,12 +47,23 @@
   const glyph = (n, cls = '') => `<svg class="gm-glyph ${cls}" viewBox="0 0 48 48" aria-hidden="true" focusable="false">${GLYPH[n]}</svg>`;
 
   const PLACES = {
-    1: { sec: 'hero', where: 'Первый экран', hint: 'Начало маршрута. Смотри по сторонам, пока не ушёл вниз — компас подскажет.' },
-    2: { sec: 'drop', where: 'Дроп 01', hint: 'У шестой вещи. Приглядись к углу карточки.' },
-    3: { sec: 'looks', where: 'Образы', hint: 'Среди образов. Там, где лента держит фото.' },
-    4: { sec: 'about', where: 'О бренде', hint: 'В истории знака — где STOP становится стартом.' },
-    5: { sec: 'footer', where: 'Самый низ', hint: 'Под лентой в самом низу. Оторви — найдёшь.' },
+    1: { sec: 'hero', where: 'Первый экран', hint: 'Смотри по сторонам.' },
+    2: { sec: 'drop', where: 'Дроп 01', hint: 'Шестая вещь, угол карточки.' },
+    3: { sec: 'looks', where: 'Образы', hint: 'Там, где лента держит фото.' },
+    4: { sec: 'about', where: 'О бренде', hint: 'Где STOP становится стартом.' },
+    5: { sec: 'footer', where: 'Самый низ', hint: 'Под лентой. Оторви её.' },
   };
+
+  // Правила — один источник для раздела #gather и окна «Как играть» (#game-help)
+  const RULES = [
+    ['Ищи', '5 зелёных меток спрятаны на сайте. Жми на них.'],
+    ['Собирай', 'Каждая — кусок логотипа. G на первом экране — компас.'],
+    ['Забирай', '5 из 5 — код раннего доступа к предзаказу.'],
+  ];
+  const STREET = 'Видел такой стикер на улице? Сканируй QR — метка засчитается.';
+  const rulesHTML = () =>
+    `<ol class="gm-rules">${RULES.map(([b, t], i) => `<li><span class="gm-rules__n" aria-hidden="true">${pad(i + 1)}</span><b>${b}</b><span class="gm-rules__t">${t}</span></li>`).join('')}</ol>` +
+    `<p class="gm-street"><span aria-hidden="true">${glyph(1)}</span>${STREET}</p>`;
 
   // Карта района (viewBox 0 0 800 560): улицы, маршруты по сетке, точка сбора
   const PTS = { 1: [96, 90], 2: [700, 90], 3: [96, 500], 4: [700, 400], 5: [330, 500] };
@@ -146,15 +157,15 @@
       : glyph(n);
   }
 
-  function find(n, el) {
+  function find(n, el, source) {
     if (has(n)) return;
     st.found.push(n); save();
     const idx = st.found.length, snap = st.found.slice(), done = isComplete();
     paintMark(n); paintStage(n);
     // событие — сразу (тост A, эффект B, «чпок» 3D); фрагмент в шапке загорается, когда долетит стикер
-    D.dispatchEvent(new CustomEvent('grinchin:mark', { detail: { n, found: snap, total: TOTAL } }));
+    D.dispatchEvent(new CustomEvent('grinchin:mark', { detail: { n, found: snap, total: TOTAL, source: source || 'site' } }));
     const after = () => {
-      paintFrags(counter, idx); paintCounter();
+      paintFrags(counter, idx); paintCounter(); paintHelp();
       if (done) {
         pendingAssemble = true; maybeAssemble();
         D.dispatchEvent(new CustomEvent('grinchin:gather-complete'));
@@ -210,8 +221,8 @@
   function bindCounter(c) {
     c.dataset.gm = '1';
     counter = c;
-    c.innerHTML = `<button class="gm-counter" type="button">${logoSVG('gm-counter__logo')}<span class="gm-counter__num" aria-hidden="true"><b>0</b>/${TOTAL}</span></button>`;
-    c.firstChild.addEventListener('click', () => nav('gather'));
+    c.innerHTML = `<button class="gm-counter" type="button" aria-haspopup="dialog">${logoSVG('gm-counter__logo')}<span class="gm-counter__num" aria-hidden="true"><i>метки</i> <b>0</b>/${TOTAL}</span></button>`;
+    c.firstChild.addEventListener('click', () => { if (GV.open && GV.open('game')) return; nav('gather'); });
     paintFrags(c); paintCounter();
   }
   function paintCounter() {
@@ -220,8 +231,9 @@
     b.querySelector('b').textContent = st.found.length;
     b.classList.toggle('is-done', isComplete());
     b.setAttribute('aria-label', isComplete()
-      ? 'Точка сбора: все 5 меток найдены. Открыть награду'
-      : `Точка сбора: найдено ${st.found.length} из ${TOTAL}. Открыть карту маршрута`);
+      ? 'Точка сбора: 5 из 5. Забрать код'
+      : `Точка сбора: меток ${st.found.length} из ${TOTAL}. Как играть`);
+    b.title = isComplete() ? 'Маршрут сошёлся' : 'Точка сбора — как играть';
   }
   function nav(target) {
     const ev = new CustomEvent('grinchin:navigate', { detail: { target }, cancelable: true });
@@ -277,10 +289,10 @@
  <span class="gm-item__state"></span>
  <button class="gm-go" type="button" data-n="${n}" aria-label="Метка ${n}: ${PLACES[n].where}. Перейти">Туда →</button></li>`).join('');
     el.innerHTML = `<div class="gm-cq"><div class="gm" data-state="play">
- <div class="gm-map">${mapSVG()}<div class="gm-map__legend"><span>N ↑</span><span>район «Дроп 01»</span><span>1 : гринч</span></div></div>
+ <div class="gm-map">${mapSVG()}<div class="gm-map__legend"><span>N ↑</span><span>район «Дроп 01»</span><span>масштаб 1:1</span></div></div>
  <div class="gm-panel">
   <div class="gm-logo">
-   <span class="gm-stk gm-stk--tape" style="--r:-3deg;--k:0" aria-hidden="true">ДРОП 01 · СОБРАН • GRINCHIN • ТОЧКА СБОРА • ДРОП 01 · СОБРАН • GRINCHIN •</span>
+   <span class="gm-stk gm-stk--tape" style="--r:-3deg;--k:0" aria-hidden="true">МАРШРУТ СОШЁЛСЯ • GRINCHIN • ТОЧКА СБОРА • МАРШРУТ СОШЁЛСЯ • GRINCHIN •</span>
    ${logoSVG('gm-logo__svg')}
    <span class="gm-stk gm-stk--start" style="--r:-12deg;--k:1" aria-hidden="true">ST’ART</span>
    <span class="gm-stk gm-stk--smile" style="--r:9deg;--k:2" aria-hidden="true">${glyph(1)}</span>
@@ -294,15 +306,15 @@
     <span class="gm-tag__tape" aria-hidden="true"></span>
     <span class="gm-tag__hole" aria-hidden="true"></span>
     <svg class="gm-tag__glow" viewBox="0 0 1850 386" aria-hidden="true" focusable="false"><path d="${LOGO[8]}"/></svg>
-    <p class="gm-tag__kicker">награда точки сбора</p>
+    <p class="gm-tag__kicker">точка сбора · 5/5</p>
     <p class="gm-tag__title">Ранний доступ<br>к предзаказу</p>
     <div class="gm-tag__grid"><div><span class="k">drop:</span><span class="v">01</span></div><div><span class="k">access:</span><span class="v">early</span></div></div>
     <div class="gm-tag__code"><span class="k">code:</span><output class="v gm-code"></output></div>
     <button class="gm-copy" type="button">Скопировать</button>
-    <p class="gm-tag__note">Код откроет предзаказ раньше остальных — в день старта.</p>
+    <p class="gm-tag__note">Отправь код нам в Telegram — откроем предзаказ раньше всех.</p>
    </div>
   </div>
-  <button class="gm-reset" type="button" hidden>↺ начать заново</button>
+  <button class="gm-reset" type="button" hidden>↺ заново</button>
  </div>
 </div></div>`;
     el.querySelectorAll('.gm-go').forEach((b) => b.addEventListener('click', (e) => go(+b.dataset.n, e.detail === 0)));
@@ -327,13 +339,12 @@
     root.querySelectorAll('.gm-item').forEach((li) => {
       const n = +li.dataset.n, got = has(n);
       li.classList.toggle('is-on', got);
-      li.querySelector('.gm-item__state').textContent = got ? 'найдена' : 'не найдена';
+      li.querySelector('.gm-item__state').textContent = got ? 'найдена' : '';
       li.querySelector('.gm-go').hidden = got;
     });
     root.querySelector('.gm-status').textContent = done
-      ? 'Все пять. Маршрут сошёлся — знак собран.'
-      : k === 0 ? 'На сайте спрятаны 5 зелёных меток. Найди все — соберёшь знак и откроешь ранний доступ к предзаказу.'
-        : `Найдено ${k} из ${TOTAL}. Объёмная G на первом экране показывает на ближайшую.`;
+      ? 'Маршрут сошёлся.'
+      : k === 0 ? `0 из ${TOTAL}. Начни с первого экрана.` : `Найдено ${k} из ${TOTAL}.`;
     root.querySelector('.gm-play').hidden = done;
     root.querySelector('.gm-done').hidden = !done;
     root.querySelector('.gm-reset').hidden = k === 0;
@@ -377,10 +388,75 @@
   function reset() {
     st.found = []; save(); pendingAssemble = false;
     for (let n = 1; n <= TOTAL; n++) { paintMark(n); const b = slots[n] && slots[n].querySelector('.gm-mark'); if (b) b.tabIndex = -1; }
-    paintFrags(counter); paintCounter(); paintStage();
+    paintFrags(counter); paintCounter(); paintStage(); paintHelp();
     if (stage) stage.querySelector('.gm').classList.remove('gm--assemble');
     R.dataset.gather = 'play';
     if (GV.g3d && GV.g3d.refresh) GV.g3d.refresh();
+  }
+
+  // ── окно «Как играть» (#game-help, открывает A: GV.open('game')) ──────────
+  let help = null, fromStreet = false;
+  function bindHelp(el) {
+    el.dataset.gm = '1';
+    help = el;
+    el.innerHTML = `<div class="gh">
+ <p class="gh-street" hidden>Метка с улицы засчитана.</p>
+ <div class="gh-progress">${logoSVG('gh-logo')}<p class="gh-num" aria-live="polite"></p></div>
+ <div class="gh-play">${rulesHTML()}
+  <div class="gh-act"><button class="btn btn--accent" type="button" data-close>Понятно, ищу</button><button class="btn btn--ghost" type="button" data-nav="gather">Карта меток</button></div>
+ </div>
+ <div class="gh-done" hidden><p class="gh-done-t">Маршрут сошёлся. Твой код — в точке сбора.</p>
+  <div class="gh-act"><button class="btn btn--accent" type="button" data-nav="gather">Забрать код →</button></div>
+ </div>
+</div>`;
+    paintHelp();
+  }
+  function paintHelp() {
+    if (!help) return;
+    const k = st.found.length, done = isComplete();
+    paintFrags(help.querySelector('.gh-progress'));
+    help.querySelector('.gh-num').innerHTML = `<b>${k}</b>/${TOTAL} <span>${done ? 'собрано' : 'меток'}</span>`;
+    help.querySelector('.gh-street').hidden = !fromStreet;
+    help.querySelector('.gh-play').hidden = done;
+    help.querySelector('.gh-done').hidden = !done;
+  }
+
+  // первое знакомство: после первой прокрутки — тихий тост «Как играть →» и подсветка счётчика
+  const INV = 'grinchin:gather:invited';
+  function invite() {
+    if (isShot() || demo || isComplete()) return;
+    try { if (localStorage.getItem(INV)) return; } catch (e) { /* без хранилища — пригласим один раз за визит */ }
+    let gone = false;
+    const onScroll = () => {
+      if (gone || W.scrollY < innerHeight * 0.5) return;
+      gone = true; W.removeEventListener('scroll', onScroll);
+      try { localStorage.setItem(INV, '1'); } catch (e) { /* ок */ }
+      if (GV.overlay || st.found.length) return;
+      if (GV.toast) GV.toast('На сайте 5 меток. Как играть →', 8000, () => GV.open && GV.open('game'));
+      const b = counter && counter.querySelector('.gm-counter');
+      if (b) { b.classList.add('is-invite'); setTimeout(() => b.classList.remove('is-invite'), 8000); }
+    };
+    W.addEventListener('scroll', onScroll, { passive: true });
+  }
+
+  // QR на уличном стикере: ?mark=street (следующая не найденная) или ?mark=3 (конкретная)
+  function streetMark() {
+    const m = (Q.get('mark') || '').toLowerCase();
+    if (!m) return;
+    const n = m === 'street' ? [1, 2, 3, 4, 5].find((x) => !has(x)) : parseInt(m, 10);
+    if (!(n >= 1 && n <= TOTAL)) return;
+    fromStreet = true;
+    if (!has(n)) find(n, null, 'street');
+    paintHelp();
+    if (!isShot()) {
+      try { const u = new URL(location.href); u.searchParams.delete('mark'); history.replaceState(null, '', u.pathname + u.search + u.hash); } catch (e) { /* file:// */ }
+    }
+    // с улицы человек пришёл без контекста — сразу объясняем, что это (если не просили открыть другое)
+    if (Q.get('open')) return;
+    const show = () => { if (GV.open && !GV.overlay) GV.open('game'); };
+    if (isShot()) show();
+    else if (R.getAttribute('data-loader') === 'off') setTimeout(show, 400); // без лоадера ready мог уже пройти
+    else { D.addEventListener('grinchin:ready', () => setTimeout(show, 400), { once: true }); setTimeout(show, 4500); }
   }
 
   // ── публичное API ────────────────────────────────────────────────────────
@@ -410,6 +486,8 @@
     D.querySelectorAll('.gm-slot[data-mark-slot]:not([data-gm])').forEach(bindSlot);
     const c = D.getElementById('gather-counter'); if (c && !c.dataset.gm) bindCounter(c);
     const s = D.getElementById('gather-stage'); if (s && !s.dataset.gm) bindStage(s);
+    const h = D.querySelector('[data-gh-body]'); if (h && !h.dataset.gm) bindHelp(h);
+    D.querySelectorAll('[data-gm-rules]:not([data-gm])').forEach((r) => { r.dataset.gm = '1'; r.innerHTML = rulesHTML(); });
   }
   function init() {
     if (W.IntersectionObserver) markIO = new IntersectionObserver((es) => es.forEach((e) => {
@@ -425,6 +503,8 @@
     if (FINE.matches) W.addEventListener('pointermove', onPointer, { passive: true });
     R.dataset.gather = isComplete() ? 'done' : 'play';
     D.addEventListener('grinchin:gather-complete', () => { R.dataset.gather = 'done'; });
+    streetMark();
+    invite();
   }
   if (D.readyState === 'loading') D.addEventListener('DOMContentLoaded', init, { once: true }); else init();
 })();

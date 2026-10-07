@@ -1,0 +1,29 @@
+<!-- Иконки, PWA и превью ссылок. Владелец: координатор. Генерация: tools/make_icons.py -->
+<link rel="icon" href="{{asset:meta/favicon.ico}}" sizes="32x32">
+<link rel="icon" href="{{asset:meta/favicon.svg}}" type="image/svg+xml" id="fav-svg">
+<link rel="apple-touch-icon" href="{{asset:meta/apple-touch-icon.png}}">
+<link rel="manifest" href="{{asset:meta/site.webmanifest}}">
+<meta name="apple-mobile-web-app-title" content="GRINCHIN">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="GRINCHIN">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:title" content="GRINCHIN — Дроп 01">
+<meta property="og:description" content="Одежда для тех, кто не идёт по заданному маршруту. Предзаказ открыт.">
+<meta property="og:url" content="https://whsmotilek.github.io/grinch/">
+<meta property="og:image" content="https://whsmotilek.github.io/grinch/{{asset:meta/og.jpg}}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="GRINCHIN зелёным скотчем на двери с граффити">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://whsmotilek.github.io/grinch/{{asset:meta/og.jpg}}">
+<script>
+/* Вкладка ушла в фон — знак переворачивается рогами вниз (грустная ухмылка), вернулся — улыбается. */
+(function(){
+  var ok="{{asset:meta/favicon.svg}}", sad="{{asset:meta/favicon-sad.svg}}", title=document.title;
+  document.addEventListener("visibilitychange", function(){
+    var l=document.getElementById("fav-svg"); if(!l) return;
+    if(document.hidden){ l.href=sad; document.title="Маршрут не задан… — GRINCHIN"; }
+    else { l.href=ok; document.title=title; }
+  });
+})();
+</script>

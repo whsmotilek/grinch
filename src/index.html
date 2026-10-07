@@ -22,6 +22,7 @@ document.documentElement.classList.add("js");})();
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.0/Draggable.min.js"></script>
 <!--@css:tokens.css-->
 <!--@css:base.css-->
+<!--@css:content.css-->
 <!--@css:motion.css-->
 <!--@css:game.css-->
 </head>
@@ -59,29 +60,7 @@ document.documentElement.classList.add("js");})();
 
 <main id="main">
 <!-- ============ HERO ============ -->
-<section id="hero" aria-labelledby="hero-title">
-  <div class="hero-bg" aria-hidden="true"></div>
-  <div id="g3d" aria-hidden="true"></div>
-  <div class="hero-copy">
-    <p class="eyebrow eyebrow--dark"><span>drop: 01</span><span>осень — зима 26</span></p>
-    <h1 id="hero-title">
-      <span class="ht-pre">Одежда для тех, кто</span>
-      <span class="ht-big">не идёт по <span class="ht-strike">заданному</span> маршруту.</span>
-    </h1>
-    <p class="hero-sub">Жизнь внутри ограничений. Свой путь — снаружи.</p>
-    <div class="hero-cta">
-      <a class="btn btn--accent" href="#drop" data-nav="drop">Смотреть дроп <span aria-hidden="true">↓</span></a>
-      <a class="btn btn--ghost" href="#gather" data-nav="gather">Точка сбора</a>
-    </div>
-  </div>
-  <dl class="hero-tag" aria-label="Коротко о дропе">
-    <div><dt>drop:</dt><dd>01</dd></div>
-    <div><dt>вещей:</dt><dd>08</dd></div>
-    <div><dt>предзаказ:</dt><dd>до 30.11</dd></div>
-    <div><dt>отправка:</dt><dd>с 01.12</dd></div>
-  </dl>
-  <span class="gm-slot" data-mark-slot="1"></span>
-</section>
+<!--@html:hero.html-->
 
 <!-- ============ ДРОП 01 ============ -->
 <section id="drop" aria-labelledby="drop-title">
@@ -98,64 +77,15 @@ document.documentElement.classList.add("js");})();
 <div class="tape-run" data-text="GRINCHIN • ГРИНЧИТЬ • ТОЧКА СБОРА"></div>
 
 <!-- ============ ОБРАЗЫ ============ -->
-<section id="looks" aria-labelledby="looks-title">
-  <div class="wrap">
-    <div class="sec-head">
-      <p class="eyebrow eyebrow--dark"><span>looks:</span><span>04</span></p>
-      <h2 id="looks-title" class="h-poster">Образы</h2>
-      <p class="sec-lead">Четыре маршрута по дропу. Нажми на вещь — откроется карточка.</p>
-    </div>
-  </div>
-  <div class="looks-wall" data-looks>
-    <!-- .look рендерит shop.js из GV_LOOKS (разметка по контракту: .look/.look-photo/.look-tape/.look-tag) -->
-  </div>
-  <span class="gm-slot" data-mark-slot="3"></span>
-</section>
+<!--@html:looks.html-->
 
 <!-- ============ О БРЕНДЕ ============ -->
-<section id="about" aria-labelledby="about-title">
-  <div class="wrap about-grid">
-    <div class="about-side">
-      <p class="eyebrow eyebrow--dark"><span>about:</span><span>манифест</span></p>
-      <h2 id="about-title" class="h-poster h-poster--md">Не&nbsp;ломать.<br>Найти щель.</h2>
-    </div>
-    <div class="about-text">
-      <p class="manifest">GRINCHIN — бренд мужской одежды про&nbsp;жизнь внутри ограничений и&nbsp;умение находить <em>свой путь</em>.</p>
-      <p class="manifest manifest--dim">Не&nbsp;про бунт ради бунта и&nbsp;не&nbsp;про разрушение правил.</p>
-      <ul class="about-points">
-        <li><span class="ap-k">стена:</span> Ограничение — это не только стена. Это ещё и повод искать в ней щель.</li>
-        <li><span class="ap-k">фон:</span> Ограничение — это фон. Кислотный зелёный на чёрном и белом.</li>
-        <li><span class="ap-k">стрелка:</span> Буква G визуально напоминает стрелку — это часть идеи логотипа.</li>
-      </ul>
-    </div>
-  </div>
-  <div id="logo-story"></div>
-  <span class="gm-slot" data-mark-slot="4"></span>
-</section>
+<!--@html:about.html-->
 
 <div class="tape-run" data-text="GRINCHIN • ГРИНЧИТЬ • ТОЧКА СБОРА"></div>
 
 <!-- ============ ТОЧКА СБОРА ============ -->
-<section id="gather" aria-labelledby="gather-title">
-  <div class="wrap gather-grid">
-    <div class="gather-copy">
-      <p class="eyebrow eyebrow--dark"><span>gather:</span><span>5 меток</span></p>
-      <h2 id="gather-title" class="h-poster">Точка сбора</h2>
-      <p class="sec-lead">Пять зелёных меток спрятаны на этом сайте. Собери все — и маршрут выведет тебя к предзаказу раньше остальных.</p>
-      <ol class="rules">
-        <li><span><b>Ищи.</b> Метки прячутся в разделах сайта: где-то на виду, где-то под лентой.</span></li>
-        <li><span><b>Сверяйся с G.</b> Буква G на первом экране работает компасом и показывает на ближайшую метку.</span></li>
-        <li><span><b>Собирай.</b> Каждая находка дорисовывает кусок логотипа в шапке.</span></li>
-        <li><span><b>Забирай.</b> Пять из пяти — и логотип собран. Твоя награда — ранний доступ к предзаказу.</span></li>
-      </ol>
-      <dl class="reward-tag">
-        <div><dt>награда:</dt><dd>ранний доступ к предзаказу</dd></div>
-        <div><dt>меток:</dt><dd>5</dd></div>
-      </dl>
-    </div>
-    <div id="gather-stage"></div>
-  </div>
-</section>
+<!--@html:gather.html-->
 
 <!-- ============ ПЕРЕЗАПУСК ============ -->
 <section id="next" aria-labelledby="next-title">
@@ -190,48 +120,7 @@ document.documentElement.classList.add("js");})();
 <div class="tape-run" data-text="GRINCHIN • ГРИНЧИТЬ • ТОЧКА СБОРА"></div>
 
 <!-- ============ ФУТЕР ============ -->
-<footer id="footer">
-  <div class="wrap">
-    <p class="ft-motto">Не все ограничения нужно ломать.</p>
-    <div class="ft-cols">
-      <div class="ft-col">
-        <p class="mono-label">инфо:</p>
-        <ul>
-          <li><button type="button" data-open="sizes">Размерная сетка</button></li>
-          <li><a href="#gather" data-nav="gather">Точка сбора</a></li>
-        </ul>
-        <details class="ft-acc">
-          <summary>Доставка и предзаказ</summary>
-          <p>Предзаказ до 30.11, отправка с 01.12. По России — СДЭК и Почта, 2–7 дней после отправки. Пример: условия уточняются к старту продаж.</p>
-        </details>
-        <details class="ft-acc">
-          <summary>Возврат и обмен</summary>
-          <p>14 дней с получения, если вещь не носили и бирка на месте. Обмен размера — бесплатно один раз.</p>
-        </details>
-      </div>
-      <div class="ft-col">
-        <p class="mono-label">соцсети:</p>
-        <ul>
-          <li><span class="ft-soon">Telegram <i>скоро</i></span></li>
-          <li><span class="ft-soon">VK <i>скоро</i></span></li>
-          <li><span class="ft-soon">YouTube <i>скоро</i></span></li>
-        </ul>
-      </div>
-      <div class="ft-col ft-contacts">
-        <p class="mono-label">контакты:</p>
-        <ul>
-          <li><span class="ft-soon">почта <i>появится к старту продаж</i></span></li>
-          <li><span class="ft-soon">поддержка в Telegram <i>скоро</i></span></li>
-          <li><span class="ft-soon">Москва</span></li>
-        </ul>
-        <span class="gm-slot" data-mark-slot="5"></span>
-        <div id="footer-tape"></div>
-      </div>
-    </div>
-    <div class="ft-logo" aria-hidden="true"><!--@svg:logo--></div>
-    <p class="ft-legal"><span>© 2026 GRINCHIN</span><span>цены, даты и составы — пример</span><span>дроп 01 · v1</span></p>
-  </div>
-</footer>
+<!--@html:footer.html-->
 
 <!-- ============ ОВЕРЛЕИ ============ -->
 <div id="mobile-menu" class="ov ov--menu" role="dialog" aria-modal="true" aria-label="Меню" hidden>

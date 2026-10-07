@@ -45,6 +45,7 @@ html = expand(read("index.html"))
 left = re.findall(r"<!--@\w+:[^>]*-->|\{\{img:[^}]*\}\}", html)
 if left:
     sys.exit(f"build: не раскрыто: {left[:5]}")
+OUT.parent.mkdir(parents=True, exist_ok=True)
 OUT.write_text(html, encoding="utf-8")
 kb = OUT.stat().st_size / 1024
 print(f"build: {OUT} — {kb:.0f} КБ")

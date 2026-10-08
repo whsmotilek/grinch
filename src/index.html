@@ -9,211 +9,169 @@ document.documentElement.classList.add("js");})();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>GRINCHIN — Дроп 01</title>
-<meta name="description" content="GRINCHIN — мужская одежда для тех, кто не идёт по заданному маршруту. Дроп 01: джинсы, костюм, худи, косуха, футболка и лонгслив. Предзаказ открыт.">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#000000">
 <!--@html:meta/head.html-->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800;900&family=Inter:wght@400;500;600;700&family=Martian+Mono:wght@400;500;700&display=swap">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.0/gsap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.0/ScrollTrigger.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.0/MorphSVGPlugin.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.0/DrawSVGPlugin.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.0/Draggable.min.js"></script>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<!-- шрифты без блокировки отрисовки: точка прелоадера появляется сразу, подмена шрифта скрыта под крышкой прелоадера -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Inter:wght@400;600&family=Martian+Mono:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Inter:wght@400;600&family=Martian+Mono:wght@400;700&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Inter:wght@400;600&family=Martian+Mono:wght@400;700&display=swap"></noscript>
+<!-- GSAP грузится в конце body (перед motion.js): не держит разбор страницы; preload — чтобы скачивание началось сразу -->
+<link rel="preload" as="script" href="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.0/gsap.min.js">
+<link rel="preload" as="script" href="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.0/ScrollTrigger.min.js">
 <!--@css:tokens.css-->
 <!--@css:base.css-->
-<!--@css:content.css-->
 <!--@css:motion.css-->
-<!--@css:game.css-->
+<!--@css:street.css-->
+<!--@css:g.css-->
+<!--@css:end.css-->
 </head>
 <body>
 <!--@html:loader.html-->
-<a class="skip" href="#drop">К вещам</a>
+<a class="skip" href="#drop" data-nav="drop">К вещам</a>
 
-<!-- ============ ПОЛОСА СТАТУСА ============ -->
+<!-- ============ ПОЛОСА СТАТУСА (статична) ============ -->
 <div id="status" role="note" aria-label="Статус дропа">
-  <div class="status-track">
-    <span class="status-item">ДРОП 01 <i aria-hidden="true">—</i> ПРЕДЗАКАЗ ОТКРЫТ</span>
+  <div class="wrap status-in">
+    <p class="status-long">ДРОП 01 · 08 ВЕЩЕЙ · ПРЕДЗАКАЗ · ОТПРАВКА С 01.12</p>
+    <p class="status-short" aria-hidden="true">ДРОП 01 · ПРЕДЗАКАЗ</p>
   </div>
 </div>
 
 <!-- ============ ШАПКА ============ -->
 <header id="header">
-  <div class="hd-inner">
+  <div class="wrap hd-in">
     <button class="hd-burger" type="button" aria-label="Меню" aria-controls="mobile-menu" aria-expanded="false" data-open="menu"><span></span><span></span></button>
-    <a id="logo" href="#hero" aria-label="GRINCHIN — в начало"><!--@svg:logo--></a>
+    <a id="logo" href="#hero" aria-label="GRINCHIN — наверх"><!--@svg:logo--></a>
     <nav class="hd-nav" aria-label="Разделы">
       <a href="#drop" data-nav="drop">Дроп 01</a>
       <a href="#looks" data-nav="looks">Образы</a>
-      <a href="#about" data-nav="about">О бренде</a>
       <button type="button" data-open="sizes">Размеры</button>
     </nav>
-    <div class="hd-right">
-      <div id="gather-counter"></div>
-      <button class="hd-cart" type="button" data-open="cart" aria-label="Корзина, товаров: 0">
-        <span class="hd-cart-label">Корзина</span><span class="hd-cart-count" data-cart-count>0</span>
-      </button>
-    </div>
+    <button class="hd-cart" type="button" data-open="cart" aria-label="Корзина, товаров: 0">
+      <span class="hd-cart-label">Корзина</span>
+      <span class="hd-cart-icon" aria-hidden="true"></span>
+      <span class="hd-cart-count" data-cart-count>0</span>
+    </button>
   </div>
 </header>
+<div id="progress" aria-hidden="true"></div>
 
 <main id="main">
-<!-- ============ HERO ============ -->
+<!-- ============ HERO (K3) ============ -->
 <!--@html:hero.html-->
 
 <!-- ============ ДРОП 01 ============ -->
-<section id="drop" aria-labelledby="drop-title">
+<section id="drop" data-g="drop" aria-labelledby="drop-title">
   <div class="wrap">
     <div class="drop-head">
-      <h2 id="drop-title" class="drop-title">Дроп&nbsp;01<sup>08</sup></h2>
-      <div class="chips" role="group" aria-label="Категории" data-chips></div>
+      <h2 id="drop-title" class="drop-title">Дроп&nbsp;01<sup aria-label="восемь вещей">08</sup></h2>
+      <p class="drop-note">эскизы · фото после съёмки</p>
     </div>
     <div class="grid" data-grid></div>
-    <p class="demo-note">Демо: цены, даты и фото — пример</p>
   </div>
 </section>
 
-<div class="tape-run" data-text="GRINCHIN • ГРИНЧИТЬ • ТОЧКА СБОРА"></div>
-
-<!-- ============ ОБРАЗЫ ============ -->
+<!-- ============ ОБРАЗЫ (K3) ============ -->
 <!--@html:looks.html-->
 
-<!-- ============ О БРЕНДЕ ============ -->
-<!--@html:about.html-->
+<!-- ============ ЗНАК (K3 + жест K4) ============ -->
+<!--@html:sign.html-->
 
-<div class="tape-run" data-text="GRINCHIN • ГРИНЧИТЬ • ТОЧКА СБОРА"></div>
-
-<!-- ============ ТОЧКА СБОРА ============ -->
-<!--@html:gather.html-->
-
-<!-- ============ ПЕРЕЗАПУСК ============ -->
-<section id="next" aria-labelledby="next-title">
-  <div class="tx-layer tx-layer--paper" aria-hidden="true"></div>
-  <div class="wrap next-row">
-    <div class="next-copy">
-      <h2 id="next-title" class="next-title">Разобрали — вернём.</h2>
-      <p class="next-sub">Дата перезапуска — тем, кто подписан.</p>
-    </div>
-    <form class="sub-form" data-sub novalidate>
-      <fieldset class="seg">
-        <legend class="vh">Куда написать</legend>
-        <label><input type="radio" name="ch" value="tg" checked><span>Telegram</span></label>
-        <label><input type="radio" name="ch" value="email"><span>Email</span></label>
-      </fieldset>
-      <label class="field">
-        <span class="mono-label" data-sub-label>ник в Telegram:</span>
-        <input type="text" name="contact" autocomplete="off" placeholder="@твой_ник" data-sub-input aria-describedby="sub-err">
-      </label>
-      <p class="field-err" id="sub-err" data-sub-err></p>
-      <button class="btn btn--accent btn--wide" type="submit">Подписаться</button>
-      <div class="sub-done" data-sub-done hidden tabindex="-1">
-        <p class="sub-done-big">Есть. Ты в списке.</p>
-        <p data-sub-done-text>Напишем в Telegram.</p>
-      </div>
-    </form>
-  </div>
-</section>
+<!-- ============ РАЗОБРАЛИ — ВЕРНЁМ (K5) ============ -->
+<!--@html:next.html-->
 </main>
 
-<div class="tape-run" data-text="GRINCHIN • ГРИНЧИТЬ • ТОЧКА СБОРА"></div>
-
-<!-- ============ ФУТЕР ============ -->
+<!-- ============ ПОДВАЛ (K5) ============ -->
 <!--@html:footer.html-->
 
 <!-- ============ ОВЕРЛЕИ ============ -->
 <div id="mobile-menu" class="ov ov--menu" role="dialog" aria-modal="true" aria-label="Меню" hidden>
   <div class="ov-panel menu-panel">
-    <div class="menu-top">
-      <span class="mono-label">маршрут:</span>
-      <button class="ov-x" type="button" data-close aria-label="Закрыть меню">Закрыть</button>
+    <div class="wrap menu-top">
+      <span class="t-mono">Меню</span>
+      <button class="ov-x" type="button" data-close aria-label="Закрыть меню"></button>
     </div>
-    <nav class="menu-list" aria-label="Разделы">
-      <a href="#drop" data-nav="drop"><span>Дроп 01</span><i aria-hidden="true">→</i></a>
-      <a href="#looks" data-nav="looks"><span>Образы</span><i aria-hidden="true">→</i></a>
-      <a href="#about" data-nav="about"><span>О бренде</span><i aria-hidden="true">→</i></a>
-      <a href="#gather" data-nav="gather"><span>Точка сбора</span><i aria-hidden="true">→</i></a>
-      <button type="button" data-open="sizes"><span>Размеры</span><i aria-hidden="true">→</i></button>
+    <nav class="wrap menu-list" aria-label="Разделы">
+      <a href="#drop" data-nav="drop">Дроп 01</a>
+      <a href="#looks" data-nav="looks">Образы</a>
+      <button type="button" data-open="sizes">Размеры</button>
     </nav>
-    <p class="menu-foot mono-label">предзаказ открыт · отправка с 01.12</p>
+    <p class="wrap menu-foot t-mono">ПРЕДЗАКАЗ · ОТПРАВКА С 01.12</p>
   </div>
 </div>
 
 <div id="product-sheet" class="ov ov--sheet" role="dialog" aria-modal="true" aria-labelledby="ps-title" hidden>
   <div class="ov-scrim" data-close></div>
-  <div class="ov-panel ps-panel">
-    <button class="ov-x ps-x" type="button" data-close aria-label="Закрыть карточку">Закрыть</button>
+  <div class="ov-panel ps-panel" data-swipe>
+    <div class="sheet-bar">
+      <span class="sheet-grab" aria-hidden="true"></span>
+      <button class="ov-x" type="button" data-close aria-label="Закрыть карточку"></button>
+    </div>
     <div class="ps-body" data-ps-body></div>
   </div>
 </div>
 
 <div id="size-modal" class="ov ov--modal" role="dialog" aria-modal="true" aria-labelledby="sz-title" hidden>
   <div class="ov-scrim" data-close></div>
-  <div class="ov-panel sz-panel">
-    <div class="sz-top">
-      <h2 id="sz-title" class="sz-title">Размерная сетка</h2>
-      <button class="ov-x" type="button" data-close aria-label="Закрыть размерную сетку">Закрыть</button>
+  <div class="ov-panel sz-panel" data-swipe>
+    <div class="sheet-bar">
+      <span class="sheet-grab" aria-hidden="true"></span>
+      <h2 id="sz-title" class="t-h3">Размерная сетка</h2>
+      <button class="ov-x" type="button" data-close aria-label="Закрыть размерную сетку"></button>
     </div>
-    <p class="sz-lead">Крой свободный. Между размерами — бери меньший.</p>
-    <div class="sz-scroll">
-      <table class="sz-table">
-        <caption class="mono-label">верх и костюм, см</caption>
-        <thead><tr><th scope="col">Размер</th><th scope="col">RU</th><th scope="col">Рост</th><th scope="col">Грудь</th><th scope="col">Талия</th></tr></thead>
-        <tbody>
-          <tr><th scope="row">S</th><td>44–46</td><td>168–176</td><td>88–94</td><td>74–80</td></tr>
-          <tr><th scope="row">M</th><td>48</td><td>174–182</td><td>94–100</td><td>80–86</td></tr>
-          <tr><th scope="row">L</th><td>50–52</td><td>180–188</td><td>100–106</td><td>86–92</td></tr>
-          <tr><th scope="row">XL</th><td>54</td><td>184–192</td><td>106–112</td><td>92–98</td></tr>
-          <tr><th scope="row">XXL</th><td>56</td><td>188–196</td><td>112–118</td><td>98–104</td></tr>
-        </tbody>
-      </table>
+    <div class="sz-body">
+      <p class="t-body-s">Крой свободный. Между размерами — бери меньший.</p>
+      <div class="sz-scroll">
+        <table class="sz-table">
+          <caption class="t-mono">верх и костюм, см</caption>
+          <thead><tr><th scope="col">Размер</th><th scope="col">RU</th><th scope="col">Рост</th><th scope="col">Грудь</th><th scope="col">Талия</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">S</th><td>44–46</td><td>168–176</td><td>88–94</td><td>74–80</td></tr>
+            <tr><th scope="row">M</th><td>48</td><td>174–182</td><td>94–100</td><td>80–86</td></tr>
+            <tr><th scope="row">L</th><td>50–52</td><td>180–188</td><td>100–106</td><td>86–92</td></tr>
+            <tr><th scope="row">XL</th><td>54</td><td>184–192</td><td>106–112</td><td>92–98</td></tr>
+            <tr><th scope="row">XXL</th><td>56</td><td>188–196</td><td>112–118</td><td>98–104</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <dl class="kv sz-kv">
+        <div><dt>модель:</dt><dd>187 см, носит L</dd></div>
+        <div><dt>джинсы:</dt><dd>в пол, ниже 175 см — подгибать</dd></div>
+      </dl>
     </div>
-    <dl class="sz-model">
-      <div><dt>модель:</dt><dd>187 см, носит L</dd></div>
-      <div><dt>джинсы:</dt><dd>в пол; ниже 175 см — подгибай</dd></div>
-    </dl>
   </div>
 </div>
 
 <div id="cart-drawer" class="ov ov--drawer" role="dialog" aria-modal="true" aria-labelledby="cart-title" hidden>
   <div class="ov-scrim" data-close></div>
-  <div class="ov-panel cart-panel">
-    <div class="cart-top">
-      <h2 id="cart-title" class="cart-title">Корзина <span data-cart-count>0</span></h2>
-      <button class="ov-x" type="button" data-close aria-label="Закрыть корзину">Закрыть</button>
+  <div class="ov-panel cart-panel" data-swipe>
+    <div class="sheet-bar">
+      <span class="sheet-grab" aria-hidden="true"></span>
+      <h2 id="cart-title" class="t-h3">Корзина <span class="cart-n" data-cart-count>0</span></h2>
+      <button class="ov-x" type="button" data-close aria-label="Закрыть корзину"></button>
     </div>
     <div class="cart-body" data-cart-body></div>
   </div>
 </div>
 
-<div id="page-404" class="ov ov--full" role="dialog" aria-modal="true" aria-labelledby="p404-title" hidden>
-  <div class="ov-panel p404-panel">
-    <p class="mono-label p404-code">404 · маршрута нет</p>
-    <div class="p404-sign">
-      <h2 id="p404-title" class="p404-title">STOP.<span>Тупик.</span></h2>
-      <div class="smirk" data-mood="look"></div>
-    </div>
-    <button class="btn btn--accent" type="button" data-close data-home>Через щель — на главную <span aria-hidden="true">→</span></button>
-  </div>
-</div>
-
-<div id="game-help" class="ov ov--modal" role="dialog" aria-modal="true" aria-labelledby="gh-title" hidden>
-  <div class="ov-scrim" data-close></div>
-  <div class="ov-panel sz-panel gh-panel">
-    <div class="sz-top">
-      <h2 id="gh-title" class="sz-title">Точка сбора</h2>
-      <button class="ov-x" type="button" data-close aria-label="Закрыть">Закрыть</button>
-    </div>
-    <div class="gh-body" data-gh-body></div>
-  </div>
-</div>
+<!--@html:404.html-->
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+
 <!--@js:products.js-->
 <!--@js:shop.js-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.0/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.0/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.0/MorphSVGPlugin.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.0/DrawSVGPlugin.min.js"></script>
 <!--@js:motion.js-->
-<!--@js:game.js-->
 <!--@js:three-g.js-->
+<!--@js:street.js-->
+<!--@js:end.js-->
 </body>
 </html>

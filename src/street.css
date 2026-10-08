@@ -1,0 +1,223 @@
+/* GRINCHIN v2 — арт: лента, первый экран, «Образы», «Знак». Владелец: K3.
+   ============================================================================================
+   ЛЕНТА — СИСТЕМА (пользуются K3 и K5)
+   Материал — скан настоящей малярной ленты бренда (old/p-009-058) с альфой, растры в img/tape/ (генератор img/_street.py).
+   Никаких CSS-полос, градиентов «под блик» и бегущих строк. Лента не «вырастает» и не едет — её один раз ПРИЛЕПЛЯЮТ.
+
+   Разметка:  <span class="tape tape--green" data-stick aria-hidden="true" style="--w:520px; --rot:-24deg"></span>
+     .tape               абсолютный, pointer-events:none; родитель должен быть position:relative (и обычно overflow:hidden,
+                         если лента «уходит за край» предмета/экрана)
+     .tape--white        белая малярная, слегка просвечивает (7 %, у кромки больше), матовая
+     .tape--pin-1 … -5   пять РАЗНЫХ форм белых кусков (на одном экране форма не повторяется):
+                           pin-1 натуральный конец с отогнутым углом · pin-2 натуральный рваный конец справа ·
+                           pin-3 диагональный залом посередине · pin-4 короткий, зеркальный · pin-5 длинный, продольный залом
+     .tape--green        фирменная зелёная: форма и светотень скана, цвет бренда ПОД светотенью,
+                         печать GRINCHIN гротеском ПОД заломами (буквы мнутся вместе с лентой). По умолчанию длинная (green-1).
+     .tape--len-l/-m/-s  зелёная: три разных рисунка заломов и длины — 1500/1080/900 px растра (2×),
+                         -l = green-1 (натуральный рваный конец слева), -m = green-2 (срез ножом слева), -s = green-3 (рваный слева).
+                         Для пакета крест-накрест — -m и -s (два разных рисунка).
+   Модификаторы (CSS-переменные на элементе):
+     --w     ширина куска (длина ленты), px/%/vw. Высота — из пропорции растра (--ar задан классом).
+             Толщина видимой ленты ≈ 0,8 × высоты элемента у зелёной и ≈ 0,75 у белой.
+             Правило: на предмете толщина ленты 8–12 % его короткой стороны; запечатывающая полоса у края экрана —
+             40–56 px (mobile 28–36); длина куска — 3–4 толщины.
+     --rot   угол (по умолчанию 0deg). Поворот вокруг --origin (по умолчанию центр; «из-за края» удобнее 0 50%).
+     --tx/--ty  сдвиг до поворота (напр. --tx:-50% для центровки по left:50%).
+     --flip  -1 — зеркально по X (другая «рука», та же форма не повторится на экране).
+     --lift  сила мягкой «подъёмной» тени, 0….3 (по умолчанию .14; на тёмном фоне её почти не видно — как в жизни).
+   Тень в два слоя: контакт (почти нет, ≤1 px) + мягкая широкая под приподнятыми местами.
+   Механика «прилепить» — street.js: GV.street.stick(el) → Promise; [data-stick] в разметке лепится сам
+   один раз при входе в зону видимости (после grinchin:ready). ?shot=1 и prefers-reduced-motion — сразу на месте.
+   ============================================================================================ */
+
+.tape{
+  --w:140px; --rot:0deg; --tx:0px; --ty:0px; --flip:1; --lift:.14; --origin:50% 50%;
+  position:absolute; z-index:3; display:block; width:var(--w); aspect-ratio:var(--ar);
+  pointer-events:none; user-select:none;
+  transform-origin:var(--origin);
+  transform:translate(var(--tx),var(--ty)) rotate(var(--rot)) scaleX(var(--flip));
+}
+/* мягкая тень приподнятых мест (заломы, концы): тот же силуэт, размыт и сдвинут; при посадке «садится» вместе с лентой */
+.tape::before{content:""; position:absolute; inset:0; background:var(--src) center/100% 100% no-repeat;
+  filter:brightness(0) blur(7px); opacity:var(--lift); transform:translateY(5px) scale(1.01)}
+/* сама лента + контактная тень (лежащая лента почти не отбрасывает тень) */
+.tape::after{content:""; position:absolute; inset:0; background:var(--src) center/100% 100% no-repeat;
+  filter:drop-shadow(0 .5px .6px rgb(0 0 0 / .32))}
+
+.tape--white{--lift:.16}
+.tape--pin-1{--ar:440/158; --src:url("{{asset:img/tape/pin-1.webp}}")}
+.tape--pin-2{--ar:430/143; --src:url("{{asset:img/tape/pin-2.webp}}")}
+.tape--pin-3{--ar:380/148; --src:url("{{asset:img/tape/pin-3.webp}}")}
+.tape--pin-4{--ar:360/152; --src:url("{{asset:img/tape/pin-4.webp}}")}
+.tape--pin-5{--ar:460/141; --src:url("{{asset:img/tape/pin-5.webp}}")}
+.tape--green,.tape--green.tape--len-l{--ar:1500/112; --src:url("{{asset:img/tape/green-1.webp}}")}
+.tape--green.tape--len-m{--ar:1081/102; --src:url("{{asset:img/tape/green-2.webp}}")}
+.tape--green.tape--len-s{--ar:900/104; --src:url("{{asset:img/tape/green-3.webp}}")}
+
+/* «прилепить»: до посадки кусок над поверхностью (крупнее, тень шире), посадка ~350 мс с прогибом.
+   Анимируются только translate/scale/opacity (отдельные свойства, не трогают transform с углом). */
+.js .tape[data-stick]:not(.is-stuck){opacity:0}
+.tape.is-landing{animation:tape-land .36s cubic-bezier(.3,.7,.2,1) both}
+.tape.is-landing::before{animation:tape-land-shadow .36s cubic-bezier(.3,.7,.2,1) both}
+@keyframes tape-land{
+  0%  {opacity:0; translate:var(--from-x,-6px) var(--from-y,-14px); scale:1.07 1.07}
+  22% {opacity:1}
+  68% {translate:0 0; scale:1.012 .975}           /* прижали: лента прогибается по поверхности */
+  100%{opacity:1; translate:0 0; scale:1 1}
+}
+@keyframes tape-land-shadow{
+  0%  {opacity:calc(var(--lift) * 2.2); transform:translateY(16px) scale(1.06)}
+  100%{opacity:var(--lift); transform:translateY(5px) scale(1.01)}
+}
+@media (prefers-reduced-motion:reduce){
+  .tape.is-landing,.tape.is-landing::before{animation:none}
+}
+
+/* ============================================================================================
+   HERO — чёрный холст, целый кадр, заголовок, G справа, одна лента в нижнем правом углу.
+   Высота: до 88 % экрана от верха страницы (статус + шапка + hero), снизу виден край дропа.
+   #g3d (K2 ставит канвас по этому прямоугольнику):
+     desktop ≥768: правая колонка контента, right:0 · top:5 % · width:31 % ширины контента · height:58 % hero
+                   (1440×900 → 407×408 px, x 969–1376, y 123–531 от верха страницы);
+     mobile  <768: верхняя правая четверть сцены над текстом, right:0 · top:2 % · квадрат 40vw
+                   (390×844 → 156×156 px, x 210–366, y 91–247 от верха страницы).
+   ============================================================================================ */
+#hero{
+  position:relative; isolation:isolate; overflow:hidden; background:var(--c-black); color:var(--c-white);
+  height:clamp(520px, calc(88vh - var(--status-h) - var(--header-h)), 1040px);
+  height:clamp(520px, calc(88svh - var(--status-h) - var(--header-h)), 1040px);
+}
+#hero .hero-in{position:relative; height:100%; display:grid; grid-template-rows:minmax(0,1fr) auto}
+#hero .hero-stage{position:relative; grid-row:1 / -1; grid-column:1; min-height:0}
+#hero .hero-copy{grid-row:2; grid-column:1; position:relative; z-index:4; display:grid; justify-items:start;
+  padding-bottom:clamp(36px, 7vh, 88px)}
+
+/* кадр целиком: высота = высота hero, пропорция родная 2:3. Фон кадра — чистый #000, совпадает с холстом;
+   маска гасит только кромку (компрессия даёт неровный «почти чёрный» прямоугольник). Ноги стоят на краю дропа. */
+#hero .hero-shot{position:absolute; bottom:0; left:40%; height:96%; aspect-ratio:1024/1536; display:block; z-index:1;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent),linear-gradient(180deg,transparent,#000 4%);
+  mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent),linear-gradient(180deg,transparent,#000 4%);
+  -webkit-mask-composite:source-in; mask-composite:intersect}
+#hero .hero-shot img{width:100%; height:100%; object-fit:contain}
+#hero #g3d{position:absolute; z-index:2; right:0; top:5%; width:31%; height:58%}
+
+#hero-title{font:900 clamp(2.1rem, 1.2rem + 2.3vw, 3.5rem)/1.02 var(--font-display); letter-spacing:-.035em;
+  max-width:12.4em; width:min(100%, 41vw); text-wrap:balance; color:var(--c-white)}
+#hero .hero-strike{text-decoration-thickness:.06em; position:relative; white-space:nowrap}
+#hero .hero-meta{font:var(--t-mono); color:var(--text-2); margin-top:clamp(20px, 3vh, 32px); letter-spacing:.02em}
+#hero .hero-btn{margin-top:clamp(16px, 2.4vh, 24px)}
+
+/* лента: торчит из-за правого края и кончается в углу — «запечатывает» экран, как пакет pres_20 */
+#hero .tape--hero{--w:min(760px, 56vw); --rot:-24deg; --origin:0 50%; --ty:-50%; --lift:.1;
+  --from-x:10px; --from-y:-12px;
+  left:calc(100% - clamp(250px, 23vw, 380px)); top:calc(100% - clamp(40px, 6vh, 64px)); z-index:3}
+
+/* планшет в альбомной / маленький ноутбук: та же раскладка, кадр и G теснее */
+@media (min-width:768px) and (max-width:1099px){
+  #hero .hero-shot{left:36%}
+  #hero #g3d{width:29%}
+}
+/* телефон и планшет в портретной: кадр и G сверху, текст снизу */
+@media (max-width:767px), (max-width:1099px) and (orientation:portrait){
+  #hero{height:clamp(480px, calc(88vh - var(--status-h) - var(--header-h)), 760px);
+        height:clamp(480px, calc(88svh - var(--status-h) - var(--header-h)), 760px)}
+  #hero .hero-in{grid-template-rows:minmax(0,1fr) auto; row-gap:12px}
+  #hero .hero-stage{grid-row:1}
+  #hero .hero-shot{left:-10%; top:auto; bottom:0; height:100%}
+  #hero #g3d{right:0; top:2%; width:40vw; height:40vw}          /* явная высота: канвас K2 не должен раздувать блок */
+  #hero .hero-copy{padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+  #hero-title{font-size:clamp(1.6rem, 7.6vw, 2.25rem); width:100%; max-width:none; line-height:1.04}
+  #hero .hero-meta{margin-top:14px}
+  #hero .hero-btn{margin-top:14px}
+  /* через угол: входит снизу, выходит справа — видна только «печать» на углу, без конца */
+  #hero .tape--hero{--w:520px; --rot:-34deg; --ty:-50%; left:calc(100% - 122px); top:calc(100% + 30px)}
+}
+/* альбомный телефон и низкие окна: hero = экран без шапки, текст мельче, кадр меньше */
+@media (min-width:768px) and (max-height:560px) and (orientation:landscape){
+  #hero{height:max(300px, calc(100vh - var(--status-h) - var(--header-h))); height:max(300px, calc(100svh - var(--status-h) - var(--header-h)))}
+  #hero-title{font-size:clamp(1.5rem, 5.5vh + .6rem, 2.2rem); width:min(100%, 44vw)}
+  #hero .hero-copy{padding-bottom:20px}
+  #hero .hero-meta{margin-top:10px}
+  #hero .hero-btn{margin-top:12px}
+  #hero .hero-shot{left:46%}
+  #hero #g3d{width:24%; top:4%; height:70%}
+  #hero .tape--hero{--w:420px; left:calc(100% - 150px); top:calc(100% - 22px)}
+}
+
+/* ============================================================================================
+   ОБРАЗЫ — чёрный холст, 4 отпечатка (белое поле 12/12/40, мягкая тень, наклон ≤1,5°), подписи не наклонены.
+   desktop: 4 колонки (последняя шире — пакет 16:9), ступенька по высоте; mobile: свайп со snap и счётчиком.
+   ============================================================================================ */
+#looks{position:relative; background:var(--c-black); color:var(--c-white); padding:clamp(72px, 9vw, 152px) 0 clamp(72px, 8vw, 136px)}
+#looks .looks-head{display:flex; align-items:baseline; justify-content:space-between; gap:24px}
+#looks .looks-title{font:var(--t-d1); letter-spacing:-.05em; text-transform:uppercase}
+#looks .looks-count{font:var(--t-mono); color:var(--text-2); display:none}
+
+#looks .looks-rail{display:grid; grid-template-columns:1fr 1fr 1fr 1.46fr; align-items:start;
+  gap:clamp(28px, 3.2vw, 56px); margin-top:clamp(48px, 6vw, 88px);
+  width:100%; max-width:calc(var(--maxw) + 2 * var(--gutter)); margin-inline:auto;
+  padding-left:max(var(--gutter), env(safe-area-inset-left)); padding-right:max(var(--gutter), env(safe-area-inset-right))}
+#looks .look{position:relative; margin:0; min-width:0}
+#looks .look[data-look="02"]{margin-top:clamp(28px, 4vw, 64px)}
+#looks .look[data-look="03"]{margin-top:clamp(8px, 1.2vw, 20px)}
+#looks .look[data-look="04"]{margin-top:clamp(40px, 6vw, 104px)}
+
+/* отпечаток: поле 12/12/40, мягкая тень на чёрном почти не видна — как в жизни; держит его белое поле */
+#looks .look-print{position:relative; background:#fff; padding:12px 12px 40px; transform:rotate(var(--r, 0deg));
+  box-shadow:0 1px 1px rgb(0 0 0 / .4), 0 18px 34px -14px rgb(0 0 0 / .9)}
+#looks .look[data-look="01"] .look-print{--r:-1.2deg}
+#looks .look[data-look="02"] .look-print{--r:.8deg}
+#looks .look[data-look="03"] .look-print{--r:-.5deg}
+#looks .look[data-look="04"] .look-print{--r:1.3deg}
+#looks .look-photo{display:block; background:var(--c-black)}
+#looks .look-photo img{width:100%; height:auto}
+
+/* лента держит угол двух отпечатков из четырёх: '01 — правый верхний угол, '04 — верх по центру */
+#looks .tape--at-tr{--w:clamp(92px, 8.2vw, 132px); --rot:38deg; right:clamp(-46px, -3.2vw, -32px); top:clamp(-6px, .2vw, 4px); --from-x:6px}
+#looks .tape--at-t{--w:clamp(104px, 9vw, 150px); --rot:-3.5deg; --tx:-50%; left:52%; top:clamp(-26px, -1.6vw, -18px)}
+
+#looks .look-cap{display:grid; grid-template-columns:auto 1fr; justify-items:start; align-items:baseline; gap:8px 16px; margin-top:20px; padding-left:12px}
+#looks .look-cap > :not(.look-n){grid-column:2}
+#looks .look-n{font:var(--t-mono); color:var(--accent)}
+#looks .look-cap a{font:var(--t-ui); color:var(--c-white); text-decoration:underline; text-decoration-thickness:1px;
+  text-underline-offset:.28em; text-decoration-color:color-mix(in srgb, var(--c-white) 35%, transparent)}
+#looks .look-cap a:hover{color:var(--accent); text-decoration-color:currentColor}
+#looks .look-note{font:var(--t-mono); color:var(--text-2)}
+
+@media (max-width:1099px) and (min-width:768px){
+  #looks .looks-rail{grid-template-columns:1fr 1fr; row-gap:56px}
+  #looks .look[data-look]{margin-top:0}
+  #looks .look[data-look="02"],#looks .look[data-look="04"]{margin-top:48px}
+}
+@media (max-width:767px){
+  #looks .looks-count{display:block}
+  #looks .looks-rail{display:flex; gap:20px; overflow-x:auto; overscroll-behavior-x:contain;
+    scroll-snap-type:x mandatory; scroll-padding-inline:max(var(--gutter), env(safe-area-inset-left));
+    padding-top:28px; padding-bottom:12px; margin-top:20px; scrollbar-width:none}
+  #looks .looks-rail::-webkit-scrollbar{display:none}
+  #looks .look{flex:0 0 min(74vw, 340px); scroll-snap-align:start; scroll-snap-stop:always}
+  #looks .look--wide{flex-basis:min(84vw, 420px); align-self:center}
+  #looks .look[data-look]{margin-top:0}
+  #looks .look-cap{min-height:44px}
+  #looks .look-cap a{padding-block:12px; margin-block:-12px}           /* тап-зона ≥ 44 px */
+  #looks .tape--at-tr{--w:96px; right:-30px; top:-2px}
+  #looks .tape--at-t{--w:112px; top:-20px}
+}
+
+/* ============================================================================================
+   ЗНАК — без слов. Дверь целым кадром ≤ 960 CSS px, ниже — как сделан знак (три листа), затем жест K4.
+   ============================================================================================ */
+#sign{position:relative; background:var(--c-black); color:var(--c-white); padding:clamp(48px, 6vw, 104px) 0 clamp(40px, 5vw, 80px)}
+#sign .sign-door{max-width:960px}
+#sign .sign-door img{width:100%; height:auto}
+#sign .sign-steps{display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:clamp(12px, 2.4vw, 32px);
+  max-width:720px; margin-top:clamp(40px, 5vw, 80px)}
+#sign .sign-step{margin:0; display:grid; gap:14px; align-content:start}
+#sign .sign-step img{width:100%; height:auto; box-shadow:0 14px 28px -16px rgb(0 0 0 / .8)}
+#sign .sign-cap{font:var(--t-mono); color:var(--text-2)}
+#sign #sign-gesture{position:relative}
+/* широкий экран: три листа столбиком справа от двери — «как сделано» сбоку, а не отдельным блоком */
+@media (min-width:1100px){
+  #sign > .wrap{display:grid; grid-template-columns:minmax(0, 960px) 140px; column-gap:clamp(40px, 4.4vw, 80px); align-items:end}
+  #sign .sign-steps{grid-template-columns:1fr; gap:18px; margin-top:0}
+}

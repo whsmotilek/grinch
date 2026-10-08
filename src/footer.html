@@ -1,38 +1,39 @@
-<footer id="footer">
-  <div class="tx-layer tx-layer--paper is-poster" aria-hidden="true"></div>
-  <div class="wrap">
-    <div class="ft-head">
-      <p class="ft-motto">Не все ограничения нужно ломать.</p>
-      <span class="tp-piece ft-pin" aria-hidden="true"></span>
-    </div>
-    <div class="ft-cols">
-      <div class="ft-col">
-        <p class="mono-label">инфо:</p>
-        <ul>
-          <li><button type="button" data-open="sizes">Размерная сетка</button></li>
-          <li><a href="#gather" data-nav="gather">Точка сбора</a></li>
+<footer id="footer" data-g="footer">
+  <!-- мятая бумага: один лист без плитки (img/end/_end.py), подгружается, когда подвал рядом -->
+  <div class="fo-paper" aria-hidden="true"></div>
+  <div class="wrap fo-in">
+    <div class="fo-service">
+      <div class="fo-col">
+        <p class="fo-k">инфо:</p>
+        <ul class="fo-list">
+          <li><button class="fo-row" type="button" data-ft-open="sizes">Размерная сетка</button></li>
+          <li>
+            <details class="fo-acc" name="fo-info">
+              <summary class="fo-row">Доставка и предзаказ</summary>
+              <p>Предзаказ до 30.11, отправка с 01.12. СДЭК или Почта России, 2–7 дней.</p>
+            </details>
+          </li>
+          <li>
+            <details class="fo-acc" name="fo-info">
+              <summary class="fo-row">Возврат и обмен</summary>
+              <p>14 дней, если вещь не носили и бирка на месте. Обмен размера — бесплатно.</p>
+            </details>
+          </li>
         </ul>
-        <details class="ft-acc">
-          <summary>Доставка и предзаказ</summary>
-          <p>Предзаказ до 30.11, отправка с 01.12. СДЭК или Почта, 2–7 дней.</p>
-        </details>
-        <details class="ft-acc">
-          <summary>Возврат и обмен</summary>
-          <p>14 дней, если не носил и бирка на месте. Обмен размера — бесплатно.</p>
-        </details>
       </div>
-      <div class="ft-col ft-contacts">
-        <p class="mono-label">контакты:</p>
-        <ul>
-          <li class="ft-soc"><span class="ft-soon">Telegram</span><span class="ft-soon">VK</span><span class="ft-soon">YouTube</span> <i class="ft-soon-i">скоро</i></li>
-          <li><span class="ft-soon">почта <i>скоро</i></span></li>
-          <li><span class="ft-soon">Москва</span></li>
+      <div class="fo-col">
+        <p class="fo-k">контакты:</p>
+        <ul class="fo-list">
+          <li class="fo-row fo-soon"><span>Telegram · VK · почта</span><span class="fo-soon-k">скоро</span></li>
         </ul>
-        <span class="gm-slot" data-mark-slot="5"></span>
-        <div id="footer-tape"></div>
       </div>
     </div>
-    <div class="ft-logo" aria-hidden="true"><!--@svg:logo--></div>
-    <p class="ft-legal"><span>© 2026 GRINCHIN</span><span>демо-версия</span><span>дроп 01 · v1</span></p>
+
+    <!-- K2 «сажает» сюда 3D-G (ищет по id) -->
+    <div id="footer-logo" class="fo-logo-box">
+      <div class="fo-logo" role="img" aria-label="GRINCHIN"></div>
+    </div>
+
+    <p class="fo-legal"><span>© GRINCHIN 2026</span><span>Москва</span><span>демо: цены, даты и фото — пример</span></p>
   </div>
 </footer>

@@ -1,0 +1,26 @@
+<div id="page-404" class="ov ov--full" role="dialog" aria-modal="true" aria-labelledby="p404-title" hidden>
+  <div class="ov-panel e404">
+    <button class="e404-logo" type="button" data-close data-home aria-label="GRINCHIN — на главную"><!--@svg:logo--></button>
+    <div class="e404-in">
+      <div class="e404-txt">
+        <p class="e404-code">404</p>
+        <h2 id="p404-title" class="e404-title">Тупик.</h2>
+      </div>
+      <!-- Знак STOP. Перекладина .st-bar прогибается в улыбку .st-smile — анимацию даёт K4: GV.motion.play404(el).
+           Обе фигуры в одной системе координат (группа .st-face), чтобы MorphSVG морфил без пересчёта.
+           Без play404 видна статичная улыбка (end.css). -->
+      <div class="e404-sign" data-404-sign>
+        <svg class="e404-svg" viewBox="0 0 400 400" role="img" aria-label="Знак STOP с улыбкой вместо перекладины">
+          <path class="st-plate" d="M381.1 275 275 381.1H125L18.9 275V125L125 18.9h150L381.1 125z"/>
+          <path class="st-rim" d="M364 268 268 364H132L36 268V132l96-96h136l96 96z"/>
+          <text class="st-text" x="200" y="186" text-anchor="middle">STOP</text>
+          <g class="st-face" transform="translate(65.6 226) scale(.145)">
+            <path class="st-bar" d="M120 150H1734V350H120z"/>
+            <path class="st-smile" d="M927 386c0 0 8-12 26-24 20-13 41-24 63-32 56-20 113-35 187-41 93-7 177-2 266 0 82 2 163 5 226-17 65-23 97-62 113-118 13-51 4-80 4-80l-59 73 -5-3 76-142c11 32 18 65 22 99 6 55-10 156-89 204 -76 46-182 41-293 35 -103-6-212-21-346-8 -136 13-191 56-191 56 0 0-54-43-190-56 -135-13-244 2-347 8 -111 6-217 11-292-35 -80-48-96-149-89-204 4-34 11-67 21-99l77 142 -5 3 -60-73c0 0-9 29 5 80 15 56 48 95 113 118 62 22 143 19 225 17 90-2 173-7 266 0 74 6 131 21 187 41 23 8 44 19 64 32 17 12 25 24 25 24z"/>
+          </g>
+        </svg>
+      </div>
+      <button class="btn btn--accent e404-home" type="button" data-close data-home>На главную <span aria-hidden="true">→</span></button>
+    </div>
+  </div>
+</div>

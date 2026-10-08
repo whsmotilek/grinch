@@ -1,247 +1,226 @@
-/* GRINCHIN — каркас и путь клиента. Владелец: A.
-   window.GV: open/close оверлеев, корзина, навигация, тосты. Рендер карточек, образов, шита, корзины.
-   События (контракт): шлём grinchin:cart / :add / :overlay / :navigate; слушаем :ready / :mark / :gather-complete. */
+/* GRINCHIN v2 — каркас и магазин. Владелец: K1.
+   window.GV: open/close оверлеев (стек, фокус-ловушка, Esc, inert, блокировка скролла), корзина, навигация
+   (свой плавный скролл, без wipe), тост. Рендер сетки дропа, карточки товара, корзины.
+   События (CONTRACT_V2): шлём grinchin:cart {count,items} / :add {id,size} / :overlay {name,open} / :navigate {target};
+   слушаем grinchin:ready (после него — ?open=…).
+   Query: ?shot=1 — без анимаций и прелоадера; &open=product:<id>|cart|sizes|menu|404; &cart=demo — две вещи в корзине. */
 (function () {
   "use strict";
   var d = document, root = d.documentElement;
   var GV = (window.GV = window.GV || {});
   var P = window.GV_PRODUCTS || [];
   var LOOKS = window.GV_LOOKS || [];
-  var CATS = window.GV_CATEGORIES || [];
-  var DROP = window.GV_DROP || { shipFrom: "01.12", preorderTill: "30.11" };
+  var DROP = window.GV_DROP || { total: 8, shipFrom: "01.12", preorderTill: "30.11", maxQty: 3 };
   var byId = {};
   P.forEach(function (p) { byId[p.id] = p; });
 
   var Q = (function () { try { return new URLSearchParams(location.search); } catch (e) { return { get: function () { return null; } }; } })();
   var isShot = root.dataset.shot === "1";
-  var reduced = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var mq = function (q) { return !!(window.matchMedia && matchMedia(q).matches); };
+  var reduced = mq("(prefers-reduced-motion: reduce)");
   var instant = function () { return isShot || reduced; };
+  var canHover = mq("(hover: hover) and (pointer: fine)");
+  var isPhone = function () { return mq("(max-width: 767px)"); };
 
   /* ---------- утилиты ---------- */
   var nf = new Intl.NumberFormat("ru-RU");
-  function money(n) { return nf.format(n).replace(/\s/g, " ") + " ₽"; }
-  function tagPrice(n) { return nf.format(n).replace(/\s/g, "."); } // как на бирке pres_12: 7.500
+  function money(n) { return nf.format(n).replace(/\s/g, " ") + " ₽"; }
+  function plain(n) { return nf.format(n).replace(/\s/g, " "); }
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   function $(s, el) { return (el || d).querySelector(s); }
   function $$(s, el) { return Array.prototype.slice.call((el || d).querySelectorAll(s)); }
-  function emit(name, detail, cancelable) {
-    return d.dispatchEvent(new CustomEvent(name, { detail: detail, cancelable: !!cancelable }));
-  }
+  function emit(name, detail) { d.dispatchEvent(new CustomEvent(name, { detail: detail })); }
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function num(p) { return pad(p.n) + "/" + pad(DROP.total || P.length); }
   function sizesOf(p) { return Object.keys(p.sizes); }
   function inStock(p, s) { return (p.sizes[s] || 0) > 0; }
-  function anyStock(p) { return sizesOf(p).some(function (s) { return inStock(p, s); }); }
-  function stateText(p) {
-    if (p.state === "soldout") return "разобрали — ждём перезапуск";
-    if (p.state === "preorder") return "предзаказ · отправка с " + DROP.shipFrom;
-    return "отправка с " + DROP.shipFrom;
+  function anyStock(p) { return p.state !== "soldout" && sizesOf(p).some(function (s) { return inStock(p, s); }); }
+  function lastSize(p) { return sizesOf(p).filter(function (s) { return p.sizes[s] === 1; })[0] || null; }
+  function statusOf(p) {
+    if (!anyStock(p)) return { text: "РАЗОБРАЛИ", alert: true };
+    var l = lastSize(p);
+    if (l) return { text: l + " — ПОСЛЕДНИЙ", alert: true };
+    return { text: "ПРЕДЗАКАЗ", alert: false };
   }
-  var BADGE = { "new": "NEW", drop: "DROP 01", preorder: "ПРЕДЗАКАЗ", soldout: "SOLD OUT" };
-  function badges(p) {
-    var kinds = [p.state === "soldout" ? "soldout" : p.state];
-    if (p.id === "suit-detour") kinds.unshift("drop");
-    return kinds.map(function (k) { return '<span class="tape-badge" data-kind="' + k + '">' + BADGE[k] + "</span>"; }).join("");
-  }
+  function shipText(p) { return anyStock(p) ? "предзаказ · отправка с " + DROP.shipFrom : "разобрали"; }
+  var ARROW = '<svg class="gl" viewBox="0 0 16 12" aria-hidden="true"><path d="M0 6h14.5M9.5 1l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
+  // грустная улыбка пустой корзины: та же дуга знака, перевёрнутая, без рогов
+  var SMILE_SVG = '<svg viewBox="0 0 96 28" aria-hidden="true"><path d="M3 25C20 8 34 4 48 4s28 4 45 21" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>';
+  // маркер выбранного размера: стрелка с квадратным концом, как перекладина G
+  var MARK_SVG = '<svg viewBox="0 0 10 12" aria-hidden="true"><path d="M5 12V1.5M1 5.5l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"/></svg>';
 
   /* ---------- тост ---------- */
   var toastEl = d.getElementById("toast"), toastT;
-  var toastAct = null;
-  GV.toast = function (msg, ms, target) {
+  GV.toast = function (msg, ms) {
     if (!toastEl) return;
     toastEl.textContent = msg;
-    toastAct = target || null;
-    toastEl.classList.toggle("is-action", !!target);
     toastEl.classList.add("is-on");
     clearTimeout(toastT);
-    toastT = setTimeout(function () { toastEl.classList.remove("is-on", "is-action"); toastAct = null; }, ms || 2600);
+    toastT = setTimeout(function () { toastEl.classList.remove("is-on"); }, ms || 2400);
   };
-  if (toastEl) toastEl.addEventListener("click", function () {
-    if (!toastAct) return;
-    toastEl.classList.remove("is-on", "is-action");
-    var a = toastAct; toastAct = null;
-    if (typeof a === "function") a(); else GV.navigate(a);
-  });
 
-  /* ---------- корзина (в памяти + localStorage в try/catch) ---------- */
-  var KEY = "grinchin.cart.v1";
+  /* ---------- корзина: в памяти + localStorage (в try/catch) ---------- */
+  var KEY = "grinchin.cart.v2";
   var items = [];
+  var MAX_QTY = DROP.maxQty || 3;
   function valid(i) { return i && byId[i.id] && byId[i.id].sizes.hasOwnProperty(i.size) && i.qty > 0; }
   if (Q.get("cart") === "demo") {
     items = [{ id: "suit-detour", size: "L", qty: 1 }, { id: "tee-blank", size: "L", qty: 2 }];
   } else if (!isShot) {
     try { items = (JSON.parse(localStorage.getItem(KEY)) || []).filter(valid); } catch (e) { items = []; }
   }
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(items)); } catch (e) { /* без хранилища — живём в памяти */ } }
+  function save() { if (isShot) return; try { localStorage.setItem(KEY, JSON.stringify(items)); } catch (e) { /* без хранилища — живём в памяти */ } }
   function keyOf(i) { return i.id + "|" + i.size; }
   function count() { return items.reduce(function (a, i) { return a + i.qty; }, 0); }
   function total() { return items.reduce(function (a, i) { return a + byId[i.id].price * i.qty; }, 0); }
+  function limitOf(id, size) { return Math.min(MAX_QTY, byId[id].sizes[size] || 0); }
   function syncCart() {
     var c = count();
     $$("[data-cart-count]").forEach(function (el) { el.textContent = c; });
     var btn = $(".hd-cart");
-    if (btn) { btn.setAttribute("aria-label", "Корзина, товаров: " + c); btn.dataset.count = c; }
+    if (btn) btn.setAttribute("aria-label", "Корзина, товаров: " + c);
     root.dataset.cart = c ? "full" : "empty";
     save();
     emit("grinchin:cart", {
       count: c,
       items: items.map(function (i) { var p = byId[i.id]; return { id: i.id, size: i.size, qty: i.qty, name: p.name, price: p.price }; })
     });
-    if (stackTop() === "cart") renderCart();
+    if (isOpen("cart")) renderCart();
   }
-  var MAX_QTY = 5;
   GV.cart = {
     get items() { return items.slice(); },
     get count() { return count(); },
     get total() { return total(); },
-    add: function (id, size, qty) {
+    add: function (id, size) {
       var p = byId[id];
       if (!p || !inStock(p, size)) return false;
       var it = items.filter(function (i) { return i.id === id && i.size === size; })[0];
-      var limit = Math.min(MAX_QTY, p.sizes[size]);
-      if (it) { if (it.qty >= limit) { GV.toast("Больше " + limit + " в одни руки не выйдет."); return false; } it.qty += qty || 1; }
-      else items.push({ id: id, size: size, qty: qty || 1 });
+      var lim = limitOf(id, size);
+      if (it && it.qty >= lim) { GV.toast(lim < MAX_QTY ? size + " — последний, уже в корзине." : "Больше " + MAX_QTY + " в одни руки — нет."); return false; }
+      if (it) it.qty += 1; else items.push({ id: id, size: size, qty: 1 });
       syncCart();
       emit("grinchin:add", { id: id, size: size });
-      GV.toast("Есть. Вещь в корзине.");
+      GV.toast("В корзине.");
       return true;
     },
     setQty: function (key, q) {
       var it = items.filter(function (i) { return keyOf(i) === key; })[0];
       if (!it) return;
-      var p = byId[it.id];
-      it.qty = Math.max(1, Math.min(q, Math.min(MAX_QTY, p.sizes[it.size] || 1)));
+      var lim = limitOf(it.id, it.size);
+      if (q > lim) { GV.toast(lim < MAX_QTY ? it.size + " — последний." : "Больше " + MAX_QTY + " в одни руки — нет."); q = lim; }
+      it.qty = Math.max(1, q);
       syncCart();
     },
-    remove: function (key) {
-      items = items.filter(function (i) { return keyOf(i) !== key; });
-      syncCart();
-    },
+    remove: function (key) { items = items.filter(function (i) { return keyOf(i) !== key; }); syncCart(); },
     clear: function () { items = []; syncCart(); }
   };
 
-  /* ---------- каталог: чипы + карточки ---------- */
-  var grid = $("[data-grid]"), chips = $("[data-chips]");
-  function cardHTML(p, idx) {
-    var soldout = p.state === "soldout";
-    var quick = soldout ? "" :
-      '<div class="card-quick" role="group" aria-label="Быстро в корзину: ' + esc(p.name) + '"><span class="cq-label">в корзину:</span>' +
-      sizesOf(p).map(function (s) {
+  /* ---------- сетка дропа ---------- */
+  var grid = $("[data-grid]");
+  function cardHTML(p) {
+    var st = statusOf(p), sizes = sizesOf(p);
+    var row = anyStock(p) && canHover ?
+      '<div class="card-sizes" role="group" aria-label="Быстро в корзину: ' + esc(p.name) + '" style="--n:' + sizes.length + '">' +
+      sizes.map(function (s) {
         var ok = inStock(p, s);
-        return '<button type="button" class="cq-size' + (ok ? "" : " is-out") + '" data-quick="' + p.id + '" data-size="' + s + '"' +
-          (ok ? ' aria-label="' + s + ' — в корзину"' : ' disabled aria-label="' + s + ' — нет"') + ">" + s + "</button>";
-      }).join("") + "</div>";
-    return '<article class="card" data-id="' + p.id + '" data-state="' + p.state + '" data-cat="' + p.category + '">' +
+        return '<button type="button" class="cell cs' + (ok ? "" : " is-out") + '" data-quick="' + p.id + '" data-size="' + s + '"' +
+          (ok ? ' aria-label="' + s + ' — в корзину"' : ' aria-disabled="true" tabindex="-1" aria-label="' + s + ' — нет"') + ">" + s + "</button>";
+      }).join("") + "</div>" : "";
+    return '<article class="card" data-id="' + p.id + '" data-state="' + (anyStock(p) ? p.state : "soldout") + '">' +
       '<div class="card-media">' +
-      '<img class="card-img" src="' + p.img[0] + '" alt="' + esc(p.name) + ' — эскиз, фото скоро" width="800" height="1000" decoding="async">' +
-      '<img class="card-img card-img--alt" src="' + p.img[1] + '" alt="" aria-hidden="true" width="800" height="1000" decoding="async">' +
-      '<div class="card-badges">' + badges(p) + "</div>" + quick +
-      (idx === 5 ? '<span class="gm-slot" data-mark-slot="2"></span>' : "") +
-      "</div>" +
+      '<img class="card-img" src="' + p.img[0] + '" alt="' + esc(p.name) + ' — эскиз" width="800" height="1000" decoding="async">' +
+      (canHover ? '<img class="card-img card-img--alt" src="' + p.img[1] + '" alt="" aria-hidden="true" width="800" height="1000" loading="lazy" decoding="async">' : "") +
+      row + "</div>" +
       '<div class="card-body">' +
+      '<p class="card-num">' + num(p) + "</p>" +
+      '<p class="card-status' + (st.alert ? " is-alert" : "") + '">' + st.text + "</p>" +
       '<h3 class="card-name"><button type="button" class="card-open" data-open-product="' + p.id + '">' + esc(p.name) + "</button></h3>" +
+      '<p class="card-color">[' + esc(p.color) + "]</p>" +
       '<p class="card-price">' + money(p.price) + "</p>" +
       "</div></article>";
   }
   if (grid) grid.innerHTML = P.map(cardHTML).join("");
-
-  if (chips) {
-    chips.innerHTML = CATS.map(function (c) {
-      var n = c.id === "all" ? P.length : P.filter(function (p) { return p.category === c.id; }).length;
-      if (!n) return "";
-      return '<button type="button" class="chip" data-cat="' + c.id + '" aria-pressed="' + (c.id === "all") + '">' + esc(c.label) + "<sup>" + n + "</sup></button>";
-    }).join("");
-    chips.addEventListener("click", function (e) {
-      var b = e.target.closest(".chip");
-      if (!b) return;
-      var cat = b.dataset.cat;
-      $$(".chip", chips).forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); });
-      $$(".card", grid).forEach(function (card) { card.hidden = !(cat === "all" || card.dataset.cat === cat); });
-      grid.dataset.filter = cat;
-    });
-  }
-
-  /* ---------- образы ---------- */
-  var wall = $("[data-looks]");
-  if (wall) {
-    wall.innerHTML = LOOKS.map(function (l) {
-      var ps = l.items.map(function (id) { return byId[id]; }).filter(Boolean);
-      var sum = ps.reduce(function (a, p) { return a + p.price; }, 0);
-      return '<figure class="look" data-look="' + l.n + '">' +
-        '<div class="look-frame">' +
-        '<div class="look-photo">' +
-        '<span class="look-num" aria-hidden="true">’' + l.n + "</span>" +
-        ps.map(function (p, i) { return '<img class="look-img look-img--' + (i + 1) + '" src="' + p.img[0] + '" alt="' + esc(p.name) + '" width="800" height="1000" decoding="async">'; }).join("") +
-        "</div>" +
-        '<span class="look-tape look-tape--a" aria-hidden="true"></span><span class="look-tape look-tape--b" aria-hidden="true"></span>' +
-        '<div class="look-tag" aria-hidden="true"><span>look: ’' + l.n + "</span><span>вещей: " + ps.length + "</span><span>сумма: " + tagPrice(sum) + "</span></div>" +
-        "</div>" +
-        '<figcaption class="look-cap">' +
-        '<p class="look-title"><span class="look-k">’' + l.n + "</span> " + esc(l.title) + "</p>" +
-        '<ul class="look-items">' + ps.map(function (p) {
-          return '<li><button type="button" data-open-product="' + p.id + '"><span>' + esc(p.name) + '</span><i aria-hidden="true">→</i></button></li>';
-        }).join("") + "</ul></figcaption></figure>";
-    }).join("");
-  }
+  if (grid) grid.addEventListener("click", function (e) {
+    var row = e.target.closest(".card-sizes");
+    if (row) {
+      // ряд размеров перехватывает клики сам: карточка не открывается
+      e.stopPropagation();
+      var b = e.target.closest("[data-quick]");
+      if (!b || b.getAttribute("aria-disabled") === "true") return;
+      if (GV.cart.add(b.dataset.quick, b.dataset.size)) {
+        b.classList.add("is-added");
+        setTimeout(function () { b.classList.remove("is-added"); }, 700);
+      }
+      return;
+    }
+    var card = e.target.closest(".card");
+    if (card) {
+      e.stopPropagation();
+      var ob = $(".card-open", card); if (ob && d.activeElement !== ob) ob.focus({ preventScroll: true }); // сюда вернётся фокус
+      GV.open("product", card.dataset.id);
+    }
+  });
 
   /* ---------- карточка товара (шит) ---------- */
+  var sheet = d.getElementById("product-sheet");
   var sheetBody = $("[data-ps-body]");
-  var sheetState = { id: null, size: null };
-  function accHTML(p) {
-    var rows = [
-      ["Детали", "<p>" + esc(p.desc) + "</p><ul>" + p.details.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "<li>Посадка: " + esc(p.fit.toLowerCase()) + "</li></ul>"],
-      ["Состав и уход", "<p>" + esc(p.composition) + ".</p><p>" + esc(p.care) + ".</p>"],
-      ["Доставка и предзаказ", "<p>Предзаказ до " + DROP.preorderTill + ", отправка с " + DROP.shipFrom + ". СДЭК или Почта, 2–7 дней. Весь заказ — одной посылкой.</p>"],
-      ["Возврат", "<p>14 дней, если не носил и бирка на месте. Обмен размера — бесплатно.</p>"]
-    ];
-    return rows.map(function (r) { return '<details class="acc"><summary>' + r[0] + "</summary><div class=\"acc-body\">" + r[1] + "</div></details>"; }).join("");
-  }
+  var cur = { id: null, size: null };
+  function lookOf(p) { return LOOKS.filter(function (l) { return (l.items || []).indexOf(p.id) > -1; })[0]; }
   function renderSheet(p) {
-    sheetState = { id: p.id, size: null };
-    var soldout = !anyStock(p);
+    cur = { id: p.id, size: null };
+    var sizes = sizesOf(p), all = anyStock(p);
     var pairs = (p.pairs || []).map(function (id) { return byId[id]; }).filter(Boolean);
+    var look = lookOf(p);
     sheetBody.innerHTML =
-      '<div class="ps-grid" data-state="' + p.state + '">' +
+      '<div class="ps-grid" data-state="' + (all ? p.state : "soldout") + '">' +
       '<div class="ps-gallery">' +
-      '<div class="ps-track" tabindex="0" role="region" aria-label="Фото товара, листай">' +
+      '<div class="ps-track" tabindex="0" role="region" aria-label="Эскизы, листай">' +
       p.img.map(function (src, i) {
-        return '<figure class="ps-slide"><img src="' + src + '" alt="' + esc(p.name) + (i ? " — деталь" : " — целиком") + ', эскиз" width="800" height="1000" decoding="async"></figure>';
+        return '<figure class="ps-slide"><img src="' + src + '" alt="' + esc(p.name) + (i ? " — деталь, эскиз" : " — эскиз") + '" width="800" height="1000" decoding="async"></figure>';
       }).join("") + "</div>" +
-      '<div class="ps-gnav"><button type="button" class="ps-arrow" data-gal="-1" aria-label="Предыдущее фото">←</button>' +
-      '<p class="ps-count" aria-live="polite"><span data-ps-i>1</span>/' + p.img.length + "</p>" +
-      '<button type="button" class="ps-arrow" data-gal="1" aria-label="Следующее фото">→</button></div>' +
-      '<div class="tape-badges ps-badges">' + badges(p) + "</div>" +
+      '<p class="ps-count" aria-hidden="true"><span data-ps-i>1</span>/' + p.img.length + "</p>" +
       "</div>" +
       '<div class="ps-info">' +
+      '<p class="ps-num">' + num(p) + "</p>" +
       '<h2 id="ps-title" class="ps-title">' + esc(p.name) + "</h2>" +
-      '<p class="ps-marker">' + esc(p.marker) + "</p>" +
-      '<p class="ps-ship"><i aria-hidden="true"></i>' + stateText(p) + "</p>" +
-      '<div class="ps-tag" aria-hidden="true"><div class="pt-cell"><span>size:</span><b data-ps-tagsize>' + (soldout ? "—" : "?") + '</b></div><div class="pt-cell"><span>price:</span><b>' + tagPrice(p.price) + "</b></div></div>" +
-      '<div class="ps-sizes-head"><span class="mono-label">размер:</span><button type="button" class="link" data-open="sizes">Размерная сетка</button></div>' +
-      '<div class="ps-sizes" role="group" aria-label="Размер">' +
-      sizesOf(p).map(function (s) {
+      '<p class="ps-line"><span>[' + esc(p.color) + ']</span><span class="ps-price">' + money(p.price) + "</span></p>" +
+      '<p class="ps-ship">' + shipText(p) + "</p>" +
+      '<p class="ps-desc">' + esc(p.desc) + "</p>" +
+      '<div class="ps-tag" aria-hidden="true"><div class="pt-cell"><span>size:</span><b data-ps-tagsize>' + (all ? "?" : "—") + '</b></div>' +
+      '<div class="pt-cell"><span>price:</span><b>' + plain(p.price) + "</b></div></div>" +
+      '<div class="ps-sizes-head"><span class="t-mono">размер:</span><button type="button" class="link" data-open="sizes">Размерная сетка</button></div>' +
+      '<div class="ps-sizes" role="group" aria-label="Размер" style="--n:' + sizes.length + '">' +
+      sizes.map(function (s) {
         var ok = inStock(p, s);
-        return '<button type="button" class="sz' + (ok ? "" : " is-out") + '" data-size="' + s + '" aria-pressed="false"' +
-          (ok ? "" : ' aria-label="' + s + ' — нет в наличии, можно подписаться"') + ">" + s + "</button>";
-      }).join("") + "</div>" +
-      '<p class="ps-model">' + esc(p.model) + "</p>" +
+        return '<button type="button" class="cell sz' + (ok ? "" : " is-out") + '" data-size="' + s + '" aria-pressed="false"' +
+          (ok ? "" : ' aria-label="' + s + ' — нет"') + ">" + s + "</button>";
+      }).join("") +
+      '<span class="sz-mark" aria-hidden="true">' + MARK_SVG + "</span></div>" +
+      '<dl class="kv ps-fit"><div><dt>посадка:</dt><dd>' + esc(p.fit) + "</dd></div><div><dt>модель:</dt><dd>" + esc(p.model) + "</dd></div></dl>" +
       '<div class="ps-notify" data-ps-notify hidden>' +
-      '<p class="ps-notify-big">Этот маршрут закрыт. Сообщить, когда откроется?</p>' +
+      '<p data-notify-head></p>' +
       '<form class="ps-notify-form" data-notify-form novalidate><label class="vh" for="ps-notify-input">Ник в Telegram или почта</label>' +
-      '<input id="ps-notify-input" type="text" placeholder="@ник или почта" autocomplete="off">' +
+      '<input id="ps-notify-input" type="text" placeholder="@ник или почта" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="ps-notify-err">' +
       '<button type="submit" class="btn btn--dark">Сообщить</button></form>' +
-      '<p class="field-err" data-notify-err></p></div>' +
+      '<p class="field-err" id="ps-notify-err" data-notify-err></p></div>' +
       '<div class="ps-buy">' +
-      '<button type="button" class="btn btn--accent btn--wide ps-add" data-ps-add aria-disabled="true">' + (soldout ? "Сообщить о поступлении" : "Выбери размер") + "</button>" +
-      '<button type="button" class="link ps-gocart" data-open="cart" hidden>Открыть корзину →</button>' +
+      '<button type="button" class="btn ps-add" data-ps-add></button>' +
+      '<button type="button" class="link ps-gocart" data-open="cart">Корзина' + ARROW + '</button>' +
       "</div>" +
-      '<div class="ps-acc">' + accHTML(p) + "</div>" +
-      "</div>" +
-      (pairs.length ?
-        '<div class="ps-more"><h3 class="ps-more-title">С этим носят</h3><div class="ps-more-grid">' +
-        pairs.map(function (q) {
-          return '<button type="button" class="mini" data-open-product="' + q.id + '"><img src="' + q.img[0] + '" alt="" width="800" height="1000"><span class="mini-name">' + esc(q.name) + '</span><span class="mini-price">' + money(q.price) + "</span></button>";
+      '<div class="ps-acc">' +
+      acc("Состав и уход", "<p>" + esc(p.composition) + ".</p><p>" + esc(p.care) + ".</p>") +
+      acc("Доставка и предзаказ", "<p>Предзаказ до " + DROP.preorderTill + ", отправка с " + DROP.shipFrom + ". СДЭК или Почта России, 2–7 дней.</p>") +
+      acc("Возврат", "<p>14 дней, если вещь не носили и бирка на месте. Обмен размера — бесплатно.</p>") +
+      "</div></div>" +
+      ((pairs.length || look) ?
+        '<div class="ps-more"><div class="ps-more-head"><h3 class="t-h3">С этим</h3>' +
+        (look ? '<button type="button" class="link" data-look-go="' + look.n + '">Из образа ’' + look.n + ARROW + "</button>" : "") + "</div>" +
+        '<div class="ps-more-grid">' + pairs.map(function (q) {
+          return '<button type="button" class="mini" data-open-product="' + q.id + '"><img src="' + q.img[0] + '" alt="" width="800" height="1000" decoding="async">' +
+            '<span class="mini-name">' + esc(q.name) + '</span><span class="mini-price">' + money(q.price) + "</span></button>";
         }).join("") + "</div></div>" : "") +
       "</div>";
-    setAddLabel(p);
+    setBuy(p);
     var panel = $(".ps-panel");
     if (panel) panel.scrollTop = 0;
     var track = $(".ps-track", sheetBody);
@@ -251,75 +230,99 @@
       if (el) el.textContent = i + 1;
     }, { passive: true });
   }
-  function sheetProduct() { return byId[sheetState.id]; }
-  function setAddLabel(p) {
+  function acc(t, body) { return '<details class="acc"><summary>' + t + '</summary><div class="acc-body">' + body + "</div></details>"; }
+  function sheetProduct() { return byId[cur.id]; }
+  function setBuy(p, mode) {
     var btn = $("[data-ps-add]", sheetBody);
     if (!btn) return;
-    var s = sheetState.size;
-    var out = s && !inStock(p, s);
-    if (!s) { btn.textContent = anyStock(p) ? "Выбери размер" : "Сообщить о поступлении"; btn.setAttribute("aria-disabled", anyStock(p) ? "true" : "false"); }
-    else if (out) { btn.textContent = "Сообщить о поступлении"; btn.setAttribute("aria-disabled", "false"); }
-    else { btn.textContent = "В корзину · " + money(p.price); btn.setAttribute("aria-disabled", "false"); }
-    btn.dataset.mode = !s ? (anyStock(p) ? "pick" : "notify") : out ? "notify" : "add";
+    var s = cur.size, out = s && !inStock(p, s);
+    mode = mode || (!anyStock(p) ? "notify-all" : !s ? "pick" : out ? "notify" : "add");
+    var label = {
+      pick: "Выбери размер",
+      add: "В корзину · " + money(p.price),
+      done: "В корзине ✓",
+      notify: "Сообщить, когда будет",
+      "notify-all": "Сообщить о перезапуске"
+    }[mode];
+    btn.textContent = label;
+    btn.dataset.mode = mode === "notify-all" ? "notify" : mode;
+    btn.setAttribute("aria-disabled", mode === "pick" ? "true" : "false");
+  }
+  function moveMark(b) {
+    var mark = $(".sz-mark", sheetBody), box = $(".ps-sizes", sheetBody);
+    if (!mark || !box) return;
+    if (!b) { mark.classList.remove("is-on"); return; }
+    box.style.setProperty("--cw", b.offsetWidth + "px");
+    box.style.setProperty("--mx", b.offsetLeft + "px");
+    // первый показ — без проезда от левого края
+    if (!mark.classList.contains("is-on")) { mark.style.transition = "none"; void mark.offsetWidth; mark.style.transition = ""; }
+    mark.classList.add("is-on");
   }
   function showNotify(on, focus) {
-    var box = $("[data-ps-notify]", sheetBody);
-    if (!box) return;
+    var box = $("[data-ps-notify]", sheetBody), p = sheetProduct();
+    if (!box || !p) return;
     box.hidden = !on;
+    if (on) $("[data-notify-head]", box).textContent = anyStock(p) ? (cur.size || "Размер") + " — нет. Напишем, когда будет." : "Разобрали. Напишем о перезапуске.";
     if (on && focus) { var inp = $("input", box); if (inp) inp.focus(); }
   }
+  var doneT;
   if (sheetBody) {
     sheetBody.addEventListener("click", function (e) {
       var p = sheetProduct();
       if (!p) return;
       var sz = e.target.closest(".sz");
       if (sz) {
-        sheetState.size = sz.dataset.size;
+        cur.size = sz.dataset.size;
         $$(".sz", sheetBody).forEach(function (b) { b.setAttribute("aria-pressed", String(b === sz)); });
-        $("[data-ps-tagsize]", sheetBody).textContent = sz.dataset.size;
-        $("#product-sheet").dataset.size = sz.dataset.size;
-        setAddLabel(p);
-        showNotify(sz.classList.contains("is-out"), false);
-        return;
-      }
-      var gal = e.target.closest("[data-gal]");
-      if (gal) {
-        var tr = $(".ps-track", sheetBody);
-        tr.scrollBy({ left: tr.clientWidth * Number(gal.dataset.gal), behavior: instant() ? "auto" : "smooth" });
+        var tag = $("[data-ps-tagsize]", sheetBody); if (tag) tag.textContent = sz.dataset.size;
+        moveMark(sz);
+        clearTimeout(doneT);
+        setBuy(p);
+        if (!sz.classList.contains("is-out")) showNotify(false);
         return;
       }
       var add = e.target.closest("[data-ps-add]");
       if (add) {
-        var mode = add.dataset.mode || (anyStock(p) ? "pick" : "notify");
+        var mode = add.dataset.mode;
         if (mode === "pick") {
           var g = $(".ps-sizes", sheetBody);
           g.classList.remove("is-nudge"); void g.offsetWidth; g.classList.add("is-nudge");
-          GV.toast("Сначала размер — потом маршрут.");
+          GV.toast("Сначала размер.");
           var first = $(".sz:not(.is-out)", sheetBody); if (first) first.focus();
           return;
         }
         if (mode === "notify") { showNotify(true, true); return; }
-        if (GV.cart.add(p.id, sheetState.size)) {
-          add.textContent = "Есть. Вещь в корзине";
-          add.classList.add("is-done");
-          var go = $(".ps-gocart", sheetBody); if (go) go.hidden = false;
-          setTimeout(function () { add.classList.remove("is-done"); setAddLabel(p); }, 1600);
+        if (mode === "done") return;
+        if (GV.cart.add(p.id, cur.size)) {
+          setBuy(p, "done");
+          $(".ps-buy", sheetBody).classList.add("is-added");
+          clearTimeout(doneT);
+          doneT = setTimeout(function () { if (sheetProduct() === p) setBuy(p); }, 1800);
         }
+        return;
       }
+      var lk = e.target.closest("[data-look-go]");
+      if (lk) GV.navigate("looks", { look: lk.dataset.lookGo });
     });
     sheetBody.addEventListener("submit", function (e) {
       var f = e.target.closest("[data-notify-form]");
       if (!f) return;
       e.preventDefault();
-      var v = $("input", f).value.trim(), err = $("[data-notify-err]", sheetBody);
-      if (!isTg(v) && !isMail(v)) { err.textContent = "Нужен ник в Telegram или почта."; $("input", f).setAttribute("aria-invalid", "true"); return; }
-      err.textContent = "";
+      var inp = $("input", f), v = inp.value.trim(), err = $("[data-notify-err]", sheetBody);
+      if (!isTg(v) && !isMail(v)) {
+        err.textContent = !v ? "Нужен ник или почта." : v.indexOf("@") > 0 ? "В почте опечатка?" : "Ник — от 5 символов: латиница, цифры, _.";
+        inp.setAttribute("aria-invalid", "true"); inp.focus(); return;
+      }
+      err.textContent = ""; inp.removeAttribute("aria-invalid");
       var box = $("[data-ps-notify]", sheetBody);
-      box.innerHTML = '<p class="ps-notify-big">Есть. Напишем, если вернётся.</p>';
+      box.innerHTML = '<p tabindex="-1">Есть. Напишем.</p>';
+      $("p", box).focus();
     });
   }
+  function isTg(v) { return /^@?[A-Za-z0-9_]{5,32}$/.test(v); }
+  function isMail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v); }
 
-  /* ---------- корзина-drawer ---------- */
+  /* ---------- корзина ---------- */
   var cartBody = $("[data-cart-body]");
   var cartDemo = false;
   function upsell() {
@@ -327,92 +330,115 @@
     items.forEach(function (i) { inCart[i.id] = 1; });
     var cand = [];
     items.forEach(function (i) { (byId[i.id].pairs || []).forEach(function (id) { cand.push(id); }); });
-    cand = cand.concat(P.map(function (p) { return p.id; }));
     for (var k = 0; k < cand.length; k++) { var p = byId[cand[k]]; if (p && !inCart[p.id] && anyStock(p)) return p; }
     return null;
   }
   function renderCart() {
     if (!cartBody) return;
     if (!items.length) {
-      cartBody.innerHTML = '<div class="cart-empty"><div class="smirk" data-mood="sad"></div>' +
-        '<p class="cart-empty-big">Пока пусто.<br>Маршрут не задан.</p>' +
-        '<button type="button" class="btn btn--accent" data-nav="drop">Выбрать свой <span aria-hidden="true">→</span></button></div>';
+      cartBody.innerHTML = '<div class="cart-empty"><span class="smile-sad" aria-hidden="true">' + SMILE_SVG + "</span>" +
+        '<p class="cart-empty-big">Пусто.</p>' +
+        '<button type="button" class="btn btn--dark" data-nav="drop">Смотреть дроп ' + ARROW + "</button></div>";
       return;
     }
-    var pre = items.some(function (i) { return byId[i.id].state === "preorder"; });
+    var pre = items.some(function (i) { return anyStock(byId[i.id]); });
     var up = upsell();
     cartBody.innerHTML =
       '<ul class="cart-list">' + items.map(function (i) {
-        var p = byId[i.id], k = keyOf(i);
+        var p = byId[i.id], k = keyOf(i), lim = limitOf(i.id, i.size);
         return '<li class="cart-item">' +
           '<button type="button" class="ci-thumb" data-open-product="' + p.id + '" aria-label="Открыть: ' + esc(p.name) + '"><img src="' + p.img[0] + '" alt="" width="800" height="1000"></button>' +
-          '<div class="ci-info"><p class="ci-name">' + esc(p.name) + '</p><p class="ci-meta">size: ' + i.size + "</p>" +
-          (p.state === "preorder" ? '<p class="ci-pre">предзаказ · с ' + DROP.shipFrom + "</p>" : "") +
+          '<div class="ci-info"><p class="ci-name">' + esc(p.name) + '</p><p class="t-mono ci-meta">size: ' + i.size + "<br>предзаказ · с " + DROP.shipFrom + "</p></div>" +
+          '<p class="ci-price">' + money(p.price * i.qty) + "</p>" +
           '<div class="ci-row"><div class="qty" role="group" aria-label="Количество: ' + esc(p.name) + '">' +
-          '<button type="button" data-qty="-1" data-key="' + k + '" aria-label="Меньше"' + (i.qty <= 1 ? " disabled" : "") + ">−</button>" +
-          '<output aria-live="polite">' + i.qty + "</output>" +
-          '<button type="button" data-qty="1" data-key="' + k + '" aria-label="Больше">+</button></div>' +
-          '<button type="button" class="ci-remove" data-remove="' + k + '">Убрать</button></div></div>' +
-          '<p class="ci-price">' + money(p.price * i.qty) + "</p></li>";
+          '<button type="button" class="cell" data-qty="-1" data-key="' + k + '" aria-label="Меньше"' + (i.qty <= 1 ? " disabled" : "") + ">−</button>" +
+          '<output class="cell" aria-live="polite">' + i.qty + "</output>" +
+          '<button type="button" class="cell" data-qty="1" data-key="' + k + '" aria-label="Больше"' + (i.qty >= lim ? ' aria-disabled="true"' : "") + ">+</button></div>" +
+          '<button type="button" class="ci-remove" data-remove="' + k + '">Убрать</button></div></li>';
       }).join("") + "</ul>" +
-      (up ? '<div class="cart-up"><p class="mono-label">дополни маршрут:</p><button type="button" class="cu-card" data-open-product="' + up.id + '"><img src="' + up.img[0] + '" alt="" width="800" height="1000">' +
-        '<span class="cu-name">' + esc(up.name) + '</span><span class="cu-price">' + money(up.price) + '</span><span class="cu-go" aria-hidden="true">→</span></button></div>' : "") +
+      (up ? '<div class="cart-up"><p class="t-mono">С этим</p><button type="button" class="cu-card" data-open-product="' + up.id + '"><img src="' + up.img[0] + '" alt="" width="800" height="1000">' +
+        '<span class="ci-name">' + esc(up.name) + '</span><span class="ci-price">' + money(up.price) + '</span><span class="cu-go" aria-hidden="true">' + ARROW + "</span></button></div>" : "") +
       '<div class="cart-foot">' +
-      (pre ? '<p class="cart-pre">Отправим всё вместе с ' + DROP.shipFrom + ".</p>" : "") +
-      '<dl class="cart-sum"><div><dt>доставка:</dt><dd>при оформлении</dd></div>' +
+      '<dl class="kv cart-sum"><div><dt>доставка:</dt><dd>при оформлении</dd></div>' +
       '<div class="cart-total"><dt>итого:</dt><dd>' + money(total()) + "</dd></div></dl>" +
+      (pre ? '<p class="t-mono cart-pre">Отправим всё вместе ' + DROP.shipFrom + ".</p>" : "") +
       (cartDemo ?
-        '<div class="cart-demo" tabindex="-1"><p class="cart-demo-big">Это демо.</p><p>Оплата — к старту продаж. Корзина сохранится.</p>' +
-        '<button type="button" class="btn btn--ghost-dark btn--wide" data-nav="next">Сообщить о старте →</button></div>' :
+        '<div class="cart-demo" tabindex="-1"><p>Оплата откроется к старту продаж. Корзина сохранится.</p>' +
+        '<button type="button" class="btn btn--line btn--wide" data-nav="next">Сообщить о старте</button></div>' :
         '<button type="button" class="btn btn--accent btn--wide" data-checkout>Оформить · ' + money(total()) + "</button>") +
       "</div>";
   }
-  if (cartBody) {
-    cartBody.addEventListener("click", function (e) {
-      var q = e.target.closest("[data-qty]");
-      if (q) {
-        var it = items.filter(function (i) { return keyOf(i) === q.dataset.key; })[0];
-        if (it) { GV.cart.setQty(q.dataset.key, it.qty + Number(q.dataset.qty)); var again = $('[data-qty="' + q.dataset.qty + '"][data-key="' + q.dataset.key + '"]', cartBody); if (again && !again.disabled) again.focus(); }
+  if (cartBody) cartBody.addEventListener("click", function (e) {
+    var q = e.target.closest("[data-qty]");
+    if (q) {
+      if (q.getAttribute("aria-disabled") === "true") {
+        var kk = q.dataset.key.split("|");
+        GV.toast(limitOf(kk[0], kk[1]) < MAX_QTY ? kk[1] + " — последний." : "Больше " + MAX_QTY + " в одни руки — нет.");
         return;
       }
-      var r = e.target.closest("[data-remove]");
-      if (r) { GV.cart.remove(r.dataset.remove); var f = $("button, [href]", cartBody); if (f) f.focus(); return; }
-      if (e.target.closest("[data-checkout]")) {
-        cartDemo = true; renderCart();
-        var demo = $(".cart-demo", cartBody); if (demo) demo.focus();
+      var it = items.filter(function (i) { return keyOf(i) === q.dataset.key; })[0];
+      if (it) {
+        GV.cart.setQty(q.dataset.key, it.qty + Number(q.dataset.qty));
+        var again = $('[data-qty="' + q.dataset.qty + '"][data-key="' + q.dataset.key + '"]', cartBody);
+        if (again && !again.disabled) again.focus();
+        else { var other = $('[data-qty="' + (-Number(q.dataset.qty)) + '"][data-key="' + q.dataset.key + '"]', cartBody); if (other) other.focus(); }
       }
-    });
-  }
+      return;
+    }
+    var r = e.target.closest("[data-remove]");
+    if (r) {
+      GV.cart.remove(r.dataset.remove);
+      var f = $(".ci-remove, .cart-empty .btn", cartBody); if (f) f.focus();
+      return;
+    }
+    if (e.target.closest("[data-checkout]")) {
+      cartDemo = true; renderCart();
+      var demo = $(".cart-demo", cartBody); if (demo) demo.focus();
+    }
+  });
 
-  /* ---------- оверлеи: стек, фокус-ловушка, Esc, блокировка скролла ---------- */
-  var OV = { product: "product-sheet", cart: "cart-drawer", sizes: "size-modal", "404": "page-404", menu: "mobile-menu", game: "game-help" };
+  /* ---------- оверлеи ---------- */
+  var OV = { product: "product-sheet", cart: "cart-drawer", sizes: "size-modal", "404": "page-404", menu: "mobile-menu" };
   var STACKABLE = { sizes: 1 }; // размерная сетка ложится поверх карточки
   var stack = [];
   var FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select, textarea, summary, [tabindex]:not([tabindex="-1"])';
   function stackTop() { return stack.length ? stack[stack.length - 1].name : null; }
+  function isOpen(n) { return stack.some(function (s) { return s.name === n; }); }
   function setInert() {
     var on = stack.length > 0;
-    $$("#status, #header, #main, #footer, body > .tape-run, .skip").forEach(function (el) { el.inert = on; });
+    $$("body > :not(.ov):not(script):not(template):not(#toast):not(#loader)").forEach(function (el) { el.inert = on; });
     Object.keys(OV).forEach(function (n) {
       var el = d.getElementById(OV[n]);
-      if (el) el.inert = on && stackTop() !== n && !el.hidden ? true : false;
+      if (el) el.inert = !!(on && stackTop() !== n && !el.hidden);
     });
   }
+  var lockY = 0;
   function lock(on) {
-    if (on) { root.style.setProperty("--sbw", (window.innerWidth - root.clientWidth) + "px"); root.classList.add("is-locked"); }
-    else { root.classList.remove("is-locked"); root.style.removeProperty("--sbw"); }
+    if (on) {
+      if (root.classList.contains("is-locked")) return;
+      lockY = window.scrollY;
+      root.style.setProperty("--sbw", (window.innerWidth - root.clientWidth) + "px");
+      root.classList.add("is-locked");
+    } else {
+      root.classList.remove("is-locked"); root.style.removeProperty("--sbw");
+      if (Math.abs(window.scrollY - lockY) > 1) window.scrollTo(0, lockY); // iOS иногда сбрасывает позицию
+    }
   }
   function focusIn(el) {
-    // фокус на саму панель: скринридер читает диалог, а Tab ведёт к первому контролу
+    // фокус на панель: скринридер читает диалог, Tab ведёт к первому контролу
     var t = $(".ov-panel", el) || $(FOCUSABLE, el);
     if (!t) return;
     if (!t.hasAttribute("tabindex")) t.setAttribute("tabindex", "-1");
     t.focus({ preventScroll: true });
   }
+  function resetPanel(el) {
+    $$(".ov-panel", el).forEach(function (p) { p.classList.remove("is-dragging", "is-spring", "is-closing"); p.style.transform = ""; });
+    var s = $(".ov-scrim", el); if (s) { s.style.opacity = ""; s.style.transition = ""; }
+  }
   function hideEl(el) {
     el.classList.remove("is-open");
-    var done = function () { if (!el.classList.contains("is-open")) el.hidden = true; };
-    if (instant()) done(); else setTimeout(done, 260);
+    var done = function () { if (!el.classList.contains("is-open")) { el.hidden = true; resetPanel(el); } };
+    if (instant()) done(); else setTimeout(done, 440);
   }
   function popOne(restore) {
     var s = stack.pop();
@@ -425,38 +451,34 @@
     setInert();
     if (restore !== false) {
       var o = s.opener;
-      if (o && d.contains(o) && !o.closest("[inert]")) o.focus({ preventScroll: true });
+      if (o && d.contains(o) && !o.closest("[inert]") && o !== d.body) o.focus({ preventScroll: true });
       else if (stack.length) focusIn(stack[stack.length - 1].el);
     }
   }
-  GV.open = function (name, arg, opts) {
+  GV.open = function (name, arg) {
     var el = d.getElementById(OV[name]);
     if (!el) return false;
-    opts = opts || {};
     if (name === "product") {
       if (!byId[arg]) return GV.open("404");
       renderSheet(byId[arg]);
-      if (opts.notify) { showNotify(true, false); }
     }
     if (name === "cart") renderCart();
-    if (name === "game" && toastEl) toastEl.classList.remove("is-on", "is-action"); // окно само говорит, что случилось
     var opener = d.activeElement;
     var at = stack.map(function (s) { return s.name; }).indexOf(name);
     if (at > -1) {
-      // уже открыт: снять всё, что выше, и остаться на нём (перерендер уже сделан)
       while (stack.length - 1 > at) popOne(false);
       focusIn(el);
-      if (opts.notify) showNotify(true, true);
       return true;
     }
     if (!STACKABLE[name] && stack.length) {
-      // замена оверлея (корзина → карточка): фокус потом вернём туда, откуда открывали первый
+      // замена (корзина → карточка): фокус потом вернём туда, откуда открывали первый
       opener = stack[0].opener;
       while (stack.length) popOne(false);
     }
     stack.push({ name: name, el: el, opener: opener });
+    resetPanel(el);
     el.hidden = false;
-    el.style.zIndex = String(80 + stack.length); // --z-overlay + глубина
+    el.style.zIndex = String(80 + stack.length);
     if (instant()) el.classList.add("is-open");
     else { void el.offsetWidth; requestAnimationFrame(function () { el.classList.add("is-open"); }); }
     lock(true);
@@ -464,7 +486,6 @@
     setInert();
     if (name === "menu") { var b = $(".hd-burger"); if (b) b.setAttribute("aria-expanded", "true"); }
     focusIn(el);
-    if (opts.notify) showNotify(true, true);
     emit("grinchin:overlay", { name: name, open: true });
     return true;
   };
@@ -477,34 +498,109 @@
     if (e.key === "Escape") { e.preventDefault(); GV.close(); return; }
     if (e.key !== "Tab") return;
     var el = stack[stack.length - 1].el;
-    var f = $$(FOCUSABLE, el).filter(function (x) { return x.offsetParent !== null || x === d.activeElement; });
+    var f = $$(FOCUSABLE, el).filter(function (x) { return x.getClientRects().length && !x.closest("[hidden]"); });
     if (!f.length) { e.preventDefault(); return; }
     var first = f[0], last = f[f.length - 1];
-    if (!el.contains(d.activeElement)) { e.preventDefault(); first.focus(); }
+    if (!el.contains(d.activeElement) || d.activeElement === $(".ov-panel", el)) {
+      if (e.shiftKey) { e.preventDefault(); last.focus(); } else if (!el.contains(d.activeElement)) { e.preventDefault(); first.focus(); }
+    }
     else if (e.shiftKey && d.activeElement === first) { e.preventDefault(); last.focus(); }
     else if (!e.shiftKey && d.activeElement === last) { e.preventDefault(); first.focus(); }
   });
 
-  /* ---------- навигация (B может перехватить preventDefault и проиграть переход лентой) ---------- */
-  GV.navigate = function (target) {
+  /* ---------- свайп вниз закрывает шит (только телефон) ---------- */
+  function swipe(panel) {
+    var ov = panel.closest(".ov"), scrim = $(".ov-scrim", ov);
+    var y0, x0, yL, tL, v, dy, axis, track, drag, fromBar;
+    panel.addEventListener("touchstart", function (e) {
+      if (!isPhone() || e.touches.length > 1) { track = false; return; }
+      var t = e.touches[0];
+      y0 = yL = t.clientY; x0 = t.clientX; tL = e.timeStamp; v = 0; dy = 0; axis = null; drag = false;
+      fromBar = !!e.target.closest(".sheet-bar");
+      track = fromBar || panel.scrollTop <= 0;
+    }, { passive: true });
+    panel.addEventListener("touchmove", function (e) {
+      if (!track) return;
+      var t = e.touches[0], ddy = t.clientY - y0, ddx = t.clientX - x0;
+      if (!axis) {
+        if (Math.abs(ddy) < 6 && Math.abs(ddx) < 6) return;
+        axis = Math.abs(ddy) > Math.abs(ddx) ? "y" : "x";
+        if (axis === "x" || (ddy < 0 && !fromBar)) { track = false; return; }
+      }
+      if (!drag) { drag = true; panel.classList.add("is-dragging"); if (scrim) scrim.style.transition = "none"; }
+      e.preventDefault();
+      var dt = Math.max(1, e.timeStamp - tL);
+      v = .7 * v + .3 * ((t.clientY - yL) / dt);
+      yL = t.clientY; tL = e.timeStamp;
+      dy = ddy > 0 ? ddy : -Math.sqrt(-ddy) * 2; // вверх — резиновое сопротивление
+      panel.style.transform = "translateY(" + dy + "px)";
+      if (scrim) scrim.style.opacity = String(Math.max(0, 1 - Math.max(0, dy) / (panel.offsetHeight * 1.1)));
+    }, { passive: false });
+    function end() {
+      if (!drag) { track = false; return; }
+      drag = track = false;
+      panel.classList.remove("is-dragging");
+      if (scrim) scrim.style.transition = "";
+      var h = panel.offsetHeight;
+      if (dy > Math.min(h * .25, 200) || (v > .5 && dy > 32)) {
+        panel.classList.add("is-closing");
+        panel.style.transform = "translateY(" + (h + 24) + "px)";
+        if (scrim) scrim.style.opacity = "0";
+        setTimeout(function () { if (stackTop() && OV[stackTop()] === ov.id) GV.close(); }, 200);
+      } else {
+        panel.classList.add("is-spring");
+        panel.style.transform = "";
+        if (scrim) scrim.style.opacity = "";
+        setTimeout(function () { panel.classList.remove("is-spring"); }, 520);
+      }
+    }
+    panel.addEventListener("touchend", end);
+    panel.addEventListener("touchcancel", end);
+  }
+  $$(".ov-panel[data-swipe]").forEach(swipe);
+
+  /* ---------- навигация: свой плавный скролл (без wipe), под шапку ---------- */
+  var scrollRaf = 0;
+  function stopScroll() { if (scrollRaf) { cancelAnimationFrame(scrollRaf); scrollRaf = 0; } }
+  ["wheel", "touchstart", "keydown"].forEach(function (ev) { window.addEventListener(ev, stopScroll, { passive: true }); });
+  function ease(t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+  GV.scrollTo = function (y) {
+    stopScroll();
+    var max = d.documentElement.scrollHeight - window.innerHeight;
+    y = Math.max(0, Math.min(max, Math.round(y)));
+    var from = window.scrollY, dist = y - from;
+    if (instant() || Math.abs(dist) < 2) { window.scrollTo(0, y); return; }
+    var dur = Math.min(1100, Math.max(450, Math.abs(dist) * .32)), t0 = 0;
+    function step(ts) {
+      if (!t0) t0 = ts;
+      var k = Math.min(1, (ts - t0) / dur);
+      window.scrollTo(0, from + dist * ease(k));
+      scrollRaf = k < 1 ? requestAnimationFrame(step) : 0;
+    }
+    scrollRaf = requestAnimationFrame(step);
+  };
+  GV.navigate = function (target, opts) {
+    opts = opts || {};
     var t = d.getElementById(target);
     if (!t) return GV.open("404");
     var go = function () {
-      var free = emit("grinchin:navigate", { target: target }, true);
-      if (free) t.scrollIntoView({ behavior: instant() ? "auto" : "smooth", block: "start" });
-      try { history.replaceState(null, "", "#" + target); } catch (e) { /* file:// и песочница */ }
+      emit("grinchin:navigate", { target: target });
+      var el = (opts.look && $('[data-look="' + opts.look + '"]', t)) || t;
+      var hh = ($("#header") || {}).offsetHeight || 0;
+      var y = target === "hero" ? 0 : el.getBoundingClientRect().top + window.scrollY - hh;
+      GV.scrollTo(y);
+      try { history.replaceState(null, "", target === "hero" ? location.pathname + location.search : "#" + target); } catch (e) { /* file:// и песочница */ }
       if (!t.hasAttribute("tabindex")) t.setAttribute("tabindex", "-1");
       t.focus({ preventScroll: true });
     };
-    if (stack.length) { GV.closeAll(); setTimeout(go, instant() ? 0 : 120); } else go();
+    if (stack.length) { GV.closeAll(); setTimeout(go, instant() ? 0 : 60); } else go();
   };
 
   d.addEventListener("click", function (e) {
     var t = e.target;
-    var quick = t.closest("[data-quick]");
-    if (quick) { e.preventDefault(); GV.cart.add(quick.dataset.quick, quick.dataset.size); return; }
-    var op = t.closest("[data-open-product]");
-    if (op) { e.preventDefault(); GV.open("product", op.dataset.openProduct, { notify: op.hasAttribute("data-notify") }); return; }
+    if (e.defaultPrevented || e.button > 0 || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    var op = t.closest("[data-open-product], a[data-product]");
+    if (op) { e.preventDefault(); GV.open("product", op.dataset.openProduct || op.dataset.product); return; }
     var o = t.closest("[data-open]");
     if (o) { e.preventDefault(); GV.open(o.dataset.open); return; }
     var nav = t.closest("[data-nav]");
@@ -512,56 +608,31 @@
     var c = t.closest("[data-close]");
     if (c) {
       e.preventDefault();
-      if (c.hasAttribute("data-home")) { GV.closeAll(); GV.navigate("hero"); }
-      else GV.close();
+      if (c.hasAttribute("data-home")) { GV.closeAll(); GV.navigate("hero"); } else GV.close();
+      return;
+    }
+    // обычные якоря соседей (#drop, #looks…) — тем же плавным скроллом
+    var a = t.closest('a[href^="#"]');
+    if (a && a.getAttribute("href").length > 1) {
+      var id = a.getAttribute("href").slice(1);
+      if (d.getElementById(id)) { e.preventDefault(); GV.navigate(id); }
     }
   });
-  // логотип ведёт наверх через ту же навигацию
   var logo = d.getElementById("logo");
   if (logo) logo.addEventListener("click", function (e) { e.preventDefault(); GV.navigate("hero"); });
 
-  /* ---------- подписка на перезапуск (только интерфейс, без сети) ---------- */
-  function isTg(v) { return /^@?[A-Za-z0-9_]{5,32}$/.test(v); }
-  function isMail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v); }
-  var sub = $("[data-sub]");
-  if (sub) {
-    var inp = $("[data-sub-input]", sub), lab = $("[data-sub-label]", sub), err = $("[data-sub-err]", sub);
-    var CH = {
-      tg: { label: "ник в Telegram:", ph: "@твой_ник", type: "text", mode: "text", ok: isTg, bad: "Ник — от 5 символов: латиница, цифры, _.", done: "Напишем в Telegram." },
-      email: { label: "почта:", ph: "имя@почта.ру", type: "email", mode: "email", ok: isMail, bad: "Похоже, в почте опечатка.", done: "Напишем на почту." }
-    };
-    var ch = function () { var r = $('input[name="ch"]:checked', sub); return CH[r ? r.value : "tg"]; };
-    sub.addEventListener("change", function (e) {
-      if (e.target.name !== "ch") return;
-      var c = ch();
-      lab.textContent = c.label; inp.placeholder = c.ph; inp.type = c.type; inp.inputMode = c.mode;
-      err.textContent = ""; inp.removeAttribute("aria-invalid"); inp.value = "";
-    });
-    sub.addEventListener("submit", function (e) {
-      e.preventDefault();
-      var c = ch(), v = inp.value.trim();
-      if (!c.ok(v)) { err.textContent = c.bad; inp.setAttribute("aria-invalid", "true"); inp.focus(); return; }
-      err.textContent = ""; inp.removeAttribute("aria-invalid");
-      sub.classList.add("is-done");
-      var done = $("[data-sub-done]", sub);
-      $("[data-sub-done-text]", sub).textContent = c.done;
-      done.hidden = false; done.focus();
-    });
+  /* ---------- активный пункт шапки: только пока его раздел на экране ---------- */
+  var navLinks = $$(".hd-nav [data-nav]");
+  if (navLinks.length && "IntersectionObserver" in window) {
+    var vis = {};
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (x) { vis[x.target.id] = x.isIntersecting; });
+      navLinks.forEach(function (l) { l.classList.toggle("is-active", !!vis[l.dataset.nav]); });
+    }, { rootMargin: "-45% 0px -50% 0px" });
+    navLinks.forEach(function (l) { var s = d.getElementById(l.dataset.nav); if (s) io.observe(s); });
   }
 
-  /* ---------- события соседей ---------- */
-  d.addEventListener("grinchin:mark", function (e) {
-    var x = e.detail || {};
-    var n = Array.isArray(x.found) ? x.found.length : x.n;
-    if (x.source === "street") GV.toast("Метка с улицы засчитана · " + n + "/" + (x.total || 5), 4200);
-    else if (n < (x.total || 5)) GV.toast("Метка " + n + "/" + (x.total || 5));
-  });
-  d.addEventListener("grinchin:gather-complete", function () {
-    root.dataset.gather = "done";
-    GV.toast("5/5. Маршрут сошёлся → забрать код", 6000, "gather");
-  });
-
-  /* ---------- ?open=… после grinchin:ready (или сразу при shot=1) ---------- */
+  /* ---------- ?open=… после grinchin:ready (сразу при shot=1) ---------- */
   var applied = false;
   function applyOpen() {
     if (applied) return;
@@ -577,7 +648,7 @@
     var h = (location.hash || "").slice(1);
     if (h && !d.getElementById(h)) GV.open("404");
   }
-  if (isShot) applyOpen();
+  if (isShot) setTimeout(applyOpen, 0);
   else {
     d.addEventListener("grinchin:ready", applyOpen, { once: true });
     setTimeout(applyOpen, 4000); // если моушн-модуль не прислал ready

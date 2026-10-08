@@ -1,0 +1,41 @@
+<section id="sign" data-g="sign" aria-label="Знак GRINCHIN">
+  <!-- K3. Без слов. Дверь pg-021-090 целым кадром (≤ 960 CSS px, без апскейла и обработки),
+       ниже — как сделан знак: N в трёх стадиях (p-018-122 → 118 → 120), подписи по одному слову.
+       #sign-gesture наполняет K4 (немой жест: стрелки → улыбка). -->
+  <div class="wrap">
+    <figure class="sign-door">
+      <picture>
+        <source type="image/avif" srcset="{{asset:img/street/door-800.avif}} 800w, {{asset:img/street/door-1448.avif}} 1448w" sizes="(max-width: 1023px) calc(100vw - 48px), 960px">
+        <img src="{{asset:img/street/door-1448.jpg}}" srcset="{{asset:img/street/door-800.jpg}} 800w, {{asset:img/street/door-1448.jpg}} 1448w" sizes="(max-width: 1023px) calc(100vw - 48px), 960px"
+             alt="Логотип GRINCHIN, выклеенный зелёной лентой на железной двери с граффити" width="1448" height="1086" loading="lazy" decoding="async">
+      </picture>
+    </figure>
+    <ol class="sign-steps">
+      <li class="sign-step">
+        <picture>
+          <source type="image/avif" srcset="{{asset:img/street/n-1-420.avif}} 420w, {{asset:img/street/n-1-840.avif}} 840w" sizes="(max-width: 1099px) 30vw, 140px">
+          <img src="{{asset:img/street/n-1-840.jpg}}" srcset="{{asset:img/street/n-1-420.jpg}} 420w, {{asset:img/street/n-1-840.jpg}} 840w" sizes="(max-width: 1099px) 30vw, 140px"
+               alt="Буква N: прозрачный скотч наклеен на чёрный отпечаток" width="840" height="1120" loading="lazy" decoding="async">
+        </picture>
+        <span class="sign-cap">наклеили</span>
+      </li>
+      <li class="sign-step">
+        <picture>
+          <source type="image/avif" srcset="{{asset:img/street/n-2-420.avif}} 420w, {{asset:img/street/n-2-840.avif}} 840w" sizes="(max-width: 1099px) 30vw, 140px">
+          <img src="{{asset:img/street/n-2-840.jpg}}" srcset="{{asset:img/street/n-2-420.jpg}} 420w, {{asset:img/street/n-2-840.jpg}} 840w" sizes="(max-width: 1099px) 30vw, 140px"
+               alt="Буква N: скотч сорван вместе с пигментом и перенесён на белый лист" width="840" height="1120" loading="lazy" decoding="async">
+        </picture>
+        <span class="sign-cap">сорвали</span>
+      </li>
+      <li class="sign-step">
+        <picture>
+          <source type="image/avif" srcset="{{asset:img/street/n-3-420.avif}} 420w, {{asset:img/street/n-3-840.avif}} 840w" sizes="(max-width: 1099px) 30vw, 140px">
+          <img src="{{asset:img/street/n-3-840.jpg}}" srcset="{{asset:img/street/n-3-420.jpg}} 420w, {{asset:img/street/n-3-840.jpg}} 840w" sizes="(max-width: 1099px) 30vw, 140px"
+               alt="Буква N после сканирования: чёрная, с белыми прожилками" width="840" height="1120" loading="lazy" decoding="async">
+        </picture>
+        <span class="sign-cap">отсканировали</span>
+      </li>
+    </ol>
+  </div>
+  <div id="sign-gesture"></div>
+</section>

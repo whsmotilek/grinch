@@ -1,0 +1,48 @@
+<section id="next" data-g="next" aria-labelledby="next-title">
+  <div class="wrap nx-grid">
+    <div class="nx-copy">
+      <h2 id="next-title" class="nx-title">Разобрали&nbsp;— вернём.</h2>
+      <p class="nx-sub">Дата — тем, кто подписан.</p>
+    </div>
+
+    <div class="nx-side">
+      <form class="nx-form" data-nx-form novalidate>
+        <fieldset class="nx-switch">
+          <legend class="vh">Куда написать</legend>
+          <label><input type="radio" name="nx-ch" value="telegram" checked><span>Telegram</span></label>
+          <label><input type="radio" name="nx-ch" value="email"><span>Почта</span></label>
+        </fieldset>
+        <div class="nx-tag">
+          <label class="nx-cell" for="nx-input">
+            <span class="nx-k" data-nx-label>ник:</span>
+            <input class="nx-input" id="nx-input" name="contact" type="text" placeholder="@ник"
+                   autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="text"
+                   aria-describedby="nx-err" data-nx-input>
+          </label>
+          <button class="nx-submit" type="submit">Подписаться</button>
+        </div>
+        <p class="nx-err" id="nx-err" data-nx-err aria-live="polite"></p>
+      </form>
+
+      <!-- Успех: пакет без ленты + две настоящие ленты из того же кадра; end.js «прилепляет» их обратно.
+           Картинки грузятся, когда раздел рядом (data-src → src), чтобы не тянуть их на первом экране. -->
+      <div class="nx-done" data-nx-done hidden>
+        <figure class="nx-bag" data-nx-bag>
+          <picture>
+            <source type="image/avif" data-srcset="{{asset:img/end/bag.avif}}">
+            <img class="nx-bag-base" data-src="{{asset:img/end/bag.jpg}}" width="1200" height="675" decoding="async"
+                 alt="Чёрный пакет, крест-накрест заклеенный зелёной лентой GRINCHIN">
+          </picture>
+          <img class="nx-sh nx-sh--h" data-src="{{asset:img/end/bag-tape-h.webp}}" width="1200" height="675" alt="" aria-hidden="true">
+          <img class="nx-tape nx-tape--h" data-src="{{asset:img/end/bag-tape-h.webp}}" width="1200" height="675" alt="" aria-hidden="true">
+          <img class="nx-sh nx-sh--d" data-src="{{asset:img/end/bag-tape-d.webp}}" width="1200" height="675" alt="" aria-hidden="true">
+          <img class="nx-tape nx-tape--d" data-src="{{asset:img/end/bag-tape-d.webp}}" width="1200" height="675" alt="" aria-hidden="true">
+        </figure>
+        <div class="nx-done-txt" role="status">
+          <p class="nx-done-t" tabindex="-1" data-nx-done-title>Есть. Ты в списке.</p>
+          <p class="nx-done-s" data-nx-done-text>Напишем в Telegram.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,19 +1,68 @@
-<section id="looks" aria-labelledby="looks-title">
-  <div class="tx-layer tx-layer--paper tx-layer--wall" aria-hidden="true"></div>
+<section id="looks" data-g="looks" aria-labelledby="looks-title">
+  <!-- K3. Чёрный холст. 4 ЦЕЛЫХ кадра как фотопечать (белое поле 12/12/40, мягкая тень, наклон ≤1,5°).
+       Подписи — вне отпечатка и без наклона. Малярная лента держит углы только двух отпечатков ('01 и '04).
+       Имена вещей синхронизирует street.js из GV_PRODUCTS (статичный текст — запасной). -->
   <div class="wrap">
-    <div class="sec-head">
-      <h2 id="looks-title" class="h-poster">Образы</h2>
+    <div class="looks-head">
+      <h2 id="looks-title" class="looks-title">Образы</h2>
+      <p class="looks-count" aria-hidden="true"><span data-looks-now>1</span>/4</p>
     </div>
   </div>
-  <div class="looks-wall" data-looks>
-    <!-- .look рендерит shop.js из GV_LOOKS (разметка по контракту: .look/.look-photo/.look-tape/.look-tag) -->
+  <div class="looks-rail" data-looks-rail>
+    <figure class="look" data-look="01">
+      <div class="look-print">
+        <picture class="look-photo">
+          <source type="image/avif" srcset="{{asset:img/street/look-a-480.avif}} 480w, {{asset:img/street/look-a-960.avif}} 960w" sizes="(max-width: 767px) 74vw, (max-width: 1099px) 42vw, 21vw">
+          <img src="{{asset:img/street/look-a-960.jpg}}" srcset="{{asset:img/street/look-a-480.jpg}} 480w, {{asset:img/street/look-a-960.jpg}} 960w" sizes="(max-width: 767px) 74vw, (max-width: 1099px) 42vw, 21vw"
+               alt="Образ '01: джинсы КАРАКУЛИ с джинсовой курткой и худи" width="960" height="1280" loading="lazy" decoding="async">
+        </picture>
+        <span class="tape tape--white tape--pin-1 tape--at-tr" data-stick aria-hidden="true"></span>
+      </div>
+      <figcaption class="look-cap">
+        <span class="look-n">'01</span>
+        <a href="#drop" data-product="jeans-scribble">Джинсы КАРАКУЛИ</a>
+      </figcaption>
+    </figure>
+    <figure class="look" data-look="02">
+      <div class="look-print">
+        <picture class="look-photo">
+          <source type="image/avif" srcset="{{asset:img/street/look-b-480.avif}} 480w, {{asset:img/street/look-b-960.avif}} 960w" sizes="(max-width: 767px) 74vw, (max-width: 1099px) 42vw, 21vw">
+          <img src="{{asset:img/street/look-b-960.jpg}}" srcset="{{asset:img/street/look-b-480.jpg}} 480w, {{asset:img/street/look-b-960.jpg}} 960w" sizes="(max-width: 767px) 74vw, (max-width: 1099px) 42vw, 21vw"
+               alt="Образ '02: джинсы КАРАКУЛИ в паре с джинсовой курткой, взгляд вниз" width="960" height="1200" loading="lazy" decoding="async">
+        </picture>
+      </div>
+      <figcaption class="look-cap">
+        <span class="look-n">'02</span>
+        <a href="#drop" data-product="jeans-scribble">Джинсы КАРАКУЛИ</a>
+      </figcaption>
+    </figure>
+    <figure class="look" data-look="03">
+      <div class="look-print">
+        <picture class="look-photo">
+          <source type="image/avif" srcset="{{asset:img/street/look-c-480.avif}} 480w, {{asset:img/street/look-c-960.avif}} 960w" sizes="(max-width: 767px) 74vw, (max-width: 1099px) 42vw, 21vw">
+          <img src="{{asset:img/street/look-c-960.jpg}}" srcset="{{asset:img/street/look-c-480.jpg}} 480w, {{asset:img/street/look-c-960.jpg}} 960w" sizes="(max-width: 767px) 74vw, (max-width: 1099px) 42vw, 21vw"
+               alt="Образ '03: жаккардовая G у подола белой футболки, крупно" width="960" height="1024" loading="lazy" decoding="async">
+        </picture>
+      </div>
+      <figcaption class="look-cap">
+        <span class="look-n">'03</span>
+        <a href="#drop" data-product="tee-blank">Футболка ФОН</a>
+        <a href="#drop" data-product="longsleeve-blank">Лонгслив ФОН</a>
+      </figcaption>
+    </figure>
+    <figure class="look look--wide" data-look="04">
+      <div class="look-print">
+        <picture class="look-photo">
+          <source type="image/avif" srcset="{{asset:img/street/bag-640.avif}} 640w, {{asset:img/street/bag-1280.avif}} 1280w" sizes="(max-width: 767px) 84vw, (max-width: 1099px) 42vw, 30vw">
+          <img src="{{asset:img/street/bag-1280.jpg}}" srcset="{{asset:img/street/bag-640.jpg}} 640w, {{asset:img/street/bag-1280.jpg}} 1280w" sizes="(max-width: 767px) 84vw, (max-width: 1099px) 42vw, 30vw"
+               alt="Образ '04: чёрный пакет, запечатанный зелёной лентой GRINCHIN, в руке" width="1280" height="720" loading="lazy" decoding="async">
+        </picture>
+        <span class="tape tape--white tape--pin-3 tape--at-t" data-stick aria-hidden="true"></span>
+      </div>
+      <figcaption class="look-cap">
+        <span class="look-n">'04</span>
+        <span class="look-note">так приходит заказ</span>
+      </figcaption>
+    </figure>
   </div>
-  <!-- кампейн-кадры бренда для образов: motion.js кладёт их в .look-photo по data-look (грузятся лениво) -->
-  <template id="look-shots">
-    <picture data-look="01"><source type="image/avif" srcset="{{asset:img/street/look-01.avif}}"><img class="look-shot" src="{{asset:img/street/look-01.jpg}}" alt="Зелёная футболка GRINCHIN на вешалке под навесом" width="800" height="1000" loading="lazy" decoding="async"></picture>
-    <picture data-look="02"><source type="image/avif" srcset="{{asset:img/street/look-02.avif}}"><img class="look-shot" src="{{asset:img/street/look-02.jpg}}" alt="Белая футболка GRINCHIN со спины, кадр в лифте" width="800" height="1000" loading="lazy" decoding="async"></picture>
-    <picture data-look="03"><source type="image/avif" srcset="{{asset:img/street/look-03.avif}}"><img class="look-shot" src="{{asset:img/street/look-03.jpg}}" alt="Модель в косухе и джинсах на постере из мятой бумаги" width="800" height="1000" loading="lazy" decoding="async"></picture>
-    <picture data-look="04"><source type="image/avif" srcset="{{asset:img/street/look-04.avif}}"><img class="look-shot" src="{{asset:img/street/look-04.jpg}}" alt="Модель в варёном сером дениме на постере из мятой бумаги" width="800" height="1000" loading="lazy" decoding="async"></picture>
-  </template>
-  <span class="gm-slot" data-mark-slot="3"></span>
 </section>

@@ -1,0 +1,149 @@
+/* GRINCHIN v2 · финал страницы (K5): #next «Разобрали — вернём», #footer, 404.
+   Всё под своими префиксами (nx-, fo-, e404-), стили v1 этих блоков в base.css не используются.
+   Текстовые стили: заголовок (Unbounded 900), подзаголовок/строки (Inter 400/600), бирка (Martian Mono 400, 12px). */
+
+/* ============ #next ============ */
+#next{position:relative;background:var(--c-black);color:var(--c-white);padding:clamp(80px,11vw,152px) 0}
+.nx-grid{display:grid;gap:40px}
+.nx-title{margin:0;font:900 clamp(2.25rem,6.4vw,5.25rem)/.94 var(--font-display);letter-spacing:-.045em;text-wrap:balance}
+.nx-sub{margin:20px 0 0;font:400 clamp(1rem,1.4vw,1.125rem)/1.45 var(--font-text);color:var(--text-2)}
+.nx-side{min-width:0}
+
+/* переключатель Telegram / Почта */
+.nx-switch{display:flex;gap:8px;margin:0 0 16px;padding:0;border:0;min-width:0}
+.nx-switch label{position:relative;display:block}
+.nx-switch input{position:absolute;inset:0;margin:0;opacity:0;cursor:pointer}
+.nx-switch span{display:grid;place-items:center;text-align:center;min-height:44px;padding:0 18px;
+  border:1.5px solid color-mix(in srgb,var(--c-white) 28%,transparent);border-radius:var(--r-sm);
+  font:600 .9375rem/1 var(--font-text);color:var(--c-white);transition:background-color .15s,border-color .15s,color .15s}
+.nx-switch label:hover span{border-color:var(--c-white)}
+.nx-switch input:checked+span{background:var(--c-white);border-color:var(--c-white);color:var(--c-black)}
+.nx-switch input:focus-visible+span{outline:3px solid var(--c-acid);outline-offset:3px}
+
+/* поле-бирка: как ячейки навесной бирки pres_12 — зелёная рамка, подпись `ник:` в углу, значение крупно */
+.nx-tag{display:grid;grid-template-columns:minmax(0,1fr);border:2px solid var(--c-green);border-radius:var(--r-sm)}
+.nx-cell{display:grid;gap:4px;padding:12px 16px 10px;cursor:text;min-width:0}
+.nx-k{font:400 .75rem/1.2 var(--font-mono);letter-spacing:.02em;color:color-mix(in srgb,var(--c-white) 72%,transparent)}
+.nx-input{width:100%;min-width:0;min-height:44px;margin:0;padding:0;border:0;border-radius:0;background:transparent;
+  font:600 1.25rem/1.2 var(--font-text);color:var(--c-white);caret-color:var(--c-green)}
+.nx-input::placeholder{color:color-mix(in srgb,var(--c-white) 34%,transparent)}
+.nx-input:focus{outline:none}
+.nx-tag:focus-within{box-shadow:0 0 0 3px color-mix(in srgb,var(--c-green) 35%,transparent)}
+.nx-tag:has(.nx-input[aria-invalid="true"]){border-color:var(--c-error)}
+.nx-submit{display:grid;place-items:center;text-align:center;min-height:56px;padding:0 28px;margin:0;border:0;
+  border-top:2px solid var(--c-green);background:var(--c-green);color:var(--c-black);
+  font:600 1rem/1 var(--font-text);cursor:pointer;transition:background-color .15s}
+.nx-submit:hover{background:var(--c-acid)}
+.nx-submit:focus-visible{outline:3px solid var(--c-acid);outline-offset:3px}
+.nx-tag:has(.nx-input[aria-invalid="true"]) .nx-submit{border-top-color:var(--c-error)}
+.nx-err{min-height:1.5em;margin:10px 0 0;font:400 .75rem/1.5 var(--font-mono);color:var(--c-error)}
+
+/* успех: пакет + две ленты из того же кадра. Ленты лежат строго внутри кадра (overflow:hidden) —
+   на текст и кнопки не попадают физически */
+.nx-done{display:grid;gap:20px;max-width:560px}
+.nx-done[hidden]{display:none}
+.nx-bag{position:relative;margin:0;aspect-ratio:1200/675;overflow:hidden;background:#1a1a1a;border-radius:var(--r-sm)}
+.nx-bag img{position:absolute;inset:0;width:100%;height:100%;display:block}
+.nx-tape--h{transform-origin:48.6% 49.6%}
+.nx-tape--d{transform-origin:48.2% 44.2%}
+/* тень приподнятой ленты: та же форма, чёрная и мягкая; у прижатой ленты её нет (opacity 0) */
+.nx-sh{filter:brightness(0) blur(7px);opacity:0}
+.nx-done-t{margin:0;font:900 clamp(1.5rem,2.6vw,2rem)/1.05 var(--font-display);letter-spacing:-.035em;color:var(--c-green)}
+.nx-done-t:focus{outline:none}
+.nx-done-s{margin:8px 0 0;font:400 1rem/1.45 var(--font-text);color:var(--text-2)}
+
+@media (min-width:600px){
+  .nx-tag{grid-template-columns:minmax(0,1fr) auto}
+  .nx-submit{border-top:0;border-left:2px solid var(--c-green);min-height:0}
+  .nx-tag:has(.nx-input[aria-invalid="true"]) .nx-submit{border-left-color:var(--c-error)}
+}
+@media (min-width:1100px){
+  .nx-grid{grid-template-columns:minmax(0,6fr) minmax(0,5fr);gap:80px;align-items:start}
+  .nx-side{padding-top:12px}
+}
+
+/* ============ #footer ============ */
+#footer{position:relative;isolation:isolate;overflow:hidden;background:#111a10;color:var(--c-white);
+  padding:72px 0 calc(24px + env(safe-area-inset-bottom))}
+.fo-paper{position:absolute;inset:0;z-index:-1;background:center bottom/cover no-repeat}
+html:not(.js) .fo-paper,#footer.is-near .fo-paper{
+  background-image:url("{{asset:img/end/paper.jpg}}");
+  background-image:image-set(url("{{asset:img/end/paper.avif}}") type("image/avif"),url("{{asset:img/end/paper.jpg}}") type("image/jpeg"))}
+.fo-service{display:grid;gap:40px}
+.fo-k{margin:0 0 12px;font:400 .75rem/1.2 var(--font-mono);letter-spacing:.02em;color:color-mix(in srgb,var(--c-white) 72%,transparent)}
+.fo-list{list-style:none;margin:0;padding:0;border-top:1px solid color-mix(in srgb,var(--c-white) 18%,transparent)}
+.fo-list>li{border-bottom:1px solid color-mix(in srgb,var(--c-white) 18%,transparent)}
+.fo-row{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;min-height:48px;margin:0;padding:0;
+  border:0;background:none;font:400 1rem/1.3 var(--font-text);color:var(--c-white);text-align:left;cursor:pointer;list-style:none}
+.fo-row::-webkit-details-marker{display:none}
+button.fo-row::after,.fo-acc>summary::after{font:400 .875rem/1 var(--font-mono);color:var(--c-green);flex:none}
+button.fo-row::after{content:"↗"}
+.fo-acc>summary::after{content:"+"}
+.fo-acc[open]>summary::after{content:"−"}
+button.fo-row:hover,.fo-acc>summary:hover{color:var(--c-green)}
+.fo-row:focus-visible{outline:3px solid var(--c-acid);outline-offset:2px}
+.fo-acc>p{margin:0;padding:0 0 16px;max-width:46ch;font:400 .9375rem/1.5 var(--font-text);color:color-mix(in srgb,var(--c-white) 78%,transparent)}
+.fo-acc[open]>p{animation:fo-in .2s var(--ease-out) both}
+@keyframes fo-in{from{opacity:0;transform:translateY(-4px)}}
+.fo-soon{cursor:default;color:color-mix(in srgb,var(--c-white) 86%,transparent)}
+.fo-soon-k{font:400 .75rem/1 var(--font-mono);color:var(--c-green)}
+
+/* лого на мятой бумаге: форма — вектор знака (маска), цвет — бренд, заломы — ТОТ ЖЕ лист, что и фон
+   (end.js совмещает --cx/--cy/--cw/--ch с фоном подвала), поэтому лого выглядит напечатанным на этой бумаге */
+.fo-logo-box{position:relative;margin-top:clamp(56px,8vw,96px)}
+.fo-logo{width:100%;aspect-ratio:1854/390;
+  background:var(--c-green)}
+.fo-logo{background-image:url("{{asset:img/end/crease.jpg}}");
+  background-image:image-set(url("{{asset:img/end/crease.avif}}") type("image/avif"),url("{{asset:img/end/crease.jpg}}") type("image/jpeg"));
+  background-position:var(--cx,50%) var(--cy,50%);background-size:var(--cw,cover) var(--ch,);background-repeat:no-repeat;
+  background-blend-mode:multiply;
+  -webkit-mask:url("{{img:svg/logo.svg}}") center/100% 100% no-repeat;mask:url("{{img:svg/logo.svg}}") center/100% 100% no-repeat}
+.fo-legal{display:flex;flex-wrap:wrap;gap:4px 0;margin:clamp(32px,4vw,48px) 0 0;padding-top:16px;
+  border-top:1px solid color-mix(in srgb,var(--c-white) 18%,transparent);
+  font:400 .75rem/1.5 var(--font-mono);color:color-mix(in srgb,var(--c-white) 72%,transparent)}
+.fo-legal span:not(:last-child)::after{content:"·";padding:0 .7em}
+@media (min-width:768px){.fo-service{grid-template-columns:repeat(2,minmax(0,1fr));gap:48px;max-width:920px}}
+
+/* ============ 404 ============ */
+.e404{inset:0;display:grid;grid-template-rows:auto 1fr;background:var(--c-black);color:var(--c-white);opacity:0;
+  padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+.ov--full.is-open .e404{opacity:1}
+.e404-logo{justify-self:start;display:grid;place-items:center;min-height:44px;padding:0;border:0;background:none;color:var(--c-green);cursor:pointer}
+.e404-logo svg{width:112px;height:auto;display:block}
+.e404-logo:focus-visible{outline:3px solid var(--c-acid);outline-offset:4px}
+.e404-in{display:grid;align-content:center;justify-items:start;gap:28px;padding:24px 0}
+.e404-code{margin:0 0 18px;font:400 .75rem/1 var(--font-mono);letter-spacing:.04em;color:var(--c-green)}
+.e404-title{margin:0;font:900 clamp(3.25rem,13vw,9rem)/1 var(--font-display);letter-spacing:-.06em}
+.e404-sign{width:min(72vw,340px);color:var(--c-green)}
+.e404-svg{display:block;width:100%;height:auto;overflow:visible}
+.e404-svg .st-plate{fill:var(--c-green)}
+.e404-svg .st-rim{fill:none;stroke:var(--c-black);stroke-width:5;stroke-linejoin:round}
+.e404-svg .st-text{font:900 78px/1 var(--font-display);letter-spacing:-3px;fill:var(--c-black)}
+.e404-svg .st-bar,.e404-svg .st-smile{fill:var(--c-black)}
+/* статичная улыбка по умолчанию; когда K4 играет жест — end.js ставит .is-playing, видна перекладина */
+.e404-svg .st-bar{opacity:0}
+.e404-sign.is-playing .st-bar{opacity:1}
+.e404-sign.is-playing .st-smile{opacity:0}
+.e404-home{min-width:min(100%,260px)}
+@media (max-width:599px){
+  .e404-in{justify-items:stretch}
+  .e404-sign{justify-self:center}
+  .e404-home{width:100%}
+}
+@media (min-width:900px){
+  .e404{padding:40px clamp(40px,6vw,96px)}
+  .e404-in{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"txt sign" "btn sign";align-content:center;column-gap:clamp(40px,6vw,120px);row-gap:40px}
+  .e404-txt{grid-area:txt;align-self:end}
+  .e404-sign{grid-area:sign;width:clamp(300px,34vw,500px)}
+  .e404-home{grid-area:btn;align-self:start}
+}
+@media (max-height:520px) and (orientation:landscape){
+  .e404-in{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"txt sign" "btn sign";column-gap:32px;row-gap:20px}
+  .e404-txt{grid-area:txt;align-self:end}.e404-sign{grid-area:sign;width:min(60vh,260px)}.e404-home{grid-area:btn;width:auto}
+  .e404-title{font-size:clamp(2.5rem,9vh,4rem)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .fo-acc[open]>p{animation:none}
+  .nx-switch span,.nx-submit{transition:none}
+}

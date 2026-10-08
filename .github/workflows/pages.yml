@@ -28,9 +28,11 @@ jobs:
       - name: Build
         run: |
           python3 build.py
-          mkdir -p _site
-          cp -R dist/. _site/
-          mv _site/grinchin.html _site/index.html
+          mkdir -p _site/2
+          cp -R versions/. _site/        # замороженные версии: _site/1, ...
+          cp -R dist/. _site/2/          # текущая сборка = версия 2
+          mv _site/2/grinchin.html _site/2/index.html
+          cp root-index.html _site/index.html
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

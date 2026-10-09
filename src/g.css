@@ -1,45 +1,32 @@
 /* GRINCHIN v2 · K2 · сквозной объект «G в рогах» (three-g.js). Владелец: K2.
-   .g-stage  — фиксированный слой поверх страницы (под шапкой и оверлеями), без событий мыши
-   .g-cv     — единственный WebGL-канвас; размер постоянный, двигается/масштабируется transform-ом из JS
-   .g-comp   — компаньон-кнопка «наверх»: на mobile в нём двойник-картинка, на desktop — прозрачная зона клика
-   .g-host   — SVG-знак строго внутри #g3d (фолбэк и «до загрузки 3D»)
-   .g-tw     — двойник: SVG или две картинки-снимка 3D (рога + стрелка), стрелка вращается вокруг --px/--py
-   .g-tw--dock — двойник внутри #footer-logo: садится в букву G логотипа, прокручивается вместе с подвалом */
+   .g-stage — фиксированный слой поверх страницы (под шапкой и оверлеями), без событий мыши
+   .g-cv    — единственный WebGL-канвас; размер постоянный, двигается/масштабируется transform-ом из JS
+   .g-comp  — компаньон-кнопка «наверх», стоит на месте: desktop — в правом поле вне контента (размер по полю),
+              mobile — 48 px в углу над safe-area, тёмная шайба; знак (канвас) садится поверх неё
+   .g-host  — SVG-знак строго внутри #g3d (фолбэк и «пока компилируются шейдеры»)
+   --cop    — видимость компаньона (0…1) из JS; --g-btn / --g-right — размер и отступ от края из замеров */
 .g-stage{position:fixed;left:0;top:0;width:0;height:0;z-index:45;pointer-events:none}
 .g-cv{position:absolute;left:0;top:0;display:block;transform-origin:50% 50%;opacity:0;visibility:hidden;pointer-events:none}
 .g-cv.is-on{visibility:visible}
-.g-stage.is-hidden .g-cv,.g-stage.is-hidden .g-comp{visibility:hidden}
+.g-stage.is-hidden .g-cv{visibility:hidden}
 
-/* компаньон: место покоя задаёт CSS (safe-area), полёт к нему — transform из JS */
-.g-comp{--s:var(--g-comp,84px);position:fixed;right:max(var(--g-right,16px),env(safe-area-inset-right));top:50%;
+.g-comp{--s:var(--g-btn,64px);position:fixed;right:max(var(--g-right,16px),env(safe-area-inset-right));top:50%;
   width:var(--s);height:calc(var(--s) * .72);margin:calc(var(--s) * -.36) 0 0;padding:0;border:0;border-radius:50%;
-  background:none;color:inherit;cursor:pointer;transform-origin:50% 50%;
-  visibility:hidden;pointer-events:none;-webkit-tap-highlight-color:transparent}
+  background:none;color:inherit;cursor:pointer;visibility:hidden;pointer-events:none;-webkit-tap-highlight-color:transparent}
 .g-comp.is-live{visibility:visible;pointer-events:auto}
-.g-comp:not(.is-vis) .g-tw{visibility:hidden}
 .g-comp.is-vis{visibility:visible}
+.g-comp:not(.is-vis) .g-tw{visibility:hidden}
 .g-comp:focus-visible{outline:2px solid var(--c-acid,#00FF2A);outline-offset:6px}
-@media (hover:none),(pointer:coarse),(max-width:767px){
-  .g-comp{--s:var(--g-comp,48px);top:auto;margin:0;
-    right:max(12px,calc(env(safe-area-inset-right) + 8px));
-    bottom:max(16px,calc(env(safe-area-inset-bottom) + 10px));
-    min-width:48px;min-height:48px}
-}
-.g-tw--comp{position:absolute;left:50%;top:50%;translate:-50% -50%}
-@media (hover:none),(pointer:coarse),(max-width:767px){
-  .g-comp::before{content:"";position:absolute;inset:-2px;border-radius:50%;background:var(--c-black,#000);
-    box-shadow:0 0 0 1px color-mix(in srgb,var(--c-white,#fff) 16%,transparent),0 6px 16px rgba(0,0,0,.28);
-    opacity:var(--disc,0)}
-  .g-comp .g-tw--comp{scale:.82}
-}
+.g-tw--comp{position:absolute;left:50%;top:50%;width:calc(var(--s) / .78);height:calc(var(--s) / .78 / 1.4);translate:-50% -50%;opacity:var(--cop,0)}
+.g-stage.is-mob .g-comp{--s:48px;top:auto;margin:0;height:48px;
+  right:max(12px,calc(env(safe-area-inset-right) + 8px));bottom:max(16px,calc(env(safe-area-inset-bottom) + 10px))}
+.g-stage.is-mob .g-comp::before{content:"";position:absolute;inset:0;border-radius:50%;background:var(--c-black,#000);
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--c-white,#fff) 16%,transparent),0 6px 16px rgba(0,0,0,.28);opacity:var(--cop,0)}
+.g-stage.is-mob .g-tw--comp{width:46px;height:33px}
 
-/* двойник */
-.g-tw{display:block;pointer-events:none;perspective:520px}
-.g-tw-in{position:absolute;inset:0;transform-style:preserve-3d}
-.g-tw-in img,.g-tw-in .g-svg{position:absolute;inset:0;width:100%;height:100%;display:block;max-width:none}
-.g-tw-n{transform-origin:var(--px,50%) var(--py,42%)}
-.g-tw--dock{position:absolute;left:0;top:0;z-index:2;opacity:0;visibility:hidden;transform-origin:50% 50%}
-.g-tw--dock.is-on{visibility:visible}
+.g-tw{display:block;pointer-events:none}
+.g-tw-in{position:absolute;inset:0}
+.g-tw-in .g-svg{position:absolute;inset:0;width:100%;height:100%;display:block;max-width:none}
 
 /* hero: SVG-знак строго в прямоугольнике #g3d (K3), ничего не раздувает */
 #g3d{touch-action:pan-y}
@@ -48,18 +35,20 @@
 .g-host{position:absolute;inset:0;overflow:hidden;pointer-events:none;visibility:hidden}
 .g-host.is-on{visibility:visible}
 .g-host .g-svg{display:block;width:100%;height:100%;max-width:none}
-.g-host.is-born .g-svg{animation:g-born .6s cubic-bezier(.16,1,.3,1) both}
-@keyframes g-born{from{opacity:0;transform:scale(.06) rotate(-28deg)}to{opacity:1;transform:none}}
+.g-host.is-born .g-svg{animation:g-born .7s cubic-bezier(.16,1,.3,1) both}
+@keyframes g-born{from{opacity:0;transform:scale(.6) rotate(-14deg)}to{opacity:1;transform:none}}
 
-/* гироскоп (только сенсорные, только по нажатию — iOS просит разрешение по жесту) */
-.g-gyro{position:absolute;right:0;bottom:0;translate:0 60%;z-index:3;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+/* гироскоп: только сенсорные, только по нажатию (iOS просит разрешение по жесту); внутри #g3d, после рождения */
+.g-gyro{position:absolute;right:4px;bottom:4px;z-index:7;display:inline-flex;align-items:center;justify-content:center;gap:8px;
   min-height:44px;min-width:44px;padding:0 14px;border:1px solid color-mix(in srgb,var(--c-white,#fff) 28%,transparent);border-radius:999px;
   background:color-mix(in srgb,var(--c-black,#000) 70%,transparent);color:var(--c-white,#fff);
-  font:400 .75rem/1 var(--font-mono,monospace);letter-spacing:.02em;pointer-events:auto;-webkit-tap-highlight-color:transparent}
+  font:400 .75rem/1 var(--font-mono,monospace);letter-spacing:.02em;pointer-events:auto;-webkit-tap-highlight-color:transparent;
+  opacity:0;transition:opacity .2s}
+.g-gyro.is-shown{opacity:1}
 .g-gyro-i{width:10px;height:10px;border-radius:50%;border:1.5px solid currentColor}
 .g-gyro[aria-pressed="true"] .g-gyro-i{background:var(--c-green,#00DB24);border-color:var(--c-green,#00DB24)}
 .g-gyro[data-state="denied"]{opacity:.5}
 .g-gyro:focus-visible{outline:2px solid var(--c-acid,#00FF2A);outline-offset:3px}
 
-@media (prefers-reduced-motion:reduce){.g-host.is-born .g-svg{animation:none}}
-@media print{.g-stage,.g-tw--dock{display:none!important}}
+@media (prefers-reduced-motion:reduce){.g-host.is-born .g-svg{animation:none}.g-gyro{transition:none}}
+@media print{.g-stage{display:none!important}}

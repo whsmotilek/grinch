@@ -19,14 +19,13 @@
 from __future__ import annotations
 import pathlib, sys
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 from scipy import ndimage
 
-HERE = pathlib.Path(__file__).parent
+HERE = pathlib.Path(__file__).resolve().parent
 RAW = HERE.parents[2] / "assets" / "brand_raster"
 OUT_T = HERE / "tape"; OUT_S = HERE / "street"
 OUT_T.mkdir(exist_ok=True); OUT_S.mkdir(exist_ok=True)
-FONT = "/System/Library/Fonts/HelveticaNeue.ttc"   # Bold (index 1) — нейтральный гротеск, как печать на пакете pres_20
 ONLY = sys.argv[1] if len(sys.argv) > 1 else "all"
 
 def f32(im): return np.asarray(im).astype(np.float32) / 255
@@ -67,15 +66,6 @@ def tape():
     BOT = np.polyval(np.polyfit(cols[full], bot[full], 3), cols)
     THICK = float(np.median(BOT[full] - TOP[full]))
     print(f"  толщина ленты в скане ≈ {THICK:.0f} px")
-
-    def straight(out_h: int, pad: float):
-        """Распрямлённая полоса W0×out_h: гладкие кромки → горизонтали на pad·h от краёв растра.
-        Натуральные концы и мелкая волна кромки сохраняются."""
-        t = (np.linspace(0, 1, out_h)[:, None] - pad) / (1 - 2 * pad)
-        sy = TOP[None, :] + t * (BOT - TOP)[None, :]
-        sx = np.broadcast_to(cols[None, :].astype(float), sy.shape)
-        return (ndimage.map_coordinates(LUM, [sy, sx], order=1, mode="nearest"),
-                ndimage.map_coordinates(A0, [sy, sx], order=1, mode="constant", cval=0))
 
     def torn_edge(alpha, side, seed, depth, tilt=0.):
         """Новый рваный край малярной ленты: крупные зубцы + мелкий полупрозрачный ворс волокон."""
@@ -127,78 +117,50 @@ def tape():
         h, w = rgba.shape[:2]
         save_rgba(resize(rgba, wout, round(h * wout / w * .74)), OUT_T / f"{name}.webp")
 
-    # ---------- 1b. зелёная фирменная ----------
-    GREEN = np.array([0x19, 0xE8, 0x3A]) / 255     # лента на свету (pres_20 ≈ #3FF835; токен #00DB24)
-    INK = np.array([0x06, 0x10, 0x06]) / 255
-    HI = np.array([.88, 1.0, .76])                  # блик флуоресцентной плёнки уходит в жёлто-белый
+def pvc():
+    """Фирменная ПВХ-лента — НАСТОЯЩАЯ, с фото пакета pg-020-088 (диагональная полоса, она целая — лежит поверх
+    горизонтальной). Печать GRINCHIN, глянец и вспышка — свои, из кадра. Полосу распрямляем поворотом,
+    кромки — по прямым (ПВХ не мнётся по краю), видимый конец срезан ножом, правый уходит за край экрана."""
+    print("лента: ПВХ с пакета pg-020-088")
+    a = f32(Image.open(RAW / "new/pg-020-088.jpg").convert("RGB"))
+    H, W = a.shape[:2]
+    r, g, b = a[..., 0], a[..., 1], a[..., 2]
+    key = (g > .45) & (g - np.maximum(r, b) > .22)
+    key = ndimage.binary_fill_holes(ndimage.binary_closing(key, np.ones((15, 15))))    # + чёрная печать внутри
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    # кромки диагонали (замер по строкам вне пересечения, как у K5 в img/end/_end.py)
+    dl = 542 + (yy - 150) * .7255; dr = 682 + (yy - 150) * .7236
+    m = key & (xx > dl - 6) & (xx < dr + 6)
+    ang = float(np.degrees(np.arctan2(1, .7245)))
+    im = Image.fromarray((np.dstack([a, m.astype(np.float32)]) * 255 + .5).astype(np.uint8), "RGBA")
+    im = im.rotate(ang, resample=Image.BICUBIC, expand=True)
+    im = im.crop(im.getbbox())
+    t = f32(im); h, w = t.shape[:2]
+    # ровные кромки: прямые по медианам верхнего/нижнего края в чистой середине полосы
+    cols = range(int(w * .2), int(w * .8), 4)
+    top = np.median([np.argmax(t[:, x, 3] > .5) for x in cols]); bot = np.median([h - 1 - np.argmax(t[::-1, x, 3] > .5) for x in cols])
+    top += 2; bot -= 2                                                    # срезаем полупиксельную кайму фона
+    y = np.arange(h)[:, None].astype(np.float32)
+    edge = smooth(y - top, -.5, 1.0) * smooth(bot - y, -.5, 1.0)
+    # видимый конец — срез ножом, чуть наискось; справа — оставляем до начала скоса (дальше он за краем экрана)
+    x = np.arange(w)[None, :].astype(np.float32)
+    x0 = w * .13; x1 = w * .85
+    cut = smooth(x - (x0 + (y - top) / (bot - top) * (bot - top) * .1), -.6, .9) * (x < x1)
+    alpha = edge * cut
+    # под альфой — только сама лента (на кромке пересечения в маску попали чужие пиксели; кромка теперь прямая)
+    # у верхней кромки на пересечении полос остались крошки чужой печати — заменяем тоном ленты на 5 px ниже
+    rgb = t[..., :3].copy(); it = int(top)
+    for yy_ in range(it - 1, it + 5):
+        dark = rgb[yy_].max(1) < .45
+        rgb[yy_][dark] = rgb[it + 6][dark]
+    rgba = np.dstack([rgb, alpha])
+    ys = slice(int(top) - 2, int(bot) + 3); xs = slice(int(x0) - 3, int(x1))
+    rgba = rgba[ys, xs]
+    p = OUT_T / "pvc.webp"
+    Image.fromarray((np.clip(rgba, 0, 1) * 255 + .5).astype(np.uint8), "RGBA").save(p, quality=86, method=6, alpha_quality=95)
+    report(p)
 
-    def green(name, length, thick, seed, *, src=(0., 1.), flip=False, vflip=False, k=.8, cut="nat", phase=.3):
-        """length×thick — px растра (2× от CSS). src — участок скана, k — сила заломов (натянутая длинная мнётся меньше)."""
-        pad = .1
-        oh = round(thick / (1 - 2 * pad))
-        lum, al = straight(round(THICK / (1 - 2 * pad)), pad)
-        x0, x1 = int(W0 * src[0]), int(W0 * src[1])
-        lum, al = lum[:, x0:x1], al[:, x0:x1]
-        if flip: lum, al = lum[:, ::-1], al[:, ::-1]
-        if vflip: lum, al = lum[::-1], al[::-1]
-        lum = resize(lum, length, oh); al = np.clip(resize(al, length, oh), 0, 1)
-        if cut == "tear-l": al = torn_edge(al, "l", seed, thick * .12, .06)
-        elif cut == "knife-l":                                         # ровный срез ножом, чуть наискось
-            x = np.arange(length)[None, :]
-            al = al * smooth(x - (thick * .2 + np.linspace(0, thick * .3, oh)[:, None]), 0, 1.4)
-        xx = np.linspace(0, 1, length)[None, :]
-        # заломы при уменьшении скана в 7 раз «съедаются» — поднимаем деталь (яркость / её размытие)
-        det = lum / np.maximum(ndimage.gaussian_filter(lum, (thick * .5, thick * 1.5)), 1e-3)
-        low = ndimage.gaussian_filter(lum, (thick * .5, thick * 1.5))
-        s = 1 + ((det - 1) * 1.7 + (low - 1) * .6) * k * (.6 + .4 * smooth(np.abs(xx - .5), .15, .5))
-        s = ndimage.gaussian_filter(s, .6)
-        # свет вдоль ленты не ровный: плёнка слегка волнится — широкие пологие перепады ±7 %
-        rngL = np.random.default_rng(seed + 50)
-        wave = ndimage.gaussian_filter1d(rngL.normal(0, 1, length), thick * 2.2); wave = wave / (np.abs(wave).max() + 1e-6)
-        s = s * (1 + .07 * wave[None, :])
-        # печать: GRINCHIN гротеском, высота букв ≈ 30 % ширины ленты, пробел ≈ 0,6 ширины — как на пакете
-        ink = Image.new("L", (length, oh), 0); dr = ImageDraw.Draw(ink)
-        fs = round(thick * .42); font = ImageFont.truetype(FONT, fs, index=1)
-        word = "GRINCHIN"; tr = fs * .035
-        ww = sum(dr.textlength(c, font=font) for c in word) + tr * (len(word) - 1)
-        gap = thick * .64
-        bb = font.getbbox("GRINCHIN"); cy = oh / 2 - (bb[1] + bb[3]) / 2
-        x = -ww * phase
-        while x < length:
-            cx = x
-            for ch in word:
-                dr.text((cx, cy), ch, font=font, fill=255); cx += dr.textlength(ch, font=font) + tr
-            x += ww + gap
-        T = f32(ink)
-        # буквы мнутся вместе с лентой: смещение по градиенту светотени, краска стирается на гребнях
-        gy, gx = np.gradient(ndimage.gaussian_filter(s, 2.5))
-        yy, xg = np.mgrid[0:oh, 0:length].astype(np.float32)
-        T = ndimage.map_coordinates(T, [yy - gy * thick * .4, xg - gx * thick * .4], order=1)
-        rng = np.random.default_rng(seed)
-        wear = ndimage.gaussian_filter(rng.random((oh, length)), 1.0)
-        T = np.clip(T * (1 - .25 * smooth(s, 1.06, 1.25)) * (.9 + .2 * (wear - .5)), 0, 1) * .97
-        base = GREEN * (1 - T[..., None]) + INK * T[..., None]
-        # цвет ПОД светотенью: складки → глубокий зелёный (#0C8E1E), гребни → блик
-        col = base * (np.clip(s, .3, 1.0) ** 1.4)[..., None]
-        hi = (smooth(s, 1.03, 1.25) * .55)[..., None]
-        col = col + (1 - col) * hi * HI
-        # глянец ПВХ: мягкая полоса блика там, где плёнка выгибается к свету (немного — не «неон»)
-        bend = ndimage.gaussian_filter(s, thick * .35) - ndimage.gaussian_filter(s, thick * 1.6)
-        col = col + (1 - col) * (smooth(bend, .015, .07) * .28)[..., None] * HI
-        # кромка: верхняя ловит свет, нижняя чуть темнее — лента читается на чёрном без «неона»
-        e = ndimage.gaussian_filter((al > .5).astype(np.float32), 1.0)
-        g = np.gradient(e, axis=0)
-        col = col * (1 - np.clip(-g * 2.4, 0, .4))[..., None] + (np.clip(g * 1.4, 0, .22))[..., None]
-        save_rgba(trim(np.dstack([np.clip(col, 0, 1), al * .99])), OUT_T / f"{name}.webp", q=84)
-
-    print("лента: зелёная")
-    # hero: запечатывает нижний правый угол; виден левый (натуральный) конец, правая часть уходит за край
-    green("green-1", 1500, 96, 11, src=(0., 1.), k=1.0, cut="nat", phase=.55)
-    # K5 — пакет крест-накрест: два куска с разным рисунком заломов
-    green("green-2", 1100, 88, 12, src=(.0, .82), flip=True, k=1.0, cut="knife-l", phase=.15)
-    green("green-3", 900, 88, 13, src=(.28, 1.), vflip=True, k=1.1, cut="tear-l", phase=.7)
-
-if ONLY in ("all", "tape"): tape()
+if ONLY in ("all", "tape"): tape(); pvc()
 
 # =====================================================================================
 # 2. ФОТО. Только целые кадры, родные пропорции, без апскейла. AVIF + JPEG-фолбэк, две ширины (1× и 2×).
@@ -248,6 +210,24 @@ def defringe(a):
     out[junk] = 0
     return out, int(bad.sum()) + killed + int(junk.sum())
 
+def soft_edge(a, top_frac=.12):
+    """Край вырезки в исходнике — ступеньками и со светлой каймой 1–2 px. Модель стоит на #000, поэтому
+    просто «утапливаем» край: маска фигуры сжимается на 1 px и растушёвывается (в волосах, верхние 12 % — сильнее)."""
+    mx = a.max(2)
+    lab0, _ = ndimage.label(mx < 8 / 255)
+    sizes = ndimage.sum(np.ones_like(mx), lab0, range(1, lab0.max() + 1))
+    edge_ids = set(np.unique(np.concatenate([lab0[0], lab0[-1], lab0[:, 0], lab0[:, -1]]))) - {0}
+    big = [i + 1 for i, v in enumerate(sizes) if v > 900]           # «окна» фона между ног и под локтем
+    bg = np.isin(lab0, list(edge_ids | set(big)))
+    fg = ndimage.binary_erosion(~bg, iterations=1)
+    H = a.shape[0]
+    s1 = ndimage.gaussian_filter(fg.astype(np.float32), 1.0)
+    s2 = ndimage.gaussian_filter(fg.astype(np.float32), 2.4)
+    w = smooth(np.arange(H, dtype=np.float32) / H, top_frac * .6, top_frac)[:, None]   # 0 вверху (волосы) → 1
+    alpha = np.minimum(s2 * (1 - w) + s1 * w, 1)
+    alpha = np.where(fg, np.maximum(alpha, .0), alpha)
+    return a * alpha[..., None]
+
 def save_photo(a, name, widths, q_avif=58, q_jpg=80):
     im = Image.fromarray((np.clip(a, 0, 1) * 255 + .5).astype(np.uint8))
     for w in widths:
@@ -266,17 +246,211 @@ def photo():
     dot = ndimage.binary_dilation(dot, iterations=3)
     a[dot] = 0
     a, nf = defringe(a); print(f"  hero: точка {int(dot.sum())} px, ореол {nf} px")
-    save_photo(grade(a), "hero", (1024, 640), q_avif=60)
+    save_photo(grade(soft_edge(a)), "hero", (1024, 640), q_avif=60)
     # образы
     for src, name, widths in (("new/pg-011-010.jpg", "look-a", (960, 480)), ("new/pg-011-024.jpg", "look-b", (960, 480))):
         a, nf = defringe(rgbf(src)); print(f"  {name}: ореол {nf} px")
-        save_photo(grade(a), name, widths)
-    save_photo(grade(rgbf("new/pg-015-038.jpg"), sat=.9, tint=.01), "look-c", (960, 480))
-    save_photo(grade(rgbf("new/pg-020-088.jpg"), sat=.92, tint=.01), "bag", (1280, 640))
+        save_photo(grade(soft_edge(a)), name, widths)
+    save_photo(grade(rgbf("new/pg-015-038.jpg"), sat=.9, tint=.01), "look-c", (960, 480), q_avif=50)
+    save_photo(grade(rgbf("new/pg-015-040.jpg"), sat=.9, tint=.01), "look-d", (960, 480), q_avif=48)
     # знак: дверь — без грейда/резкости (исходник 1448 px, на сайте ≤ 960 CSS px)
-    save_photo(rgbf("new/pg-021-090.jpg"), "door", (1448, 800), q_avif=50, q_jpg=76)
-    # N в трёх стадиях: наклеили (122) → сорвали (118) → скан (120). Сканы ч/б — только пережатие
+    save_photo(rgbf("new/pg-021-090.jpg"), "door", (1448, 1080, 800), q_avif=50, q_jpg=76)
+    # N в трёх стадиях: наклеили (122) → сняли (118) → скан (120). Сканы ч/б — только пережатие
     for i, n in enumerate(("old/p-018-122.jpg", "old/p-018-118.jpg", "old/p-018-120.jpg"), 1):
         save_photo(rgbf(n), f"n-{i}", (840, 420), q_avif=54, q_jpg=78)
 
+# =====================================================================================
+# 3. УЛЫБКА НА ДВЕРИ. Знак бренда собирается на фото pg-021-090: под выклеенным словом GRINCHIN — улыбка с рогами
+#    из той же зелёной ленты. Форма — вектор улыбки (svg/logo.svg, путь lg-smile) в той же раскладке, что в логотипе,
+#    подогнанный по габаритам букв на фото. Фактура — НАСТОЯЩИЕ куски ленты с этой же двери (штанги I, N, H, R):
+#    тот же свет, зерно и мятость. Улыбка выклеена кусками, как буквы: прямые отрезки по дуге, нахлёст со швом и тенью.
+# =====================================================================================
+def svg_paths(path):
+    """Минимальный разбор SVG path (M m L l C c Z z — других команд в logo.svg нет) → список полигонов."""
+    import re
+    out = []
+    for cls, d in re.findall(r'<path class="([^"]+)"[^>]*\sd="([^"]+)"', path.read_text()):
+        toks = re.findall(r"[MmLlCcZz]|-?\d*\.?\d+", d)
+        polys, cur, pos, start, cmd, i = [], [], np.zeros(2), np.zeros(2), None, 0
+        def num():
+            nonlocal i
+            v = float(toks[i]); i += 1; return v
+        while i < len(toks):
+            t = toks[i]
+            if t.isalpha(): cmd = t; i += 1
+            if cmd in "Mm":
+                p_ = np.array([num(), num()]); pos = p_ + (pos if cmd == "m" and cur else (pos if cmd == "m" else 0))
+                if cur: polys.append(np.array(cur))
+                cur = [pos.copy()]; start = pos.copy(); cmd = "l" if cmd == "m" else "L"
+            elif cmd in "Ll":
+                p_ = np.array([num(), num()]); pos = p_ + (pos if cmd == "l" else 0); cur.append(pos.copy())
+            elif cmd in "Cc":
+                c = [np.array([num(), num()]) for _ in range(3)]
+                if cmd == "c": c = [pos + q for q in c]
+                for tt in np.linspace(0, 1, 13)[1:]:
+                    u = 1 - tt
+                    cur.append(u ** 3 * pos + 3 * u * u * tt * c[0] + 3 * u * tt * tt * c[1] + tt ** 3 * c[2])
+                pos = c[2].copy()
+            elif cmd in "Zz":
+                if cur: polys.append(np.array(cur)); cur = []
+                pos = start.copy(); cmd = None
+        if cur: polys.append(np.array(cur))
+        out.append((cls, polys))
+    return out
+
+def door_smile(door):
+    H, W = door.shape[:2]
+    r, g, b = door[..., 0], door[..., 1], door[..., 2]
+    gm = (g - np.maximum(r, b)) > .16
+    gm = ndimage.binary_opening(gm, iterations=1)
+    lab, n = ndimage.label(gm); sz = ndimage.sum(gm, lab, range(1, n + 1))
+    letters = np.isin(lab, [i + 1 for i, v in enumerate(sz) if v > 800])
+    ys, xs = np.where(letters); dx0, dx1, dy0, dy1 = xs.min(), xs.max(), ys.min(), ys.max()
+    paths = svg_paths(HERE.parent / "svg/logo.svg")
+    L = np.vstack([pp for cls, ps in paths if cls == "lg-l" for pp in ps])
+    lx0, lx1, ly0, ly1 = L[:, 0].min(), L[:, 0].max(), L[:, 1].min(), L[:, 1].max()
+    smile = [pp for cls, ps in paths if cls == "lg-smile" for pp in ps][0]
+    sx = (dx1 - dx0) / (lx1 - lx0)
+    sy = sx * 1.12                                   # буквы на двери вытянуты по высоте сильнее логотипа
+    cxl = (lx0 + lx1) / 2; cxd = (dx0 + dx1) / 2
+    def to_door(p): return np.stack([cxd + (p[:, 0] - cxl) * sx, dy1 + (p[:, 1] - ly1) * sy], 1)
+    poly = to_door(smile)
+    print(f"  буквы на двери x {dx0}–{dx1}, y {dy0}–{dy1}; улыбка x {poly[:,0].min():.0f}–{poly[:,0].max():.0f}, y {poly[:,1].min():.0f}–{poly[:,1].max():.0f}")
+    # маска улыбки (сглаженная, 4× суперсэмплинг)
+    from PIL import ImageDraw
+    SS = 4
+    mi = Image.new("L", (W * SS, H * SS), 0); ImageDraw.Draw(mi).polygon([tuple(q) for q in poly * SS], fill=255)
+    mask = f32(mi.resize((W, H), Image.LANCZOS))
+    # средняя линия: для каждой точки внешней (нижней) кромки — ближайшая точка внутренней, середина отрезка
+    def rs(c, nn):
+        d = np.r_[0, np.cumsum(np.hypot(*np.diff(c, axis=0).T))]
+        t = np.linspace(0, d[-1], nn)
+        return np.stack([np.interp(t, d, c[:, 0]), np.interp(t, d, c[:, 1])], 1)
+    def half(sign):
+        P = smile.copy()
+        Q = P[np.where((P[:, 0] - 927.0) * sign >= -1)[0]]
+        tip = int(np.argmin(Q[:, 1]))
+        a_, b_ = Q[:tip + 1], Q[tip:]
+        outer, inner = (a_, b_) if a_[:, 1].mean() > b_[:, 1].mean() else (b_, a_)
+        if np.hypot(*(outer[0] - [927, 386])) > np.hypot(*(outer[-1] - [927, 386])): outer = outer[::-1]   # от центра к рогу
+        O = rs(outer, 500); I = rs(inner, 1500)
+        nn = np.argmin(((O[:, None, :] - I[None, :, :]) ** 2).sum(2), 1)
+        return to_door((O + I[nn]) / 2)
+    cl_l = half(-1); cl_r = half(+1)
+    center = np.r_[cl_l[::-1], cl_r[1:]]             # от левого рога через центр к правому
+    center = ndimage.gaussian_filter1d(center, 3, axis=0)
+    dt = ndimage.distance_transform_edt(mask > .5)
+    # куски ленты-штанги с этой двери: вертикальные штрихи букв (≈40 px), y — по высоте букв
+    cov = letters[dy0:dy1].mean(0)
+    runs, inrun = [], False
+    for x in range(W):
+        if cov[x] > .82 and not inrun: s0 = x; inrun = True
+        if (cov[x] <= .82 or x == W - 1) and inrun:
+            inrun = False
+            if x - s0 >= 30: runs.append((s0, x))
+    strips = []
+    for s0, s1 in runs:
+        for k in range(max(1, (s1 - s0) // 36)):
+            a0 = s0 + k * 38; a1 = min(a0 + 40, s1)
+            if a1 - a0 < 30: continue
+            rgb_ = door[dy0 + 4:dy1 - 4, a0 + 2:a1 - 2].copy()
+            lm = letters[dy0 + 4:dy1 - 4, a0 + 2:a1 - 2]
+            if lm.mean() < .9: continue
+            if (~lm).any():                          # просветы двери внутри образца → тон соседней ленты
+                _, (iy, ix) = ndimage.distance_transform_edt(~lm, return_indices=True)
+                rgb_ = rgb_[iy, ix]
+            strips.append(np.rot90(rgb_, 1))         # длина — по горизонтали
+    # выравниваем яркость образцов к общей медиане (на двери свет падает неровно — куски не должны «мигать»)
+    med = np.median([np.median(st_.mean(2)) for st_ in strips])
+    strips = [np.clip(st_ * (med / max(np.median(st_.mean(2)), 1e-3)) ** .8, 0, 1) for st_ in strips]
+    print(f"  кусков-образцов ленты с двери: {len(strips)}")
+    canvas = np.zeros((H, W, 4), np.float32)
+    seglen = np.r_[0, np.cumsum(np.hypot(*np.diff(center, axis=0).T))]
+    total = seglen[-1]
+    rng = np.random.default_rng(21)
+    s_ = 0.0; k = 0
+    def put(piece, p0, p1, off):
+        """Кусок ленты по хорде p0→p1 (+сдвиг по нормали): тень нахлёста под ним, затем сам кусок."""
+        nonlocal canvas
+        d = p1 - p0; ln = float(np.hypot(*d)); ang = np.arctan2(d[1], d[0])
+        th = piece.shape[0]
+        pc = np.asarray(Image.fromarray((np.clip(piece, 0, 1) * 255).astype(np.uint8)).resize((max(int(ln), 8), th), Image.LANCZOS)).astype(np.float32) / 255
+        ph, pw = pc.shape[:2]
+        nrm = np.array([-np.sin(ang), np.cos(ang)])
+        c = (p0 + p1) / 2 + nrm * off
+        # обратное отображение: точка холста → координата в куске
+        ca, sa = np.cos(ang), np.sin(ang)
+        x0_, y0_ = int(c[0] - ln), int(c[1] - ln); x1_, y1_ = int(c[0] + ln), int(c[1] + ln)
+        x0_, y0_ = max(x0_, 0), max(y0_, 0); x1_, y1_ = min(x1_, W), min(y1_, H)
+        YY, XX = np.mgrid[y0_:y1_, x0_:x1_].astype(np.float32)
+        u = (XX - c[0]) * ca + (YY - c[1]) * sa + pw / 2
+        v = -(XX - c[0]) * sa + (YY - c[1]) * ca + ph / 2
+        inside = smooth(u, -.5, .8) * smooth(pw - u, -.5, .8) * smooth(v, -.5, .8) * smooth(ph - v, -.5, .8)
+        col = np.dstack([ndimage.map_coordinates(pc[..., ch], [v, u], order=1, mode="nearest") for ch in range(3)])
+        sub = canvas[y0_:y1_, x0_:x1_]
+        # тень нахлёста: кромка нового куска чуть приподнята над нижним
+        sh = ndimage.gaussian_filter(inside, 1.6)
+        sh = np.roll(np.roll(sh, 1, 0), 1, 1)
+        sub[..., :3] *= (1 - .2 * sh * (sub[..., 3] > 0))[..., None]
+        a_ = inside[..., None]
+        sub[..., :3] = sub[..., :3] * (1 - a_) + col * a_
+        sub[..., 3] = np.maximum(sub[..., 3], inside)
+    while s_ < total - 4:
+        L_ = float(rng.uniform(150, 215))
+        e_ = min(s_ + L_, total)
+        if total - e_ < 60: e_ = total
+        ov = 9.0
+        a_s, b_s = max(s_ - ov, 0), min(e_ + ov, total)
+        p0 = np.array([np.interp(a_s, seglen, center[:, 0]), np.interp(a_s, seglen, center[:, 1])])
+        p1 = np.array([np.interp(b_s, seglen, center[:, 0]), np.interp(b_s, seglen, center[:, 1])])
+        mid = np.array([np.interp((s_ + e_) / 2, seglen, center[:, 0]), np.interp((s_ + e_) / 2, seglen, center[:, 1])]).astype(int)
+        # толщина полосы в этом месте; шире ленты — второй проход внахлёст (как в «G» на двери)
+        win = dt[max(mid[1] - 30, 0):mid[1] + 30, max(mid[0] - 30, 0):mid[0] + 30]
+        thick = 2 * float(win.max()) if win.size else 40
+        piece = strips[k % len(strips)]; k += 3
+        # лента одна, во всю ширину полосы (+ запас под изгиб хорды); фактура тянется поперёк ≤ 1,3×
+        tw = int(np.clip(thick + 8, 40, 54))
+        piece = np.asarray(Image.fromarray((np.clip(piece, 0, 1) * 255).astype(np.uint8)).resize((piece.shape[1], tw), Image.LANCZOS)).astype(np.float32) / 255
+        put(piece, p0, p1, 0)
+        s_ = e_
+    # что не накрыла хорда (остриё рога, внешний изгиб) — доклеиваем отдельными кусками вдоль главной оси пятна
+    hole = (mask > .3) & (canvas[..., 3] < .5)
+    labh, nh = ndimage.label(ndimage.binary_dilation(hole, iterations=2))
+    patched = 0
+    for i_, sl in enumerate(ndimage.find_objects(labh), 1):
+        yy_, xx_ = np.where(labh[sl] == i_)
+        if len(yy_) < 12: continue
+        pts = np.stack([xx_ + sl[1].start, yy_ + sl[0].start], 1).astype(np.float64)
+        c0 = pts.mean(0)
+        with np.errstate(all='ignore'):           # ложные предупреждения Accelerate в matmul
+            u_, s_v, vt = np.linalg.svd(pts - c0, full_matrices=False)
+            ax = vt[0]; proj = (pts - c0) @ ax; wid = float(np.ptp((pts - c0) @ vt[1])) + 10
+        p0 = c0 + ax * (proj.min() - 10); p1 = c0 + ax * (proj.max() + 10)
+        piece = strips[(i_ * 5) % len(strips)]
+        piece = np.asarray(Image.fromarray((np.clip(piece, 0, 1) * 255).astype(np.uint8)).resize((piece.shape[1], int(np.clip(wid, 30, 60))), Image.LANCZOS)).astype(np.float32) / 255
+        put(piece, p0, p1, 0); patched += len(yy_)
+    hole = (mask > .3) & (canvas[..., 3] < .5)
+    if hole.any():                                   # последние крошки — ближайшим цветом
+        _, (iy, ix) = ndimage.distance_transform_edt(canvas[..., 3] < .5, return_indices=True)
+        canvas[..., :3][hole] = canvas[..., :3][iy[hole], ix[hole]]; canvas[..., 3][hole] = 1
+    print(f"  доклеено кусками: {patched} px, крошек: {int(hole.sum())} px")
+    alpha = canvas[..., 3] * mask
+    rgb_ = ndimage.gaussian_filter(canvas[..., :3], (.45, .45, 0))           # мягкость фото двери
+    # тень, как у букв на двери: мягкая, вниз-вправо
+    shadow = np.roll(np.roll(ndimage.gaussian_filter(alpha, 2.2), 3, 0), 2, 1) * .55
+    out_a = alpha + shadow * (1 - alpha)
+    out_rgb = (rgb_ * alpha[..., None]) / np.maximum(out_a, 1e-4)[..., None]
+    rgba = np.dstack([out_rgb, out_a])
+    ys, xs = np.where(out_a > .01)
+    y0, y1, x0, x1 = ys.min() - 2, ys.max() + 3, xs.min() - 2, xs.max() + 3
+    rgba = rgba[y0:y1, x0:x1]
+    p = OUT_S / "door-smile.webp"
+    Image.fromarray((np.clip(rgba, 0, 1) * 255 + .5).astype(np.uint8), "RGBA").save(p, quality=84, method=6, alpha_quality=92)
+    report(p)
+    # позиция в % от кадра двери — для CSS (#door-smile)
+    pos = dict(left=x0 / W * 100, top=y0 / H * 100, width=(x1 - x0) / W * 100, height=(y1 - y0) / H * 100)
+    print("  #door-smile: " + "; ".join(f"{k_}:{v:.3f}%" for k_, v in pos.items()))
+    return pos
+
 if ONLY in ("all", "photo"): photo()
+if ONLY in ("all", "smile"): door_smile(f32(Image.open(RAW / "new/pg-021-090.jpg").convert("RGB")))

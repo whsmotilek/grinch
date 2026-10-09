@@ -1,16 +1,13 @@
 <!-- K4 · прелоадер «точка → линия → улыбка → рожки → GRINCHIN → лого в шапку».
-     Первый кадр (точка) рисуется до JS: разметка и стили ниже инлайн, без внешних картинок, фильтров и шрифтов.
-     Режим решается до первой отрисовки: ?shot=1 и reduced-motion → без прелоадера; повторный визит в сессии → короткий. -->
+     Самодостаточный: свой маленький таймлайн на rAF, без GSAP и без ожидания DOMContentLoaded —
+     стартует с первой отрисовки, даже если CDN ещё грузит скрипты (на slow-4G точка больше не висит одна секундами).
+     Режим решается до первой отрисовки: ?shot=1 и reduced-motion → без прелоадера; повторный визит в сессии → короткий.
+     API: GV.loader {mode, started, ready, done, seek(t) — для покадровой проверки}. События: grinchin:loader-progress {t, phase}, grinchin:ready. -->
 <script>
 (function(){var h=document.documentElement,m='full';
 try{if(h.dataset.shot==='1'||/[?&]shot=1/.test(location.search)||matchMedia('(prefers-reduced-motion: reduce)').matches)m='off';
 else if(sessionStorage.getItem('gv-seen')==='1')m='short';}catch(e){}
-h.setAttribute('data-loader',m);
-/* предохранитель: если моушн-слой не стартовал (не загрузился GSAP, ошибка) — не держим сайт под крышкой */
-if(m!=='off')document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){
-  var g=window.GV;if(g&&g.motion&&g.motion.loaderStarted)return;
-  if(/full|short/.test(h.getAttribute('data-loader'))){h.setAttribute('data-loader','done');document.dispatchEvent(new CustomEvent('grinchin:ready'));}
-},2500);});})();
+h.setAttribute('data-loader',m);})();
 </script>
 <style>
 html[data-loader="full"],html[data-loader="short"]{overflow:hidden}
@@ -21,7 +18,7 @@ html[data-loader="off"] #loader,html[data-loader="done"] #loader{display:none}
 .ld-cover{position:absolute;left:0;right:0;top:-40vh;bottom:0;background:linear-gradient(to bottom,rgba(0,0,0,0),var(--c-black,#000) 40vh)}
 .ld-mark{position:relative;width:min(78vw,860px);aspect-ratio:1854/390;transform-origin:0 0}
 .ld-mark>svg,.ld-letters,.ld-letters svg{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible}
-.ld-line{fill:transparent;stroke:var(--c-white,#fff);stroke-width:3px;vector-effect:non-scaling-stroke;stroke-linejoin:round;opacity:0}
+.ld-line{fill:transparent;stroke:var(--c-white,#fff);stroke-width:3px;vector-effect:non-scaling-stroke;stroke-linejoin:round;opacity:0;transform-box:fill-box;transform-origin:50% 50%}
 .ld-horn{fill:none;stroke:var(--c-green,#00DB24);stroke-width:2.5px;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;opacity:0}
 .ld-letters{color:var(--c-green,#00DB24);clip-path:inset(-20% 100% -20% 0)}
 .ld-dot{position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:var(--c-green,#00DB24);
@@ -43,3 +40,92 @@ html[data-loader="short"] .ld-dot{display:none}
 </div>
 <!-- формы морфа: одинаковая структура команд (Mclclcz, 158 чисел) с линией выше → интерполяция по числам, без «выворачивания» -->
 <script type="application/json" id="gv-loader-shapes">{"body":"M927 386c0 0 8-12 26-24 20-13 41-24 63-32 56-20 113-35 187-41 93-7 177-2 266 0 82 2 163 5 226-17 65-23 97-62 113-118 8-19 6-19 6-19l-18 0 -2 0 23 0c3 0 5 0 7 0 28 21 12 122-67 170 -76 46-182 41-293 35 -103-6-212-21-346-8 -136 13-191 56-191 56 0 0-54-43-190-56 -135-13-244 2-347 8 -111 6-217 11-292-35 -80-48-96-149-67-170 1 0 3 0 6 0l23 0 -2 0 -17 0c0 0-3 0 6 19 15 56 48 95 113 118 62 22 143 19 225 17 90-2 173-7 266 0 74 6 131 21 187 41 23 8 44 19 64 32 17 12 25 24 25 24z","smile":"M927 386c0 0 8-12 26-24 20-13 41-24 63-32 56-20 113-35 187-41 93-7 177-2 266 0 82 2 163 5 226-17 65-23 97-62 113-118 13-51 4-80 4-80l-59 73 -5-3 76-142c11 32 18 65 22 99 6 55-10 156-89 204 -76 46-182 41-293 35 -103-6-212-21-346-8 -136 13-191 56-191 56 0 0-54-43-190-56 -135-13-244 2-347 8 -111 6-217 11-292-35 -80-48-96-149-89-204 4-34 11-67 21-99l77 142 -5 3 -60-73c0 0-9 29 5 80 15 56 48 95 113 118 62 22 143 19 225 17 90-2 173-7 266 0 74 6 131 21 187 41 23 8 44 19 64 32 17 12 25 24 25 24z"}</script>
+<script>
+(function(){'use strict';
+var D=document,h=D.documentElement,W=window,mode=h.getAttribute('data-loader')||'off';
+var GV=W.GV=W.GV||{},L=GV.loader={mode:mode,started:false,ready:false,done:false};
+var fire=function(n,d){D.dispatchEvent(new CustomEvent(n,{detail:d}));};
+var dcl=D.readyState!=='loading',want=false;
+/* ready уходит не раньше DOMContentLoaded (подписчики соседей уже на месте) и после их DCL-обработчиков */
+function sendReady(){if(L.ready)return;if(!dcl){want=true;return;}L.ready=true;h.setAttribute('data-ready','1');
+  if(mode==='off')fire('grinchin:loader-progress',{t:1,phase:'done'});fire('grinchin:ready');}
+if(!dcl)D.addEventListener('DOMContentLoaded',function(){setTimeout(function(){dcl=true;if(want)sendReady();},0);},{once:true});
+var ld=D.getElementById('loader');
+if(mode==='off'||!ld||!W.requestAnimationFrame){if(mode!=='off')h.setAttribute('data-loader','done');sendReady();return;}
+L.started=true;try{sessionStorage.setItem('gv-seen','1');}catch(e){}
+var short=mode==='short',S=JSON.parse(D.getElementById('gv-loader-shapes').textContent);
+var q=function(s){return ld.querySelector(s);},mk=q('.ld-mark'),cover=q('.ld-cover'),line=q('.ld-line'),lt=q('.ld-letters'),dot=q('.ld-dot'),horns=[].slice.call(ld.querySelectorAll('.ld-horn'));
+var NUM=/-?\d*\.?\d+(?:e[-+]?\d+)?/gi;
+function pl(a,b){var na=a.match(NUM).map(Number),nb=b.match(NUM).map(Number),pr=b.split(NUM);return function(t){var s=pr[0];for(var i=0;i<na.length;i++)s+=(+(na[i]+(nb[i]-na[i])*t).toFixed(2))+' '+pr[i+1];return s;};}
+var FLAT=line.getAttribute('d'),toBody=pl(FLAT,S.body),toSmile=pl(S.body,S.smile);
+function rgb(c){c=String(c).trim();if(c[0]==='#'){var x=c.slice(1);if(x.length===3)x=x.replace(/./g,'$&$&');return[0,2,4].map(function(i){return parseInt(x.substr(i,2),16);});}var m=c.match(/\d+(\.\d+)?/g);return m?m.slice(0,3).map(Number):[0,0,0];}
+function mix(a,b,t,al){return 'rgba('+a.map(function(v,i){return Math.round(v+(b[i]-v)*t);}).join(',')+','+(al==null?1:al)+')';}
+var GR=rgb(getComputedStyle(h).getPropertyValue('--c-green')||'#00DB24'),WH=[255,255,255];
+/* кривые как у GSAP: power1–3 / sine */
+var E={p1io:function(t){return t<.5?2*t*t:1-2*(1-t)*(1-t);},p2io:function(t){return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;},
+  p3io:function(t){return t<.5?8*t*t*t*t:1-Math.pow(-2*t+2,4)/2;},p2o:function(t){return 1-Math.pow(1-t,3);},
+  si:function(t){return 1-Math.cos(t*Math.PI/2);},so:function(t){return Math.sin(t*Math.PI/2);},sio:function(t){return -(Math.cos(Math.PI*t)-1)/2;}};
+var T=[],C=[];function tr(at,du,e,fn){T.push({at:at,du:du,e:e,fn:fn,d:0});}function call(at,fn){C.push({at:at,fn:fn,d:0});}
+var t0=short?0:.2,tM=short?0:.62,tH=short?0:.98,tL=short?.05:1.2,tF=short?.3:1.72,fd=short?.42:.5;
+var flip=null;function target(){if(flip)return flip;var a=mk.getBoundingClientRect(),l=D.querySelector('#logo svg')||D.getElementById('logo'),b=l&&l.getBoundingClientRect(),ok=b&&b.width>4;
+  flip={x:ok?b.left-a.left:0,y:ok?b.top-a.top:-a.top,s:ok?b.width/a.width:.2,c:ok?rgb(getComputedStyle(l).color):GR};return flip;}
+var ht=null;
+if(!short){
+  tr(t0,.25,E.si,function(p){dot.style.animation='none';dot.style.opacity=1-p;dot.style.transform='scale('+(1-.5*p)+')';});
+  tr(t0,.5,E.p3io,function(p){line.style.opacity=1;line.style.transform='scaleX('+(.005+.995*p)+')';});
+  tr(tM,.42,E.p2io,function(p){line.setAttribute('d',toBody(p));});
+  tr(tM,.45,E.sio,function(p){line.style.fill=mix(GR,GR,0,p);line.style.stroke=mix(WH,GR,p);});
+  tr(tH,.35,E.p2o,function(p){line.setAttribute('d',toSmile(p));});
+  tr(tH,.32,E.p1io,function(p){horns.forEach(function(e){e.style.opacity=1;e.style.strokeDashoffset=1-p;});});
+  tr(tH+.32,.25,E.so,function(p){horns.forEach(function(e){e.style.opacity=1-p;});});
+}else{
+  line.setAttribute('d',S.smile);line.style.fill=mix(GR,GR,1);line.style.stroke=mix(GR,GR,1);
+  tr(0,.2,E.so,function(p){line.style.opacity=p;});
+}
+/* буквы: маска слева направо + посадка на 3 px. Никаких лент поверх знака */
+tr(tL,short?.3:.5,E.p2io,function(p){lt.style.clipPath='inset(-20% '+(100-100*p).toFixed(2)+'% -20% 0%)';lt.style.transform=short?'':'translateY('+(3*(1-p)).toFixed(2)+'px)';});
+/* ворота перед раскрытием: картинка hero и шрифты, не дольше 1,2 с — иначе раскрылось бы пустое место или прыгнул шрифт */
+var paused=false,skipping=false;
+call(tF,function(){if(skipping)return;var img=D.querySelector('#hero img'),w=[];
+  if(img&&!img.complete)w.push(new Promise(function(r){img.addEventListener('load',r,{once:true});img.addEventListener('error',r,{once:true});}));
+  if(D.fonts&&D.fonts.status!=='loaded')w.push(D.fonts.ready);
+  ht=D.getElementById('hero-title');if(ht){ht.style.opacity=0;}
+  if(!w.length)return;paused=true;var go=function(){paused=false;last=0;};
+  Promise.race([Promise.all(w),new Promise(function(r){setTimeout(r,1200);})]).then(go,go);});
+/* раскрытие: знак — в шапку (FLIP), крышка уезжает вниз, заголовок hero встаёт */
+tr(tF,fd,E.p3io,function(p){var f=target();mk.style.transform='translate('+(f.x*p).toFixed(2)+'px,'+(f.y*p).toFixed(2)+'px) scale('+(1+(f.s-1)*p).toFixed(4)+')';
+  var c=mix(GR,f.c,p);lt.style.color=c;line.style.fill=c;line.style.stroke=mix(GR,f.c,p,1-p);});
+tr(tF,fd+.05,E.p2io,function(p){cover.style.transform='translateY('+(100*p).toFixed(2)+'%)';});
+tr(tF+.08,short?.36:.45,E.p2o,function(p){if(!ht)ht=D.getElementById('hero-title');if(ht){ht.style.opacity=p;ht.style.transform=p<1?'translateY('+(14*(1-p)).toFixed(2)+'px)':'';}});
+/* ready — когда hero раскрыт настолько, что место G видно: K2 рождает знак синхронно с раскрытием */
+call(tF+(short?.12:.2),sendReady);
+/* лого в шапке проявляется ровно в кадр посадки — подмена незаметна (боксы совпадают пиксель в пиксель) */
+call(tF+fd,function(){var l=D.getElementById('logo');if(l)l.style.visibility='visible';ld.style.display='none';});
+var END=0;T.forEach(function(k){END=Math.max(END,k.at+k.du);});C.forEach(function(k){END=Math.max(END,k.at);});
+function ph(t){return t<tM?'line':t<tL?'smile':t<tF?'word':'reveal';}
+function apply(t,force){for(var i=0;i<T.length;i++){var k=T[i];if(t<k.at||(k.d&&!force))continue;var p=Math.min(1,(t-k.at)/k.du);k.fn(k.e(p));if(p>=1)k.d=1;}
+  for(i=0;i<C.length;i++){k=C[i];if(t>=k.at&&!k.d){k.d=1;if(!(force&&i===0))k.fn();}}}
+var time=0,last=0,rate=1,held=false,ended=false;
+function finish(){if(ended)return;ended=true;['pointerdown','keydown','wheel','touchmove'].forEach(function(n){W.removeEventListener(n,skip,true);});
+  var l=D.getElementById('logo');if(l)l.style.visibility='';ld.style.display='none';h.setAttribute('data-loader','done');
+  if(ht){ht.style.opacity='';ht.style.transform='';}L.done=true;fire('grinchin:loader-progress',{t:1,phase:'done'});sendReady();}
+function tick(now){if(ended||held)return;
+  if(!paused){if(last){var dt=Math.min(now-last,200)/1000;time=Math.min(END,time+dt*rate);}last=now;apply(time);
+    fire('grinchin:loader-progress',{t:+(time/END).toFixed(3),phase:ph(time)});if(time>=END){finish();return;}}
+  else last=0;
+  requestAnimationFrame(tick);}
+/* пропуск: клик / клавиша / колесо / свайп — доигрывает остаток за 0,4 с */
+function skip(e){if(ended||skipping)return;if(e&&e.type==='keydown'&&/^(Tab|Shift|Control|Alt|Meta)$/.test(e.key))return;
+  skipping=true;paused=false;rate=Math.max(1,(END-time)/.4);}
+['pointerdown','keydown','wheel','touchmove'].forEach(function(n){W.addEventListener(n,skip,{capture:true,passive:true});});
+setTimeout(function(){if(!ended)skip();},7000);
+fire('grinchin:loader-progress',{t:0,phase:'start'});
+requestAnimationFrame(tick);
+/* для покадровой проверки: остановить и поставить таймлайн в момент t (с) */
+L.duration=END;L.seek=function(t){held=true;time=t;flip=null;
+  dot.style.animation='none';dot.style.opacity=1;dot.style.transform='';line.style.cssText='';line.setAttribute('d',short?S.smile:FLAT);
+  horns.forEach(function(e){e.style.cssText='';});lt.style.cssText='';mk.style.transform='';cover.style.transform='';ld.style.display='';
+  if(short){line.style.fill=mix(GR,GR,1);line.style.stroke=mix(GR,GR,1);}
+  T.forEach(function(k){k.d=0;});C.forEach(function(k){k.d=0;});apply(t,true);if(t>=END)finish();};
+})();
+</script>

@@ -11,6 +11,8 @@
    .kv          бирка «ключ: значение» моно (pres_12)
    .vh          скрыть визуально, оставить скринридеру
    Фокус: :focus-visible — кольцо var(--focus) (кислотное на тёмном, чёрное на бумаге .is-paper).
+   Ритм разделов — две ступени: --sec-1 (верх раздела) 72 / 120 px, --sec-2 (низ раздела, большие паузы) 96 / 160 px.
+   Трекинг: моно всегда .02em, кнопки .06em капсом, заголовки Unbounded — отрицательный (см. классы .t-*).
 
    ТИПОШКАЛА — 10 стилей, ничего мельче 12 px:
    1 --t-d1     Unbounded 900, 40→88 px / .9   заголовок раздела («Дроп 01»), пункты мобильного меню
@@ -37,6 +39,7 @@
   --t-mono-l:400 .875rem/1 var(--font-mono);
 
   --gutter:24px; --maxw:1680px;
+  --sec-1:72px; --sec-2:96px;
   --paper-2:color-mix(in srgb,var(--c-paper) 94.5%,var(--c-black));   /* подложка эскиза на листе */
   --ink-2:#5E5E5B;                                                      /* второй текст на бумаге, 6:1 */
   --focus:var(--c-acid);
@@ -44,7 +47,7 @@
   --e-spring:cubic-bezier(.34,1.32,.64,1);
 }
 @media (min-width:768px){:root{--gutter:40px}}
-@media (min-width:1100px){:root{--gutter:64px}}
+@media (min-width:1100px){:root{--gutter:64px;--sec-1:120px;--sec-2:160px}}
 
 /* ---------- база ---------- */
 *,*::before,*::after{box-sizing:border-box}
@@ -115,9 +118,9 @@ ul,ol{padding:0;list-style:none}
 .kv dt{color:var(--ink-2);flex:0 0 auto}
 
 /* ---------- полоса статуса (статична, прокручивается вместе со страницей) ---------- */
-#status{position:relative;z-index:calc(var(--z-header) + 1);height:var(--status-h);background:var(--c-black);color:var(--text-2);border-bottom:1px solid var(--c-line)}
+#status{position:relative;z-index:calc(var(--z-header) + 1);height:var(--status-h);background:var(--c-black);color:var(--text-2)}
 .status-in{height:100%;display:flex;align-items:center}
-.status-in p{font:var(--t-mono);letter-spacing:.06em;white-space:nowrap;display:flex;align-items:center;gap:10px}
+.status-in p{font:var(--t-mono);letter-spacing:.02em;white-space:nowrap;display:flex;align-items:center;gap:10px}
 .status-in p::before{content:"";width:6px;height:6px;flex:0 0 6px;background:var(--c-green)}
 .status-short{display:none!important}
 @media (max-width:767px){.status-long{display:none!important}.status-short{display:flex!important}}
@@ -129,11 +132,15 @@ ul,ol{padding:0;list-style:none}
 .hd-burger span{display:block;width:22px;height:1.5px;background:var(--c-white);transition:width .2s var(--e-out)}
 .hd-burger span+span{width:14px}
 .hd-burger:hover span+span{width:22px}
-#logo{justify-self:center;display:flex;align-items:center;height:44px;color:var(--accent);line-height:0}
+#logo{justify-self:center;display:flex;align-items:center;height:44px;color:var(--accent);line-height:0;transition:color .2s}
+#logo svg{transition:transform .35s var(--e-out)}
+#logo:hover{color:var(--c-acid)}
+#logo:hover svg{transform:translateY(-1px) scale(1.03)}
 #logo svg{height:22px;width:auto}
 .hd-nav{display:none}
 .hd-cart{justify-self:end;display:flex;align-items:center;gap:10px;min-width:44px;height:44px;justify-content:flex-end;color:var(--c-white);font:var(--t-ui)}
 .hd-cart-label{display:none}
+@media (min-width:768px){.hd-cart-label{display:inline}}
 .hd-cart-icon{display:block;width:22px;height:12px;color:inherit}
 /* фолбэк, пока иконку не нарисовал K4: пусто — плоская линия, с товаром — дуга */
 .hd-cart-icon:empty::before{content:"";display:block;width:100%;height:6px;border-bottom:1.5px solid currentColor;transition:border-radius .3s var(--e-out)}
@@ -155,46 +162,49 @@ html[data-cart="full"] .hd-cart-count{color:var(--c-green)}
 #progress{position:sticky;top:var(--header-h);z-index:var(--z-header);height:0;pointer-events:none}
 
 /* ---------- ДРОП 01: бумажный лист ---------- */
-#drop{position:relative;background:var(--c-paper);color:var(--c-black);padding:72px 0 88px;--focus:var(--c-black)}
-@media (min-width:1100px){#drop{padding:104px 0 120px}}
+#drop{position:relative;background:var(--c-paper);color:var(--c-black);padding:var(--sec-1) 0 var(--sec-2);--focus:var(--c-black)}
 .drop-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;margin-bottom:32px}
 @media (min-width:1100px){.drop-head{margin-bottom:48px}}
-.drop-title{font:var(--t-d1);letter-spacing:-.05em;text-transform:uppercase;margin-left:-.04em}
-.drop-title sup{font:var(--t-mono);letter-spacing:0;vertical-align:top;position:relative;top:.35em;margin-left:.5em}
+.drop-title{font:var(--t-d1);letter-spacing:-.05em;text-transform:uppercase}
+.drop-title sup{font:var(--t-h3);letter-spacing:-.02em;vertical-align:top;position:relative;top:.1em;margin-left:.3em}
 .drop-note{font:var(--t-mono);letter-spacing:.02em;color:var(--ink-2);padding-bottom:.3em}
 
 /* 8 вещей без сирот: 2×4 → (768–1099) 2×4 → (≥1100) 4×2 */
-.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:40px 12px}
-@media (min-width:768px){.grid{gap:56px 24px}}
-@media (min-width:1100px){.grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:64px 24px}}
+.grid{--rg:40px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:12px;row-gap:0;margin-bottom:calc(-1 * var(--rg))}
+@media (min-width:768px){.grid{--rg:56px;column-gap:24px}}
+@media (min-width:1100px){.grid{--rg:64px;grid-template-columns:repeat(4,minmax(0,1fr))}}
 
-.card{position:relative;min-width:0;cursor:pointer}
-.card-media{position:relative;aspect-ratio:4/5;overflow:hidden;background:var(--paper-2)}
+/* карточка — subgrid по ряду: имена, цвета и цены соседних карточек на одной высоте при любых переносах */
+.card{position:relative;min-width:0;cursor:pointer;display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;
+  grid-row:span 6;grid-template-rows:subgrid;row-gap:0;padding-bottom:var(--rg)}
+.card-body{display:contents}
+.card-media{grid-column:1/-1;grid-row:1;position:relative;aspect-ratio:4/5;overflow:hidden;background:var(--paper-2)}
 .card-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 .card-img--alt{background:var(--paper-2);opacity:0;transition:opacity .25s ease}
 .card-sizes{display:none}
-.card-body{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;gap:6px 12px;padding-top:14px}
 .card-num,.card-status,.card-color{font:var(--t-mono);letter-spacing:.02em;color:var(--ink-2)}
-.card-status{text-align:right;white-space:nowrap}
-
-.card-name{grid-column:1/-1;font:var(--t-name);letter-spacing:-.01em}
+.card-num{grid-row:2;grid-column:1/-1;padding-top:12px;align-self:start}
+.card-name{grid-row:3;grid-column:1/-1;padding-top:4px;font:var(--t-name);letter-spacing:-.01em}
+.card-color{grid-row:4;grid-column:1/-1;padding-top:4px}
+.card-price{grid-row:5;grid-column:1/-1;padding-top:6px;font:var(--t-mono-l);font-variant-numeric:tabular-nums;white-space:nowrap}
+.card-status{grid-row:6;grid-column:1/-1;padding-top:6px;white-space:nowrap}
+.card-status:empty{padding:0}
+@media (min-width:768px){
+  .card{grid-row:span 4}
+  .card-num{grid-column:1;padding-top:14px}
+  .card-status{grid-row:2;grid-column:2;padding-top:14px;text-align:right}
+  .card-color{grid-column:1;padding-top:6px}
+  .card-price{grid-row:4;grid-column:2;text-align:right}
+}
 .card-open{text-align:left;font:inherit;letter-spacing:inherit;text-decoration:underline;text-decoration-color:transparent;text-underline-offset:4px;
   text-decoration-thickness:1px;transition:text-decoration-color .2s}
 .card-open:focus-visible{outline:none}
 .card:has(.card-open:focus-visible) .card-media{outline:2px solid var(--c-black);outline-offset:4px}
-.card-price{font:var(--t-mono-l);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
 .card-status.is-alert{color:var(--c-black)}
 .card-status.is-alert::before{content:"";display:inline-block;width:6px;height:6px;margin-right:7px;vertical-align:.12em;background:var(--c-green)}
 .card[data-state="soldout"] .card-status.is-alert::before{background:var(--c-black)}
 .card[data-state="soldout"] .card-name,.card[data-state="soldout"] .card-price{color:var(--ink-2)}
 .card[data-state="soldout"] .card-media{opacity:.6}
-@media (max-width:767px){
-  /* узкая колонка: статус переносится под номер, если не влезает в строку */
-  .card-body{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;padding-top:10px}
-  .card-body .card-status{margin-left:auto}
-  .card-body .card-name,.card-body .card-color,.card-body .card-price{flex:0 0 100%;text-align:left}
-  .card-body .card-name{margin-top:2px}
-}
 
 /* hover (только мышь): второй эскиз мягко поверх + ряд размеров по центру */
 @media (hover:hover) and (pointer:fine){
@@ -241,7 +251,7 @@ html[data-cart="full"] .hd-cart-count{color:var(--c-green)}
   .ov-panel.is-closing{transition:transform .26s cubic-bezier(.4,0,1,1)!important}
   .ps-panel{top:calc(env(safe-area-inset-top) + 10px)}
   .sz-panel,.cart-panel{max-height:calc(100svh - env(safe-area-inset-top) - 24px)}
-  .cart-panel{display:flex;flex-direction:column;min-height:min(420px,70svh)}
+  .cart-panel{display:flex;flex-direction:column}
 }
 @media (min-width:768px){
   .sheet-grab{display:none}
@@ -262,7 +272,7 @@ html[data-cart="full"] .hd-cart-count{color:var(--c-green)}
 .ov--menu.is-open .menu-list>:nth-child(2){transition-delay:.04s}
 .ov--menu.is-open .menu-list>:nth-child(3){transition-delay:.08s}
 .menu-list a:hover,.menu-list button:hover{color:var(--c-green)}
-.menu-foot{margin-top:auto;color:var(--text-2);letter-spacing:.06em}
+.menu-foot{margin-top:auto;color:var(--text-2)}
 
 /* ---------- карточка товара ---------- */
 .ps-body{padding-bottom:0}
@@ -398,7 +408,7 @@ html[data-cart="full"] .hd-cart-count{color:var(--c-green)}
 .qty{display:inline-grid;grid-template-columns:44px 36px 44px;align-items:stretch;height:46px;border:1px solid var(--c-black)}
 .qty button{transition:background-color .15s,color .15s}
 .qty button:hover:not(:disabled){background:var(--c-black);color:var(--c-green)}
-.qty button:disabled{color:color-mix(in srgb,var(--c-black) 30%,transparent);cursor:default}
+.qty button:disabled,.qty button[aria-disabled="true"]{color:color-mix(in srgb,var(--c-black) 48%,transparent);cursor:default}
 .qty output{border-inline:1px solid var(--c-line-paper)}
 .ci-remove{display:inline-flex;align-items:center;min-height:44px;padding:0 2px;font:var(--t-ui);color:var(--ink-2);text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:1px}
 .ci-remove:hover{color:var(--c-black)}
@@ -411,7 +421,7 @@ html[data-cart="full"] .hd-cart-count{color:var(--c-green)}
 .cu-go{grid-column:3;grid-row:1/span 2;display:grid;place-items:center;width:44px;height:44px}
 .cu-go svg{width:16px}
 .cu-card:hover{border-color:var(--c-black)}
-.cart-foot{position:sticky;bottom:0;margin:auto calc(-1 * var(--gutter)) 0;padding:16px var(--gutter) calc(16px + env(safe-area-inset-bottom));
+.cart-foot{position:sticky;bottom:0;margin:24px calc(-1 * var(--gutter)) 0;padding:16px var(--gutter) calc(16px + env(safe-area-inset-bottom));
   background:var(--c-paper);border-top:1px solid var(--c-black);display:grid;gap:14px}
 .cart-sum{display:grid;gap:8px}
 .cart-sum>div{justify-content:space-between}
@@ -429,19 +439,31 @@ html[data-cart="full"] .hd-cart-count{color:var(--c-green)}
   .ov--drawer.is-open .cart-panel{transform:none}
   .cart-body{padding:0 32px}
   .cart-foot{margin-inline:-32px;padding-inline:32px}
+  .cart-body{flex:0 0 auto}
+  .cart-empty{margin:0}
 }
+
+/* ---------- 404: поля как у .wrap, чтобы лого стояло на общем левом крае (содержимое — K5) ---------- */
+#page-404 .ov-panel{padding-left:max(var(--gutter),env(safe-area-inset-left),calc((100% - var(--maxw)) / 2));
+  padding-right:max(var(--gutter),env(safe-area-inset-right),calc((100% - var(--maxw)) / 2))}
 
 /* ---------- тост ---------- */
 .toast{position:fixed;z-index:120;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));max-width:calc(100% - 2 * var(--gutter));
   padding:13px 18px;background:var(--c-paper);color:var(--c-black);border:1px solid var(--c-black);font:var(--t-mono);letter-spacing:.02em;
   transform:translate(-50%,12px);opacity:0;pointer-events:none;transition:opacity .2s ease,transform .3s var(--e-out)}
 .toast.is-on{opacity:1;transform:translate(-50%,0)}
-@media (max-width:767px){html[data-overlay="product"] .toast{bottom:calc(96px + env(safe-area-inset-bottom))}}
+.toast.is-anchored{bottom:auto;top:var(--ty);left:var(--tx)}
 
 /* ---------- альбомная ориентация телефона ---------- */
-@media (max-height:500px) and (orientation:landscape){
+@media (max-height:560px) and (orientation:landscape){
   .ps-panel{top:0}
+  .ps-info{position:static}
+  .ps-buy{position:sticky;bottom:0;z-index:4;margin:16px -40px 0;padding:10px 40px calc(10px + env(safe-area-inset-bottom));
+    background:var(--c-paper);border-top:1px solid var(--c-line-paper)}
+}
+@media (max-height:560px) and (orientation:landscape) and (max-width:767px){
   .ps-gallery{max-width:min(60vh,360px);margin-inline:auto}
+  .ps-buy{margin-inline:calc(-1 * var(--gutter));padding-inline:var(--gutter)}
 }
 
 /* ---------- reduced motion: ничего не едет само ---------- */
@@ -461,3 +483,5 @@ html[data-cart="full"] .hd-cart-count{color:var(--c-green)}
 
 /* разделы получают фокус после навигации (для скринридера) — без кольца на весь блок */
 main [tabindex="-1"]:focus-visible,#footer[tabindex="-1"]:focus-visible,#hero[tabindex="-1"]:focus-visible{outline:none}
+.ps-add[data-mode="subscribed"]{background:transparent;color:var(--c-black);border-color:var(--c-line-paper);cursor:default}
+#main:focus-visible{outline:none}

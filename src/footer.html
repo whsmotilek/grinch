@@ -6,17 +6,17 @@
       <div class="fo-col">
         <p class="fo-k">инфо:</p>
         <ul class="fo-list">
-          <li><button class="fo-row" type="button" data-ft-open="sizes">Размерная сетка</button></li>
+          <li><button class="fo-row" type="button" data-ft-open="sizes"><span>Размерная сетка</span><svg class="gl" viewBox="0 0 16 12" aria-hidden="true"><path d="M0 6h14.5M9.5 1l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button></li>
           <li>
             <details class="fo-acc" name="fo-info">
               <summary class="fo-row">Доставка и предзаказ</summary>
-              <p>Предзаказ до 30.11, отправка с 01.12. СДЭК или Почта России, 2–7 дней.</p>
+              <p>Предзаказ до&nbsp;30.11, отправка с&nbsp;01.12. СДЭК или Почта России, 2–7&nbsp;дней.</p>
             </details>
           </li>
           <li>
             <details class="fo-acc" name="fo-info">
               <summary class="fo-row">Возврат и обмен</summary>
-              <p>14 дней, если вещь не носили и бирка на месте. Обмен размера — бесплатно.</p>
+              <p>14&nbsp;дней, если вещь не&nbsp;носили и&nbsp;бирка на&nbsp;месте. Обмен размера&nbsp;— бесплатно.</p>
             </details>
           </li>
         </ul>
@@ -29,11 +29,14 @@
       </div>
     </div>
 
-    <!-- K2 «сажает» сюда 3D-G (ищет по id) -->
+    <!-- K2 «сажает» сюда 3D-G (ищет по id). .fo-logo — видимый лого (маска + бумага).
+         .fo-logo-geom — тот же вектор, невидимый, ровно поверх: геометрия букв для K2
+         (#footer-logo .fo-logo-geom [data-l="G"] → getBoundingClientRect / getBBox) -->
     <div id="footer-logo" class="fo-logo-box">
       <div class="fo-logo" role="img" aria-label="GRINCHIN"></div>
+      <div class="fo-logo-geom" aria-hidden="true"><!--@svg:logo--></div>
     </div>
 
-    <p class="fo-legal"><span>© GRINCHIN 2026</span><span>Москва</span><span>демо: цены, даты и фото — пример</span></p>
+    <p class="fo-legal"><span>© GRINCHIN 2026</span><span>Москва</span><span>демо: цены, даты и&nbsp;фото&nbsp;— пример</span></p>
   </div>
 </footer>

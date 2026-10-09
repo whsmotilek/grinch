@@ -1,6 +1,7 @@
 /* GRINCHIN v2 — лента «прилепить», подписи образов, счётчик свайпа. Владелец: K3. Глобально — только GV.street.
    Лента лепится ОДИН раз: при входе в зону видимости и не раньше конца прелоадера (grinchin:ready).
-   ?shot=1 и prefers-reduced-motion — сразу на месте, без движения. */
+   Растр ленты подключается (.is-near), только когда кусок рядом с экраном, — не качается под прелоадером.
+   ?shot=1 и prefers-reduced-motion — сразу на месте, без движения. #door-smile анимирует K4 (здесь не трогаем). */
 (function () {
   "use strict";
   var root = document.documentElement;
@@ -12,6 +13,7 @@
   /* Прилепить кусок: короткая посадка с прогибом (~350 мс, CSS @keyframes tape-land). Возвращает Promise. */
   function stick(el, opts) {
     opts = opts || {};
+    el && el.classList.add("is-near");
     return new Promise(function (done) {
       if (!el || el.classList.contains("is-stuck")) return done();
       if (still || opts.instant) { el.classList.add("is-stuck"); return done(); }
@@ -26,37 +28,57 @@
     });
   }
 
-  /* [data-stick] в разметке: лепим при первом показе. Несколько кусков в одном кадре — с шагом 120 мс. */
-  var queue = [], io = null;
+  /* [data-stick]: растр — заранее (за экран до показа), посадка — при первом показе, несколько кусков с шагом 120 мс */
+  var queue = [];
   function flush() {
     if (!ready) return;
     queue.splice(0).forEach(function (el, i) { stick(el, { delay: i * 120 + 60 }); });
   }
   function watch() {
-    var els = [].slice.call(document.querySelectorAll(".tape[data-stick]"));
-    if (still || !("IntersectionObserver" in window)) { els.forEach(function (el) { stick(el, { instant: true }); }); return; }
-    io = new IntersectionObserver(function (entries) {
+    var els = [].slice.call(document.querySelectorAll(".tape"));
+    if (!("IntersectionObserver" in window)) { els.forEach(function (el) { stick(el, { instant: true }); }); return; }
+    var near = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add("is-near"); near.unobserve(en.target); } });
+    }, { rootMargin: "100% 0px 100% 0px" });
+    var seen = new IntersectionObserver(function (entries) {
       entries.forEach(function (en) {
         if (!en.isIntersecting) return;
-        io.unobserve(en.target); queue.push(en.target);
+        seen.unobserve(en.target);
+        if (still) stick(en.target, { instant: true }); else queue.push(en.target);
       });
       flush();
     }, { rootMargin: "0px 0px -12% 0px", threshold: 0 });
-    // наблюдаем родителя (отпечаток/hero): у самой ленты opacity 0 и она может торчать за край
-    els.forEach(function (el) { io.observe(el); });
+    els.forEach(function (el) {
+      // под прелоадером растр не нужен: hero-ленту подключаем к ready, остальные — по приближению
+      if (el.closest("#hero") && !ready) document.addEventListener("grinchin:ready", function () { el.classList.add("is-near"); }, { once: true });
+      else near.observe(el);
+      if (el.hasAttribute("data-stick")) seen.observe(el); else el.classList.add("is-stuck");
+    });
+    if (still) els.forEach(function (el) { el.classList.add("is-near"); });
   }
   document.addEventListener("grinchin:ready", function () { ready = true; flush(); });
-  setTimeout(function () { if (!ready) { ready = true; flush(); } }, 6000);   // прелоадер не прислал ready — не держим ленту
+  setTimeout(function () {                         // прелоадер не прислал ready — ленту не держим
+    if (ready) return;
+    ready = true;
+    [].forEach.call(document.querySelectorAll("#hero .tape"), function (el) { el.classList.add("is-near"); });
+    flush();
+  }, 6000);
 
   /* Подписи образов: имя вещи берём из GV_PRODUCTS (единый источник с карточками), статичный текст — запасной */
   function syncNames() {
     var list = window.GV_PRODUCTS || [];
-    [].forEach.call(document.querySelectorAll("#looks a[data-product]"), function (a) {
-      for (var i = 0; i < list.length; i++) if (list[i].id === a.dataset.product && list[i].name) { a.textContent = list[i].name; break; }
+    [].forEach.call(document.querySelectorAll("#looks a[data-product], #hero a[data-product]"), function (a) {
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].id !== a.dataset.product || !list[i].name) continue;
+        var arrow = a.querySelector("[aria-hidden]");
+        a.textContent = list[i].name;
+        if (arrow) { a.appendChild(document.createTextNode(" ")); a.appendChild(arrow); }
+        break;
+      }
     });
   }
 
-  /* Mobile: счётчик «1/4» по ближайшему к левому краю отпечатку */
+  /* Mobile: счётчик «1/3» по ближайшему к левому краю отпечатку */
   function counter() {
     var rail = document.querySelector("[data-looks-rail]"), out = document.querySelector("[data-looks-now]");
     if (!rail || !out) return;

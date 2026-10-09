@@ -24,12 +24,12 @@
 
   /* ================= подписка ================= */
   var CH = {
-    telegram: { label: "ник:", ph: "@ник", type: "text", mode: "text", ac: "off", done: "Напишем в Telegram.",
+    telegram: { label: "ник:", ph: "@ник", type: "text", mode: "text", ac: "username", done: "Напишем в\u00a0Telegram.",
       ok: function (v) { return /^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(v.replace(/^(https?:\/\/)?(t\.me\/|telegram\.me\/)/i, "").replace(/^@/, "")); },
-      bad: "Ник — от 5 символов: латиница, цифры, _." },
-    email: { label: "почта:", ph: "имя@почта.ру", type: "email", mode: "email", ac: "email", done: "Напишем на почту.",
+      bad: "Ник\u00a0— от\u00a05 символов: латиница, цифры, _." },
+    email: { label: "почта:", ph: "имя@почта.ру", type: "email", mode: "email", ac: "email", done: "Напишем на\u00a0почту.",
       ok: function (v) { return /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)*\.[^\s@.]{2,}$/.test(v); },
-      bad: "В почте опечатка?" }
+      bad: "В\u00a0почте опечатка?" }
   };
   var EMPTY = "Нужен ник или почта.";
   var sec = d.getElementById("next");
@@ -63,8 +63,10 @@
       { opacity: 1, offset: .45, transform: "translate(0,1px) scale(.994) rotate(0deg)" },
       { opacity: 1, transform: "none" }
     ], { duration: 360, delay: delay, easing: ease, fill: "backwards" });
+    // тень родится вместе с лентой (не раньше: иначе ~150 мс на пакете висит тёмное пятно), пик — пока лента в воздухе
     sh.animate([
-      { opacity: .55, transform: "translate(0,22px) scale(1.08)" },
+      { opacity: 0, transform: "translate(0,22px) scale(1.08)" },
+      { opacity: .42, offset: .2, transform: "translate(0,16px) scale(1.06)" },
       { opacity: 0, transform: "translate(0,2px) scale(1)" }
     ], { duration: 360, delay: delay, easing: ease, fill: "both" });
   }

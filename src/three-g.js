@@ -1,27 +1,27 @@
 /* GRINCHIN v2 · K2 · сквозной объект «G в рогах» → window.GV.g
-   Один объект ведёт через весь сайт: рождается из улыбки прелоадера → hero (следит за курсором /
-   свайпом / наклоном) → при прокрутке уменьшается и паркуется компаньоном у правого края →
-   над «Дропом» смотрит на карточку под курсором → в «Образах» поворачивается к отпечатку в центре →
-   в «Знаке» уступает сцену и прячется → на подписку делает оборот → в подвале садится в букву G
-   логотипа на мятой бумаге и растворяется. Открыт оверлей — уходит за край.
+   Один объект ведёт через весь сайт: рождается на своём месте в hero, когда прелоадер раскрывает сайт →
+   в hero следит за курсором / свайпом / наклоном → при прокрутке уменьшается и уходит компаньоном
+   в правое поле (desktop) / в угол (mobile, только при прокрутке вверх) → над «Дропом» смотрит на карточку
+   под курсором → в «Образах» поворачивается к отпечатку в центре → в «Знаке» прячется → на подписку делает
+   оборот → в подвале летит к букве G логотипа и растворяется ДО касания букв. Открыт оверлей — уходит.
+   Правило: знак никогда не лежит поверх контента. Остановились, а под ним текст/кнопка/фото — гаснет.
 
-   Техника (причины рывков v1 — audit/04 §2.3):
-   · three.js рендерит в Web Worker через OffscreenCanvas: импорт, геометрия, текстуры и компиляция
-     шейдеров не трогают главный поток вообще. Нет OffscreenCanvas-WebGL — тот же движок на главном
-     потоке в requestIdleCallback (старые Safari).
-   · Канвас один, фиксированный, размером с hero-кадр; двигается и масштабируется только CSS-transform
-     (композитор). WebGL перерисовывает кадр, лишь когда меняется поворот; в покое — 0 кадров.
+   Техника (причины рывков v1 — audit/04 §2.3; правки — verify/03):
+   · three.js рендерит в Web Worker через OffscreenCanvas: импорт, геометрия, текстуры не трогают главный
+     поток. three.core — минифицированный (подмена импорта в воркере, −125 КБ br). Компиляция шейдеров:
+     desktop — сразу, mobile — после рождения в простое (в hero до этого SVG-знак, подмена — затуханием).
+     Программный WebGL (SwiftShader/llvmpipe) → SVG: там компиляция замораживает страницу на ~0,9 с.
+     Нет OffscreenCanvas-WebGL — тот же движок на главном потоке в requestIdleCallback (?glmain).
+   · Канвас один, фиксированный; двигается и масштабируется только CSS-transform. WebGL перерисовывает кадр,
+     лишь когда меняется поворот; в покое — 0 кадров. Двойников-картинок больше нет — нет и скачков подмены.
    · Один цикл — gsap.ticker; сглаживание по dt: x += (t−x)·(1−e^(−λ·dt)) — одинаково на 30/60/120 Гц.
-   · Чтений layout в цикле нет: прямоугольники меряются в measure() (load / resize / ResizeObserver /
-     ScrollTrigger.refresh), в кадре — только scrollY и арифметика.
-   · Там, где знак «прилипает» к прокручиваемому контенту (подвал), вместо канваса — двойник-картинка
-     внутри самого контента: прокрутка двигает её нативно, отставания от страницы нет.
-   · Mobile: WebGL только в hero; дальше компаньон 48 px — двойник (снимок того же 3D-знака, рога и
-     G отдельно, чтобы стрелка поворачивалась CSS-ом), кнопка «наверх».
-   · Фолбэк (нет WebGL, ошибка импорта, слабое устройство, reduced-motion): SVG-знак того же контура,
-     статичный в hero, компаньон без движения за прокруткой.
+     Скачок прокрутки > 0,5 экрана (End/Home, якорь) — знак гаснет на месте, переносится и проявляется.
+   · Чтений layout в цикле нет: прямоугольники меряются в measure(); при остановке — одна проверка
+     elementsFromPoint под знаком.
+   · Фолбэк (нет WebGL, ошибка, слабое устройство, reduced-motion): SVG того же контура — в hero статично,
+     компаньон без движения за прокруткой.
    Контуры — оригинальный вектор из PDF (стр. 14), тот же, что в svg/g-horns.svg.
-   Отладка: ?nogl — сразу SVG-фолбэк; ?glmain — WebGL на главном потоке (без воркера). */
+   Отладка: ?nogl — SVG; ?glmain — WebGL на главном потоке; ?soft — разрешить программный WebGL. */
 (() => {
   'use strict';
   const GV = (window.GV = window.GV || {});
@@ -36,8 +36,7 @@
   const MARK_W = 392;                     // ширина знака, ед. SVG
   const VB_W = MARK_W / FILL, VB_H = VB_W / ASPECT;
   const VB = `${(-VB_W / 2).toFixed(1)} ${(-VB_H / 2).toFixed(1)} ${VB_W.toFixed(1)} ${VB_H.toFixed(1)}`;
-  // буква G в логотипе (svg/logo.svg, 1854×390): bbox 137..347 × 47..240 → центр знака и его ширина в ед. лого
-  const LOGO = { w: 1854, h: 390, cx: 242.3, cy: 174.2, mark: 533 };
+  const LOGO = { w: 1854, h: 390 };      // svg/logo.svg; буква G — bbox 137..347 × 47..240
   const URL3 = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.186.1/three.module.min.js';
   const NEUTRAL = { rx: 0.1, ry: -0.3 };  // поза покоя = поза двойника (стыковки без скачка)
 
@@ -141,6 +140,12 @@
       canvas, antialias: !!o.aa, alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance',
       failIfMajorPerformanceCaveat: !!o.strict, preserveDrawingBuffer: !!o.keep, stencil: false,
     });
+    // программный WebGL (SwiftShader / llvmpipe / Basic Render): компиляция шейдеров замораживает страницу на ~0,9 с → SVG
+    try {
+      const g = renderer.getContext(), di = g.getExtension('WEBGL_debug_renderer_info');
+      const rn = String(di ? g.getParameter(di.UNMASKED_RENDERER_WEBGL) : g.getParameter(g.RENDERER));
+      if (!o.soft && /swiftshader|llvmpipe|softpipe|basic render|software|microsoft basic/i.test(rn)) throw new Error('software-gl: ' + rn);
+    } catch (e) { if (/software-gl/.test(e.message)) { renderer.dispose(); throw e; } }
     renderer.setPixelRatio(1);                      // размер буфера в пикселях задаём сами
     renderer.setClearColor(0x000000, 0);
     renderer.outputColorSpace = T.SRGBColorSpace;
@@ -196,78 +201,70 @@
       if (renderer.compileAsync) await renderer.compileAsync(scene, cam); else renderer.compile(scene, cam);
       render(p);                                  // первая отрисовка грузит текстуры и буферы — до показа
     }
-    // двойник: рога и G отдельными картинками той же позы и того же кадра (суперсэмплинг ×2)
-    async function snap(Wpx, p) {
-      const Hpx = Math.round(Wpx / o.ASPECT), SW = Wpx * 2, SH = Hpx * 2;
-      const rt = new T.WebGLRenderTarget(SW, SH); rt.texture.colorSpace = T.SRGBColorSpace;
-      const buf = new Uint8Array(SW * SH * 4), out = {};
-      pose(p);
-      for (const part of ['horns', 'needle']) {
-        horns.visible = part === 'horns'; needle.visible = part === 'needle';
-        renderer.setRenderTarget(rt); renderer.clear(); renderer.render(scene, cam);
-        renderer.readRenderTargetPixels(rt, 0, 0, SW, SH, buf);
-        const big = cv2d(SW, SH), bg = big.getContext('2d'), id = bg.createImageData(SW, SH), row = SW * 4;
-        for (let y = 0; y < SH; y++) id.data.set(buf.subarray((SH - 1 - y) * row, (SH - y) * row), y * row);
-        bg.putImageData(id, 0, 0);
-        const sm = cv2d(Wpx, Hpx), sg = sm.getContext('2d');
-        sg.imageSmoothingEnabled = true; sg.imageSmoothingQuality = 'high'; sg.drawImage(big, 0, 0, Wpx, Hpx);
-        out[part] = sm.convertToBlob ? await sm.convertToBlob({ type: 'image/webp', quality: 0.9 })
-          : await new Promise((res) => sm.toBlob(res, 'image/webp', 0.9));
-      }
-      horns.visible = needle.visible = true;
-      renderer.setRenderTarget(null); rt.dispose();
-      const v = new T.Vector3(gcx, gcy, 0.07); group.updateMatrixWorld(true); v.applyMatrix4(group.matrixWorld).project(cam);
-      out.pivot = [(v.x + 1) / 2, (1 - v.y) / 2];
-      return out;
-    }
     function info() { const r = renderer.info.render; return { frames, glFrame: r.frame, calls: r.calls, tris: r.triangles, programs: (renderer.info.programs || []).length }; }
     function dispose() { [gH, gG, face, side, mcFace, mcSide, nrm].forEach((x) => x.dispose()); renderer.dispose(); }
-    return { render, setRes, warm, snap, info, dispose, onLost: (f) => { lostCb = f; } };
+    return { render, setRes, warm, info, dispose, onLost: (f) => { lostCb = f; } };
   }
 
+  // three.module.min.js импортирует НЕминифицированный ./three.core.js (+125 КБ br) — подменяем на three.core.min.js
   const WORKER_SRC = `'use strict';
 const ENGINE = ${ENGINE.toString()};
 let E = null, last = null, pend = false;
 const raf = self.requestAnimationFrame ? (f) => self.requestAnimationFrame(f) : (f) => setTimeout(f, 0);
 const draw = () => { pend = false; if (E && last) E.render(last); };
+async function load(url) {
+  try {
+    const src = await (await fetch(url)).text();
+    const core = new URL('three.core.min.js', url).href;
+    const IMP = 'from"./three.core.js"';
+    if (src.indexOf(IMP) < 0) throw 0;
+    const blob = new Blob([src.split(IMP).join('from"' + core + '"')], { type: 'text/javascript' });
+    return await import(URL.createObjectURL(blob));
+  } catch (e) { return import(url); }
+}
 self.onmessage = async (ev) => {
   const m = ev.data;
   try {
     if (m.t === 'init') {
-      const T = await import(m.url);
+      const T = await load(m.url);
       E = ENGINE(T, m.canvas, m.o);
       E.onLost(() => postMessage({ t: 'lost' }));
       E.setRes(m.w, m.h); last = m.pose;
-      await E.warm(m.pose);
-      postMessage({ t: 'ready' });
-      if (m.snap) { const s = await E.snap(m.snap, m.pose); E.render(last); postMessage({ t: 'twin', s }); }
+      postMessage({ t: 'built' });
     } else if (!E) return;
+    else if (m.t === 'warm') { await E.warm(last); postMessage({ t: 'ready' }); }
     else if (m.t === 'pose') { last = m.p; if (!pend) { pend = true; raf(draw); } }
     else if (m.t === 'res') { E.setRes(m.w, m.h); if (last) E.render(last); }
-    else if (m.t === 'stats') postMessage({ t: 'stats', id: m.id, v: E.info() });
+    else if (m.t === 'stats') {
+      const v = E.info();
+      v.net = performance.getEntriesByType('resource').map((r) => [r.name.split('/').pop(), r.encodedBodySize, r.decodedBodySize]);
+      postMessage({ t: 'stats', id: m.id, v });
+    }
   } catch (e) { postMessage({ t: 'error', msg: String((e && e.message) || e) }); }
 };`;
 
   /* ═════════════════════ СОСТОЯНИЕ ═════════════════════ */
   const S = {
-    mode: 'none',            // 'gl' — 3D (до готовности показывается SVG) | 'svg' — фолбэк
-    glReady: false, twinReady: false, glIn: 0,
-    started: false, birthT: -1e9, origin: null,
+    mode: 'none',            // 'gl' — 3D (пока шейдеры не готовы, в hero стоит SVG) | 'svg' — фолбэк
+    built: false, warmAsked: false, glReady: false, glIn: -1e9,
+    started: false, birthT: -1e9,
     sy: 0, vel: 0, px: -1, py: -1,
+    up: 0, down: 0, lastScrollT: -1e9, summon: 0, summonV: 0,   // mobile: компаньон только при прокрутке вверх
     yaw: 0, yawV: 0, pitch: 0, drag: null, gyro: null,
     card: null, cardEl: null, compHover: false,
-    overlay: false, nodT: -1e9, spinT: -1e9,
+    overlay: false, kb: false, nodT: -1e9, spinT: -1e9,
+    jumpT: -1e9, jumpSnap: true, restHide: false, chk: null,
     settled: false, dirty: true, renders: 0, lastPost: null, res: [0, 0], resT: 0,
-    carrier: '', pose: null, lastComp: '', lastCv: '', lastOp: '',
+    carrier: '', pose: null, lastCv: '', lastOp: '',
   };
   const M = {                // замеры (обновляются только в measure)
     vw: 1, vh: 1, dpr: 1, mob: false, docH: 1,
-    hero: { cx: 0, cy: 0, w: 300 }, heroTop: 0, heroH: 1,
-    park: { x: 0, y: 0, size: 84 }, compMark: 84, rest: { x: 0, y: 0 },
-    secs: [], logo: null, looks: [], Wc: 300, Hc: 214, dockW: 200,
+    hero: { cx: 0, cy: 0, w: 300 }, heroTop: 0,
+    park: { x: 0, y: 0, size: 48 }, show: true, btn: 48,
+    secs: [], logo: null, looks: [], Wc: 300, Hc: 214,
   };
-  let stage = null, cv = null, comp = null, compTw = null, host = null, hostSvg = null, gyroBtn = null, dock = null, dockTw = null;
-  let glh = null, twinURL = null, uid = 0;
+  let stage = null, cv = null, comp = null, compTw = null, host = null, hostSvg = null, gyroBtn = null;
+  let glh = null, uid = 0;
   const statsCb = new Map();
 
   /* ═════════════════════ DOM ═════════════════════ */
@@ -279,29 +276,15 @@ self.onmessage = async (ev) => {
       `<g fill="url(#${id})" stroke="${tok('--c-forest', '#10340C')}" stroke-width="6" stroke-linejoin="round" paint-order="stroke">` +
       `<path d="${P_HORNS}"/><g class="g-sv-n"><path d="${P_G}"/></g></g></svg>`;
   }
-  // двойник: пока нет снимка 3D — SVG; снимок пришёл — две картинки (рога + стрелка)
-  function twin(cls) {
-    const el = D.createElement('div');
-    el.className = 'g-tw ' + cls;
-    el.setAttribute('aria-hidden', 'true');
-    el.innerHTML = `<div class="g-tw-in">${svgMark()}</div>`;
-    return el;
-  }
-  function twinToImages(el) {
-    if (!twinURL || !el) return;
-    const inn = el.firstChild;
-    inn.innerHTML = `<img class="g-tw-h" alt="" src="${twinURL.horns}"><img class="g-tw-n" alt="" src="${twinURL.needle}">`;
-    inn.style.setProperty('--px', (twinURL.pivot[0] * 100).toFixed(2) + '%');
-    inn.style.setProperty('--py', (twinURL.pivot[1] * 100).toFixed(2) + '%');
-    inn._nd = null;
-    el.dataset.img = '1';
-  }
   function buildStage() {
     stage = D.createElement('div');
     stage.className = 'g-stage';
     comp = D.createElement('button');
     comp.type = 'button'; comp.className = 'g-comp'; comp.setAttribute('aria-label', 'Наверх'); comp.title = 'Наверх';
-    compTw = twin('g-tw--comp'); comp.appendChild(compTw);
+    compTw = D.createElement('div');
+    compTw.className = 'g-tw g-tw--comp'; compTw.setAttribute('aria-hidden', 'true');
+    compTw.innerHTML = `<div class="g-tw-in">${svgMark()}</div>`;
+    comp.appendChild(compTw);
     stage.appendChild(comp);
     D.body.appendChild(stage);
     comp.addEventListener('click', () => {
@@ -342,74 +325,65 @@ self.onmessage = async (ev) => {
       } catch (err) { gyroBtn.dataset.state = 'denied'; }
     });
     host.appendChild(gyroBtn);
-  }
-  function buildDock() {
-    const box = D.getElementById('footer-logo');
-    if (!box || (dock === box && dockTw && dockTw.isConnected)) return;
-    dock = box; dockTw = twin('g-tw--dock'); dock.appendChild(dockTw);
-    if (S.twinReady) twinToImages(dockTw);
+    // «наклон» появляется после рождения знака, не раньше
+    const show = () => { if (gyroBtn) gyroBtn.classList.add('is-shown'); };
+    if (S.started) setTimeout(show, Math.max(0, S.birthT + 750 - now())); else gyroBtn._late = show;
   }
 
   /* ═════════════════════ ЗАМЕРЫ (только здесь читаем layout) ═════════════════════ */
   const docRect = (el, sy) => { const r = el.getBoundingClientRect(); return { l: r.left, t: r.top + sy, w: r.width, h: r.height }; };
   function measure() {
     if (!stage) return;
-    buildHost(); buildDock();
+    buildHost();
     const sy = W.scrollY || 0;
     M.vw = R.clientWidth || innerWidth; M.vh = innerHeight; M.docH = R.scrollHeight;
     M.mob = !FINEQ.matches || NARROWQ.matches;
     M.dpr = Math.min(W.devicePixelRatio || 1, 2);
+    stage.classList.toggle('is-mob', M.mob);
     // разделы: data-g (контракт), запасной путь — id
     const secs = [];
     const add = (name, el) => { if (el && !secs.some((s) => s.el === el)) { const r = docRect(el, sy); secs.push({ name, el, top: r.t, bot: r.t + r.h }); } };
     D.querySelectorAll('[data-g]').forEach((el) => add(el.dataset.g, el));
-    [['hero', '#hero'], ['drop', '#drop'], ['looks', '#looks'], ['sign', '#sign'], ['sign', '#about'], ['next', '#next'], ['footer', '#footer']]
+    [['hero', '#hero'], ['drop', '#drop'], ['looks', '#looks'], ['sign', '#sign'], ['next', '#next'], ['footer', '#footer']]
       .forEach(([n, s]) => { if (!secs.some((x) => x.name === n)) add(n, D.querySelector(s)); });
     secs.sort((a, b) => a.top - b.top); M.secs = secs;
     const hs = secs.find((s) => s.name === 'hero');
-    M.heroTop = hs ? hs.top : 0; M.heroH = hs ? hs.bot - hs.top : M.vh;
-    // hero-кадр: прямоугольник #g3d (K3); нет — правая треть hero
+    M.heroTop = hs ? hs.top : 0;
+    // hero-кадр: строго прямоугольник #g3d (K3)
     let hb = host && host.getBoundingClientRect();
     if (!hb || hb.width < 24 || hb.height < 24) {
-      const w = M.mob ? M.vw * 0.5 : M.vw * 0.32;
-      hb = { left: M.vw - w - (M.mob ? 8 : 48), top: M.heroTop - sy + (M.mob ? 80 : M.vh * 0.22), width: w, height: w / ASPECT * 1.2 };
+      const w = M.mob ? M.vw * 0.4 : M.vw * 0.3;
+      hb = { left: M.vw - w - 16, top: M.heroTop - sy + 60, width: w, height: w };
     }
     const Wc = Math.min(hb.width, hb.height * ASPECT);
     M.hero = { cx: hb.left + hb.width / 2, cy: hb.top + sy + hb.height / 2, w: Wc };
-    // компаньон: desktop — у правого края по центру; размер — под свободное поле справа от сетки дропа
-    if (M.mob) M.compMark = 48;
+    // компаньон. Desktop: только в правом поле вне контента, размер — по полю; поле < 40 px → не показываем.
+    // Mobile: кнопка 48 px в углу (safe-area), знак 36 px на тёмной шайбе.
+    if (M.mob) { M.btn = 48; M.show = true; stage.style.removeProperty('--g-right'); }
     else {
       const grid = D.querySelector('#drop [data-grid]') || D.querySelector('#drop .wrap') || D.querySelector('.wrap');
-      // знак живёт в правом поле контейнера и не заходит на контент (критерий «ничего не перекрывать»)
       const gap = grid ? M.vw - grid.getBoundingClientRect().right : 64;
-      M.compMark = Math.round(clamp(gap - 8, 48, 96));
-      M.compRight = Math.max(4, Math.round((gap - M.compMark) / 2));
+      M.show = gap >= 40;
+      M.btn = Math.round(clamp(gap - 12, 24, 96));
+      stage.style.setProperty('--g-right', Math.max(2, Math.round((gap - M.btn) / 2)) + 'px');
     }
-    stage.style.setProperty('--g-comp', M.compMark + 'px');
-    if (!M.mob) stage.style.setProperty('--g-right', (M.compRight || 16) + 'px');
-    comp.style.transform = 'none';
-    M.rest = { x: comp.offsetLeft + comp.offsetWidth / 2, y: comp.offsetTop + comp.offsetHeight / 2 };
-    M.park = { x: M.rest.x, y: M.rest.y, size: M.compMark };
-    S.lastComp = '';
-    // логотип в подвале (K5: #footer-logo > .fo-logo): куда садится знак
-    const lg = D.querySelector('#footer-logo .fo-logo, #footer-logo .ft-logo') || D.getElementById('footer-logo');
+    stage.style.setProperty('--g-btn', M.btn + 'px');
+    M.park = { x: comp.offsetLeft + comp.offsetWidth / 2, y: comp.offsetTop + comp.offsetHeight / 2, size: M.mob ? 36 : M.btn };
+    // логотип подвала (K5: #footer-logo > .fo-logo): буква G — bbox 137..347 × 47..240 в 1854×390
+    const lg = D.querySelector('#footer-logo .fo-logo') || D.getElementById('footer-logo');
     if (lg) {
-      const r = docRect(lg, sy), k = r.w / LOGO.w;
-      const dl = dock ? docRect(dock, sy) : r;
-      M.logo = { x: r.l + LOGO.cx * k, y: r.t + LOGO.cy * (r.h / LOGO.h), size: LOGO.mark * k, bl: dl.l, bt: dl.t };
-      M.dockW = Math.max(40, M.logo.size / FILL);
-      if (dockTw) { dockTw.style.width = M.dockW + 'px'; dockTw.style.height = (M.dockW / ASPECT) + 'px'; }
+      const r = docRect(lg, sy), kx = r.w / LOGO.w, ky = r.h / LOGO.h;
+      M.logo = { gx: r.l + 242 * kx, gTop: r.t + 47 * ky, gW: 210 * kx, top: r.t };
     } else M.logo = null;
     // отпечатки «Образов» (контракт: figure.look > .look-print)
     let prints = Array.from(D.querySelectorAll('#looks .look-print'));
     if (!prints.length) prints = Array.from(D.querySelectorAll('#looks .look'));
     M.looks = prints.map((el) => { const r = docRect(el, sy); return { x: r.l + r.w / 2, y: r.t + r.h / 2 }; });
     // канвас: CSS-размер постоянный (hero-кадр), масштаб — transform; буфер меняется отдельно
-    const cw = Math.round(Math.max(Wc, M.compMark / FILL)), ch = Math.round(cw / ASPECT);
+    const cw = Math.round(Math.max(Wc, 96 / FILL)), ch = Math.round(cw / ASPECT);
     if (cv && (cw !== M.Wc || ch !== M.Hc)) { cv.style.width = cw + 'px'; cv.style.height = ch + 'px'; S.res = [0, 0]; S.lastCv = ''; }
     M.Wc = cw; M.Hc = ch;
-    compTw.style.width = (M.compMark / FILL) + 'px'; compTw.style.height = (M.compMark / FILL / ASPECT) + 'px';
-    S.settled = false;
+    S.settled = false; S.restHide = false;
     wake();
   }
   let mT = 0;
@@ -453,6 +427,13 @@ self.onmessage = async (ev) => {
     const ry = Math.round(clamp(e.gamma / 35, -1, 1) * 0.55 * 50) / 50;
     if (rx !== S.gyro.rx || ry !== S.gyro.ry) { S.gyro.rx = rx; S.gyro.ry = ry; wake(); }
   }
+  // экранная клавиатура (mobile): компаньон прячется
+  function kbCheck() {
+    const a = D.activeElement, vv = W.visualViewport;
+    const field = !!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && !/^(radio|checkbox|button|submit)$/i.test(a.type || ''));
+    const k = M.mob && (field || !!(vv && vv.height < innerHeight * 0.78));
+    if (k !== S.kb) { S.kb = k; wake(); }
+  }
 
   /* ═════════════════════ РЕЖИССЁР: поза-цель как чистая функция прокрутки и ввода ═════════════════════ */
   const heroK = () => M.vh * (M.mob ? 0.45 : 0.6);
@@ -467,25 +448,28 @@ self.onmessage = async (ev) => {
     const dx = px - x, dy = py - y;
     T.ry += clamp(dx / (M.vw * 0.5), -1, 1) * 0.55 * w;
     T.rx += clamp(dy / (M.vh * 0.5), -1, 1) * 0.3 * w;
-    // стрелка доворачивает к цели не больше ±14°, знак не ломается (01_desktop #12)
+    // стрелка доворачивает к цели не больше ±14°, знак не ломается
     const a = Math.atan2(dy, dx) + Math.PI / 4;
     T.nd += clamp(Math.atan2(Math.sin(a), Math.cos(a)) * 0.18, -0.25, 0.25) * w;
   }
+  const smooth = (t) => { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); };
   function target(sy) {
     const hp = clamp((sy - M.heroTop) / heroK(), 0, 1), e = eio(hp);
     const H = M.hero, P = M.park, heroMark = H.w * FILL;
-    // mobile: сначала быстро уменьшается и прижимается к правому краю, потом спускается в угол —
-    // так путь не пересекает заголовок hero
+    const live = !RMQ.matches && !SHOT;
+    // mobile: сначала прижимается к правому краю и уменьшается, потом спускается в угол — путь не пересекает заголовок
     const ex = M.mob ? eo3(hp) : e;
+    const parkX = M.mob || M.show ? P.x : M.vw + P.size;      // поля нет — знак уходит за правый край
     const T = {
-      x: lerp(H.cx, P.x, ex),
+      x: lerp(H.cx, parkX, ex),
       y: lerp(H.cy - sy * 0.5, P.y, e),         // в начале — полпараллакса за hero, дальше к парковке
       size: Math.exp(lerp(Math.log(heroMark), Math.log(P.size), ex)),
-      rx: NEUTRAL.rx, ry: NEUTRAL.ry, rz: 0, nd: 0, s: 1, op: 1, hide: 0, dock: 0,
+      rx: NEUTRAL.rx, ry: NEUTRAL.ry, rz: 0, nd: 0, s: 1, op: 1, foot: 0, hide: 0,
     };
-    const live = !RMQ.matches && !SHOT;
+    // где знак может стоять вне hero: desktop — в поле (если оно есть), mobile — только когда позвали прокруткой вверх
+    const parkVis = M.mob ? S.summonV : (M.show ? 1 : 0);
+    T.op = lerp(1, parkVis, e);
     const wHero = live ? 1 - eio(clamp(hp / 0.35, 0, 1)) : 0, wPark = live ? clamp((hp - 0.6) / 0.4, 0, 1) : 0;
-    // hero: курсор (desktop) / свайп и наклон (mobile)
     if (wHero > 0) {
       if (FINEQ.matches && S.px >= 0) lookAt(T, H.cx, H.cy - sy, S.px, S.py, wHero);
       if (S.gyro) { T.rx += S.gyro.rx * wHero; T.ry += S.gyro.ry * wHero; }
@@ -493,10 +477,11 @@ self.onmessage = async (ev) => {
     }
     const sec = section(sy);
     if (wPark > 0) {
-      // стрелка и знак наклоняются по направлению и скорости прокрутки
-      const k = clamp(S.vel / 2400, -1, 1);
-      T.nd += k * 0.45 * wPark; T.rx += k * 0.22 * wPark; T.rz += k * 0.06 * wPark;
-      if (sec === 'drop' && S.card && FINEQ.matches) lookAt(T, P.x, P.y, S.card.x, S.card.y - sy, wPark);
+      if (!M.mob) {               // desktop: наклон по скорости прокрутки (mobile — без, чтобы не рендерить на каждом кадре)
+        const k = clamp(S.vel / 2400, -1, 1);
+        T.nd += k * 0.45 * wPark; T.rx += k * 0.22 * wPark; T.rz += k * 0.06 * wPark;
+        if (sec === 'drop' && S.card && FINEQ.matches) lookAt(T, P.x, P.y, S.card.x, S.card.y - sy, wPark);
+      }
       if (sec === 'looks' && M.looks.length) {
         let best = null, bd = 1e9;
         for (const L of M.looks) { const d = Math.hypot(L.y - sy - M.vh * 0.5, (L.x - M.vw * 0.5) * 0.5); if (d < bd) { bd = d; best = L; } }
@@ -504,24 +489,31 @@ self.onmessage = async (ev) => {
       }
       if (S.compHover) T.nd = -Math.PI / 4;     // наведение на компаньона: стрелка смотрит вверх — «наверх»
     }
-    // знак прячется: «Знак» (сцена немого жеста) и открытый оверлей
-    if ((sec === 'sign' && hp >= 1) || S.overlay) T.hide = 1;
-    // подвал: подлетает к букве G логотипа и растворяется в ней
-    if (M.logo && live && !S.overlay) {
-      const maxS = Math.max(0, M.docH - M.vh);
-      const end = Math.min(M.logo.y - M.vh * (M.mob ? 0.5 : 0.56), maxS - 2), start = end - M.vh * 0.55;
+    if ((sec === 'sign' && hp >= 1) || S.overlay || S.kb) T.hide = 1;
+    // подвал: летит к букве G логотипа и растворяется ДО касания букв (рога не ложатся на лого)
+    if (M.logo && hp >= 1) {
+      const maxS = Math.max(1, M.docH - M.vh);
+      const end = Math.min(M.logo.gTop - M.vh * 0.62, maxS - 2), start = end - M.vh * 0.9;   // длинный участок — полёт не быстрее прокрутки
       const fp = clamp((sy - start) / Math.max(1, end - start), 0, 1);
       if (fp > 0) {
-        const f = eio(fp);
-        T.x = lerp(T.x, M.logo.x, f); T.y = lerp(T.y, M.logo.y - sy, f);
-        T.size = lerp(T.size, M.logo.size, f);
-        const nw = eio(clamp(fp / 0.5, 0, 1));
-        T.rx = lerp(T.rx, NEUTRAL.rx, nw); T.ry = lerp(T.ry, NEUTRAL.ry, nw); T.nd *= 1 - nw; T.rz *= 1 - nw;
-        T.op = fp > 0.8 ? 1 - (fp - 0.8) / 0.2 : 1;
-        T.dock = fp; T.hide = 0;
+        if (!live || S.mode !== 'gl') T.op *= 1 - smooth(fp / 0.3);      // фолбэк: компаньон просто гаснет
+        else {
+          const f = eio(fp), top = M.logo.gTop - sy, sz = M.logo.gW * (MARK_W / 154) * 0.5;
+          T.x = lerp(T.x, M.logo.gx, f); T.size = lerp(T.size, sz, f);
+          T.y = lerp(T.y, top - sz * 0.34 - 12, f);
+          const nw = eio(clamp(fp / 0.5, 0, 1));
+          T.rx = lerp(T.rx, NEUTRAL.rx, nw); T.ry = lerp(T.ry, NEUTRAL.ry, nw); T.nd *= 1 - nw; T.rz *= 1 - nw;
+          let op = Math.max(T.op, smooth(fp / 0.12)) * (1 - smooth((fp - 0.4) / 0.42));
+          const gap = top - (T.y + T.size * 0.34);                         // от низа знака до верха букв
+          op *= clamp(gap / (T.size * 0.3), 0, 1);
+          T.op = op; T.foot = fp; T.hide = 0;
+        }
       }
-    } else if (M.logo && sec === 'footer') T.hide = 1;     // фолбэк/RM: компаньон уходит перед логотипом
-    if (T.hide) { T.op = 0; if (live) T.x = M.vw + T.size; }
+    }
+    // mobile: путь не уходит за нижний край экрана
+    if (M.mob) T.y = Math.min(T.y, M.vh - T.size * 0.34 - 10);
+    if (T.hide) { T.op = 0; if (live && !M.mob) T.x = M.vw + T.size; }
+    if (S.restHide) T.op = 0;
     return T;
   }
 
@@ -538,39 +530,61 @@ self.onmessage = async (ev) => {
     const t = now();
     const dt = clamp((dtMs || 16.7) / 1000, 0.001, 0.05);
     const sy = W.scrollY || 0;
+    const still = RMQ.matches || SHOT;
     let raw = 0;
-    if (sy !== S.sy) { raw = (sy - S.sy) / dt; S.sy = sy; S.dirty = true; }
-    const anim = t - S.birthT < 700 || t - S.nodT < 1300 || (t - S.spinT < 1200 && t > S.spinT - 200) || !!S.drag || Math.abs(S.yawV) > 0.01 || t - S.glIn < 400;
+    if (sy !== S.sy) {
+      const dy = sy - S.sy;
+      // скачок (End/Home, якорь, перетаскивание полосы): не телепортируемся — гасим, переносим, проявляем
+      if (Math.abs(dy) > M.vh * 0.5 && S.pose && !still) { S.jumpT = t; S.jumpSnap = false; }
+      else raw = dy / dt;
+      if (dy < 0) { S.up += -dy; S.down = 0; if (S.up > 24) S.summon = 1; }
+      else { S.down += dy; S.up = 0; if (S.down > 24) S.summon = 0; }
+      S.sy = sy; S.lastScrollT = t; S.restHide = false; S.dirty = true;
+    }
+    if (S.summon && t - S.lastScrollT > 1500) S.summon = 0;
+    if (S.overlay || S.kb || sy <= M.heroTop + 4) S.summon = 0;
+    const jt = t - S.jumpT;
+    const anim = t - S.birthT < 760 || t - S.nodT < 1300 || (t - S.spinT < 1200 && t > S.spinT - 200) || !!S.drag ||
+      Math.abs(S.yawV) > 0.01 || t - S.glIn < 400 || jt < 260 || Math.abs(S.summonV - S.summon) > 0.003 ||
+      (S.summon && t - S.lastScrollT < 1600);
     if (!S.dirty && S.settled && !anim && S.vel === 0) return;   // покой — ноль работы
     S.vel = damp(S.vel, clamp(raw, -9000, 9000), raw ? 10 : 7, dt);
     if (Math.abs(S.vel) < 4 && !raw) S.vel = 0;
+    S.summonV = still ? S.summon : damp(S.summonV, S.summon, 16, dt);
+    if (Math.abs(S.summonV - S.summon) < 0.003) S.summonV = S.summon;
     // инерция свайпа и пружина «домой»
     if (!S.drag) {
       S.yaw += S.yawV * dt; S.yawV = damp(S.yawV, 0, 3.2, dt);
       if (Math.abs(S.yawV) < 0.6) { const home = Math.round(S.yaw / TAU) * TAU; S.yaw = damp(S.yaw, home, 4, dt); }
       S.pitch = damp(S.pitch, 0, 3, dt);
-      if (Math.abs(S.yaw - Math.round(S.yaw / TAU) * TAU) < 0.0005 && Math.abs(S.yawV) < 0.01) { S.yaw = 0; S.yawV = 0; }
-      if (Math.abs(S.pitch) < 0.0005) S.pitch = 0;
+      if (Math.abs(S.yaw - Math.round(S.yaw / TAU) * TAU) < 0.002 && Math.abs(S.yawV) < 0.05) { S.yaw = 0; S.yawV = 0; }
+      if (Math.abs(S.pitch) < 0.001) S.pitch = 0;
     }
     const T = target(sy);
+    // прокрутка остановилась (140 мс тишины) — сразу проверяем, не встанет ли знак на контент
+    if (!S.restHide && S.chk !== S.lastScrollT && t - S.lastScrollT > 140) { S.chk = S.lastScrollT; restCheck(T); }
     let P = S.pose;
     const fresh = !P;
     if (fresh) P = S.pose = Object.assign({}, T);
-    const lp = T.dock > 0 ? 22 : T.hide ? 9 : 16, lr = 7;
-    const still = RMQ.matches || SHOT;
-    // у буквы логотипа сглаживание уходит: двойник жёстко «садится» в лого и едет с ним без отставания
-    const lock = clamp((T.dock - 0.6) / 0.25, 0, 1);
-    for (const k of ['x', 'y', 'size']) P[k] = still ? T[k] : lerp(damp(P[k], T[k], lp, dt), T[k], lock);
-    for (const k of ['rx', 'ry', 'rz', 'nd']) P[k] = still ? T[k] : damp(P[k], T[k], lr, dt);
-    P.op = still ? T.op : damp(P.op, T.op, 10, dt); P.dock = T.dock; P.hide = T.hide; P.s = 1;
+    let jm = 1;
+    if (jt < 90) jm = 1 - jt / 90;                                 // гаснет на месте
+    else if (jt < 240) { if (!S.jumpSnap) { Object.assign(P, T); S.jumpSnap = true; } jm = (jt - 90) / 150; }
+    if (jt >= 90 || jt < 0) {
+      const lp = T.hide ? 9 : T.foot ? 10 : 16, lr = 7;
+      for (const k of ['x', 'y', 'size']) P[k] = still ? T[k] : damp(P[k], T[k], lp, dt);
+      for (const k of ['rx', 'ry', 'rz', 'nd']) P[k] = still ? T[k] : damp(P[k], T[k], lr, dt);
+      P.op = still ? T.op : damp(P.op, T.op, 14, dt);
+      P.foot = T.foot; P.hide = T.hide;
+    }
+    P.s = 1;
     // одноразовые жесты — поверх сглаженной позы
     const V = Object.assign({}, P);
-    const tb = (t - S.birthT) / 600;
-    if (tb >= 0 && tb < 1 && S.origin) {
-      const e = eo3(tb);
-      V.x = lerp(S.origin.x, P.x, e); V.y = lerp(S.origin.y, P.y, e);
-      V.size = lerp(P.size * 0.04, P.size, e); V.ry = P.ry - Math.PI * 0.85 * (1 - e); V.rx = P.rx + 0.4 * (1 - e);
-      V.op = P.op * clamp(tb / 0.15, 0, 1);
+    V.op *= jm;
+    const tb = (t - S.birthT) / 700;                                // рождение на месте: 0,6 → 1, поворот, проявление
+    if (tb >= 0 && tb < 1) {
+      const k = eo3(tb);
+      V.size = P.size * (0.6 + 0.4 * k); V.ry = P.ry - 1.25 * (1 - k); V.rx = P.rx + 0.25 * (1 - k);
+      V.op *= clamp(tb / 0.45, 0, 1);
     }
     const tn = (t - S.nodT) / 1000;
     if (tn >= 0 && tn < 1.3) { const a = Math.exp(-4.5 * tn) * Math.sin(tn * 15); V.rx += 0.34 * a; V.s = 1 + 0.05 * Math.max(0, a); }
@@ -580,20 +594,43 @@ self.onmessage = async (ev) => {
     // устоялось?
     const eps = Math.abs(P.x - T.x) + Math.abs(P.y - T.y) + Math.abs(P.size - T.size);
     const epr = Math.abs(P.rx - T.rx) + Math.abs(P.ry - T.ry) + Math.abs(P.rz - T.rz) + Math.abs(P.nd - T.nd);
+    const was = S.settled;
     S.settled = eps < 0.25 && epr < 0.0015 && Math.abs(P.op - T.op) < 0.004 && !anim && S.vel === 0;
-    if (S.settled) { Object.assign(P, T); apply(P, t); }
+    if (S.settled) { Object.assign(P, T); apply(P, t); if (!was) restCheck(P); }
     S.dirty = false;
   }
 
-  /* какой носитель показывает знак в этом кадре: gl (канвас) | comp (двойник-компаньон) | dock (двойник в подвале) | host (SVG в hero) */
-  function carrierFor(P) {
-    if (S.mode !== 'gl' || !S.glReady) {
-      if (heroP() < 0.5 && !P.hide) return 'host';
-      return P.dock >= 0.6 ? 'dock' : 'comp';
+  // остановились — знак не должен лежать на тексте, кнопке, цене, поле, фото вещи, логотипе
+  const CONTENT = 'a,button,input,textarea,select,label,summary,h1,h2,h3,h4,h5,p,li,dt,dd,figcaption,td,th,img,video,svg,.fo-logo,[role="img"]';
+  function isContent(el) {
+    if (stage.contains(el) || (host && host.contains(el))) return false;
+    if (el.matches(CONTENT)) return !(el.matches('img,svg') && el.closest('[aria-hidden="true"]')) || el.closest('.fo-logo');
+    for (const n of el.childNodes) if (n.nodeType === 3 && n.textContent.trim()) return true;
+    return false;
+  }
+  function overlaps(r) {
+    for (const fx of [0.2, 0.5, 0.8]) for (const fy of [0.25, 0.5, 0.75]) {
+      const x = r.l + r.w * fx, y = r.t + r.h * fy;
+      if (x < 0 || y < 0 || x > M.vw || y > M.vh) continue;
+      for (const el of D.elementsFromPoint(x, y)) {
+        if (el === D.body || el === R) break;
+        if (isContent(el)) return el;
+      }
     }
-    if (P.dock >= 0.6) return 'dock';
-    if (M.mob && S.twinReady && heroP() >= 0.4) return 'comp';
-    return 'gl';
+    return null;
+  }
+  function restCheck(P) {
+    if (S.restHide || P.op < 0.05 || P.hide || heroP() < 0.95 || !stage) return;
+    const w = Math.max(P.size, M.mob ? M.btn : 0), h = Math.max(P.size * 0.68, M.mob ? M.btn : 0);
+    const hit = overlaps({ l: P.x - w / 2, t: P.y - h / 2, w, h });
+    if (hit) { S.restHide = true; S.settled = false; S.lastHit = hit; wake(); }
+  }
+
+  /* какой носитель показывает знак: gl (канвас) | host (SVG в hero) | comp (SVG-компаньон, фолбэк) */
+  function carrierFor(P) {
+    if (S.mode === 'gl' && S.glReady) return 'gl';
+    if (heroP() < 0.5 && !P.hide) return 'host';
+    return 'comp';
   }
   function setCarrier(c) {
     if (c === S.carrier) return;
@@ -601,45 +638,35 @@ self.onmessage = async (ev) => {
     stage.dataset.carrier = c;
     if (hostSvg) hostSvg.classList.toggle('is-on', c === 'host');
     comp.classList.toggle('is-vis', c === 'comp');
-    if (c !== 'comp') comp.style.opacity = '';
-    if (dockTw) dockTw.classList.toggle('is-on', c === 'dock');
     if (cv) cv.classList.toggle('is-on', c === 'gl');
-    S.lastPost = null; S.lastComp = ''; S.lastCv = ''; S.lastOp = '';
+    S.lastPost = null; S.lastCv = ''; S.lastOp = '';
   }
   const f2 = (v) => Math.round(v * 100) / 100;
   function apply(V, t) {
     const c = carrierFor(V);
     setCarrier(c);
-    const vis = V.op > 0.01;
+    const hp = heroP(), vis = V.op > 0.01;
     const hid = !vis && c !== 'host';
     if (stage.classList.contains('is-hidden') !== hid) stage.classList.toggle('is-hidden', hid);
-    // компаньон-кнопка «наверх»: кликабелен, когда припаркован
-    const parked = heroP() >= 0.95 && !V.hide && V.dock < 0.3 && vis;
-    if (comp.classList.contains('is-live') !== parked) comp.classList.toggle('is-live', parked);
-    if (c === 'gl' || c === 'comp') {
-      const still = (RMQ.matches || SHOT || S.mode === 'svg') && c === 'comp';
-      const s = still ? 1 : V.size / M.compMark;
-      const tr = still ? 'none' : `translate3d(${f2(V.x - M.rest.x)}px,${f2(V.y - M.rest.y)}px,0) scale(${s.toFixed(4)})`;
-      if (tr !== S.lastComp) { comp.style.transform = tr; S.lastComp = tr; }
-      if (c === 'comp') {
-        comp.style.opacity = V.op.toFixed(3); twinPose(compTw, V);
-        // mobile: под знаком проявляется тёмная «шайба» кнопки — компаньон читается как кнопка «наверх», а не как наклейка поверх текста
-        const d = (clamp((heroP() - 0.5) / 0.4, 0, 1) * clamp(1 - V.dock * 2.5, 0, 1)).toFixed(2);
-        if (comp._d !== d) { comp._d = d; comp.style.setProperty('--disc', d); }
-      }
-    }
+    // компаньон-кнопка «наверх» стоит на месте; живая, когда знак припаркован и виден
+    const parked = hp >= 0.95 && !V.foot && !V.hide;
+    const live = parked && V.op > 0.5 && (M.mob || M.show);
+    if (comp.classList.contains('is-live') !== live) comp.classList.toggle('is-live', live);
+    const cop = (parked ? V.op : 0).toFixed(3);
+    if (comp._o !== cop) { comp._o = cop; comp.style.setProperty('--cop', cop); }
+    if (c === 'comp') twinPose(compTw, V);
     if (c === 'gl' && cv && glh) {
       const glOp = V.op * clamp((t - S.glIn) / 300, 0, 1);
       const s = V.size / (M.Wc * FILL);
       const tr = `translate3d(${f2(V.x - M.Wc / 2)}px,${f2(V.y - M.Hc / 2)}px,0) scale(${s.toFixed(4)})`;
       if (tr !== S.lastCv) { cv.style.transform = tr; S.lastCv = tr; }
       const o = glOp.toFixed(3); if (o !== S.lastOp) { cv.style.opacity = o; S.lastOp = o; }
-      // SVG в hero гаснет, пока проявляется 3D (если three догрузился уже после рождения)
+      // SVG в hero гаснет, пока проявляется 3D (если шейдеры догрузились после рождения)
       if (hostSvg) {
-        const x = t - S.glIn < 320 ? (1 - glOp).toFixed(3) : '';
+        const x = t - S.glIn < 320 && hp < 0.5 ? (1 - glOp / Math.max(0.01, V.op)).toFixed(3) : '';
         if (hostSvg._o !== x) { hostSvg._o = x; hostSvg.style.opacity = x; hostSvg.classList.toggle('is-on', x !== ''); }
       }
-      // разрешение буфера — ступенями ×2^¼ под видимый размер (резкость без лишних пикселей)
+      // разрешение буфера — ступенями ×2^¼ под видимый размер
       const need = (V.size / FILL) * M.dpr, cap = M.Wc * M.dpr;
       const bw = Math.round(Math.min(cap, Math.pow(2, Math.ceil(Math.log2(Math.max(32, need)) * 4) / 4)));
       if (bw !== S.res[0] && (bw > S.res[0] || S.settled || t - S.resT > 250)) {
@@ -653,27 +680,13 @@ self.onmessage = async (ev) => {
         glh.pose(p); S.lastPost = p; S.renders++;
       }
     }
-    if (c === 'dock' && dockTw && M.logo) {
-      // двойник живёт в подвале: координаты — относительно блока логотипа, прокрутку двигает браузер
-      const sy = W.scrollY || 0, lx = V.x - M.logo.bl, ly = V.y - (M.logo.bt - sy);
-      const s = V.size / (M.dockW * FILL);
-      const tr = `translate3d(${f2(lx - M.dockW / 2)}px,${f2(ly - M.dockW / ASPECT / 2)}px,0) scale(${s.toFixed(4)})`;
-      if (dockTw._tr !== tr) { dockTw.style.transform = tr; dockTw._tr = tr; }
-      dockTw.style.opacity = V.op.toFixed(3);
-      twinPose(dockTw, V);
-    }
   }
   function twinPose(el, V) {
     const inn = el.firstChild;
-    const still = RMQ.matches || SHOT || S.mode === 'svg';
-    const tr = still ? '' : `rotateX(${(-(V.rx - NEUTRAL.rx)).toFixed(3)}rad) rotateY(${(V.ry - NEUTRAL.ry).toFixed(3)}rad) rotate(${V.rz.toFixed(3)}rad) scale(${(V.s || 1).toFixed(3)})`;
-    if (inn._tr !== tr) { inn.style.transform = tr; inn._tr = tr; }
-    const nd = still ? '0' : (V.nd * 57.2958).toFixed(2);
+    const nd = (RMQ.matches || SHOT) ? '0' : (V.nd * 57.2958).toFixed(1);
     if (inn._nd !== nd) {
       inn._nd = nd;
-      const n = inn.querySelector('.g-tw-n');
-      if (n) n.style.transform = `rotate(${nd}deg)`;
-      else { const g = inn.querySelector('.g-sv-n'); if (g) g.setAttribute('transform', `rotate(${nd} ${GC[0]} ${GC[1]})`); }
+      const g = inn.querySelector('.g-sv-n'); if (g) g.setAttribute('transform', `rotate(${nd} ${GC[0]} ${GC[1]})`);
     }
   }
 
@@ -685,7 +698,7 @@ self.onmessage = async (ev) => {
   function engineOpts() {
     const lite = !FINEQ.matches || NARROWQ.matches;
     return {
-      lite, aa: M.dpr < 2, strict: !SHOT, keep: SHOT, FILL, ASPECT, P_HORNS, P_G, GC,
+      lite, aa: M.dpr < 2, strict: !SHOT, keep: SHOT, soft: Q.has('soft'), FILL, ASPECT, P_HORNS, P_G, GC,
       colors: { hi: '#e9ffd9', acid: tok('--c-acid', '#00FF2A'), green: tok('--c-green', '#00DB24'), deep: '#07791a', forest: tok('--c-forest', '#10340C') },
     };
   }
@@ -693,24 +706,27 @@ self.onmessage = async (ev) => {
     cv = D.createElement('canvas');
     cv.className = 'g-cv'; cv.setAttribute('aria-hidden', 'true');
     cv.style.width = M.Wc + 'px'; cv.style.height = M.Hc + 'px';
-    stage.insertBefore(cv, comp);
+    stage.appendChild(cv);                     // поверх шайбы компаньона; клики проходят к кнопке
     return cv;
   }
   const initPose = () => ({ rx: NEUTRAL.rx, ry: NEUTRAL.ry, rz: 0, nd: 0, s: 1 });
+  const idle = (f, to) => (W.requestIdleCallback ? W.requestIdleCallback(f, { timeout: to || 1500 }) : setTimeout(f, 120));
+  // компиляция шейдеров: desktop — сразу (на GPU это 0 провалов), mobile — после рождения в простое,
+  // пока в hero стоит SVG-знак: прелоадер G не ждёт, подмена — перекрёстным затуханием
+  function maybeWarm() {
+    if (!S.built || S.warmAsked || S.mode !== 'gl' || !glh) return;
+    if (!M.mob || SHOT) { S.warmAsked = true; glh.warm(); return; }
+    if (!S.started) return;
+    S.warmAsked = true;
+    setTimeout(() => idle(() => glh && glh.warm(), 2000), Math.max(0, S.birthT + 900 - now()));
+  }
+  function onBuilt() { S.built = true; maybeWarm(); }
   function onGLReady() {
     if (S.mode !== 'gl') return;
-    S.glReady = true; S.glIn = S.started ? now() : -1e9; S.lastPost = null; S.res = [0, 0]; S.carrier = '';
+    S.glReady = true; S.glIn = S.started && !SHOT ? now() : -1e9; S.lastPost = null; S.res = [0, 0]; S.carrier = '';
     stage.dataset.mode = 'gl'; GV.g.mode = 'gl'; GV.g.engine = glh && glh.kind;
     if (host) host.classList.add('is-gl');
     buildGyro(); wake();
-  }
-  function onTwin(s) {
-    try {
-      twinURL = { horns: URL.createObjectURL(s.horns), needle: URL.createObjectURL(s.needle), pivot: s.pivot };
-      const a = new Image(), b = new Image(); a.src = twinURL.horns; b.src = twinURL.needle;
-      const fin = () => { twinToImages(compTw); twinToImages(dockTw); S.twinReady = true; S.lastComp = ''; S.carrier = ''; wake(); };
-      Promise.all([a.decode ? a.decode() : 0, b.decode ? b.decode() : 0]).then(fin, fin);
-    } catch (e) { /* остаёмся на SVG-двойнике */ }
   }
   function toSVG(why) {
     if (S.mode === 'svg') return;
@@ -736,38 +752,39 @@ self.onmessage = async (ev) => {
         const off = cv.transferControlToOffscreen();
         wk.onmessage = (ev) => {
           const m = ev.data;
-          if (m.t === 'ready') onGLReady();
-          else if (m.t === 'twin') onTwin(m.s);
+          if (m.t === 'built') onBuilt();
+          else if (m.t === 'ready') onGLReady();
           else if (m.t === 'stats') { const cb = statsCb.get(m.id); if (cb) { statsCb.delete(m.id); cb(m.v); } }
           else if (m.t === 'error' || m.t === 'lost') toSVG(m.msg || m.t);
         };
         wk.onerror = () => toSVG('worker');
         glh = {
           kind: 'worker',
+          warm: () => wk.postMessage({ t: 'warm' }),
           pose: (p) => wk.postMessage({ t: 'pose', p }),
           res: (w, h) => wk.postMessage({ t: 'res', w, h }),
           stats: () => new Promise((res) => { const id = ++uid; statsCb.set(id, res); wk.postMessage({ t: 'stats', id }); setTimeout(() => res(null), 1500); }),
           kill: () => wk.terminate(),
         };
-        // снимок двойника — под самый крупный показ (буква G логотипа в подвале), ×dpr
-        const snapW = Math.round(clamp(Math.max(M.dockW, M.compMark / FILL) * M.dpr, 200, 900));
-        wk.postMessage({ t: 'init', url: URL3, canvas: off, o, w: w0, h: h0, pose: p0, snap: snapW }, [off]);
+        wk.postMessage({ t: 'init', url: URL3, canvas: off, o, w: w0, h: h0, pose: p0 }, [off]);
         return;
       } catch (e) { if (wk) wk.terminate(); glh = null; cv.remove(); makeCanvas(); }
     }
-    // главный поток: тяжёлое — в простое, чтобы не попасть на анимацию прелоадера; двойник — SVG
-    const idle = (f) => (W.requestIdleCallback ? W.requestIdleCallback(f, { timeout: 2500 }) : setTimeout(f, 200));
+    // главный поток (нет OffscreenCanvas-WebGL): всё тяжёлое — в простое
     import(URL3).then((T) => new Promise((res, rej) => idle(() => {
       try {
         const E = ENGINE(T, cv, o);
         E.onLost(() => toSVG('lost'));
         E.setRes(w0, h0);
-        glh = { kind: 'main', pose: (p) => E.render(p), res: (w, h) => { E.setRes(w, h); if (S.lastPost) E.render(S.lastPost); }, stats: () => Promise.resolve(E.info()), kill: () => E.dispose() };
-        idle(() => E.warm(p0).then(res, rej));
-        // двойник и здесь — в простое, после показа hero (иначе mobile держал бы WebGL на всём пути)
-        setTimeout(() => idle(() => { if (S.mode === 'gl' && E.snap) E.snap(Math.round(clamp(Math.max(M.dockW, M.compMark / FILL) * M.dpr, 200, 640)), p0).then(onTwin, () => {}); }), 2500);
+        glh = {
+          kind: 'main',
+          warm: () => idle(() => E.warm(p0).then(onGLReady, (er) => toSVG('warm: ' + er))),
+          pose: (p) => E.render(p), res: (w, h) => { E.setRes(w, h); if (S.lastPost) E.render(S.lastPost); },
+          stats: () => Promise.resolve(E.info()), kill: () => E.dispose(),
+        };
+        res();
       } catch (e) { rej(e); }
-    }))).then(onGLReady).catch((e) => toSVG('import: ' + ((e && e.message) || e)));
+    }, 2500))).then(onBuilt).catch((e) => toSVG('import: ' + ((e && e.message) || e)));
   }
 
   /* ═════════════════════ СОБЫТИЯ И ЖИЗНЕННЫЙ ЦИКЛ ═════════════════════ */
@@ -777,38 +794,31 @@ self.onmessage = async (ev) => {
     measure();
     if (!RMQ.matches && !SHOT) {
       S.birthT = now();
-      if (!S.origin) S.origin = { x: M.vw / 2, y: M.vh / 2 };
-      if (hostSvg && !S.glReady) hostSvg.classList.add('is-born');
+      if (hostSvg && !S.glReady) hostSvg.classList.add('is-born');      // SVG рождается на месте, 3D проявится поверх
     }
-    S.glIn = S.glReady ? -1e9 : 0;
+    S.glIn = -1e9;
     stage.classList.add('is-started');
     S.ticker = useTicker();                  // GSAP (K1 подключает в конце body, до этого файла) — один общий тикер
     if (S.ticker) W.gsap.ticker.add(tick);
+    if (gyroBtn && gyroBtn._late) setTimeout(gyroBtn._late, 750);
+    maybeWarm();
     wake();
-  }
-  // точка рождения: улыбка прелоадера (K4 может прислать detail.origin {x,y} — тогда берём её)
-  function captureOrigin(e) {
-    const d = e && e.detail;
-    if (d && d.origin && isFinite(d.origin.x)) { S.origin = { x: +d.origin.x, y: +d.origin.y }; return; }
-    if (S.origin || (d && typeof d.t === 'number' && d.t < 0.45)) return;
-    const mk = D.querySelector('#loader .ld-mark');
-    if (!mk || R.getAttribute('data-loader') === 'done') return;
-    const r = mk.getBoundingClientRect();
-    if (r.width > 8) S.origin = { x: r.left + r.width / 2, y: r.top + r.height * 0.66 };   // «тело» улыбки
   }
   function boot() {
     if (stage) return;
     S.overlay = R.hasAttribute('data-overlay');
     const wantGL = !RMQ.matches && !weakDevice() && !Q.has('nogl');
     S.mode = wantGL ? 'gl' : 'svg';
-    buildStage(); buildHost(); buildDock();
+    buildStage(); buildHost();
     stage.dataset.mode = S.mode; GV.g.mode = S.mode;
     measure();
     if (wantGL) startGL();
     W.addEventListener('scroll', wake, { passive: true });
     W.addEventListener('pointermove', onPointer, { passive: true });
     D.addEventListener('pointerover', onOver, { passive: true });
-    W.addEventListener('resize', remeasure, { passive: true });
+    W.addEventListener('resize', () => { remeasure(); kbCheck(); }, { passive: true });
+    if (W.visualViewport) W.visualViewport.addEventListener('resize', kbCheck, { passive: true });
+    D.addEventListener('focusin', kbCheck); D.addEventListener('focusout', () => setTimeout(kbCheck, 60));
     W.addEventListener('load', remeasure);
     if (D.fonts && D.fonts.ready) D.fonts.ready.then(remeasure);
     if (W.ResizeObserver) new ResizeObserver(remeasure).observe(D.body);
@@ -821,7 +831,7 @@ self.onmessage = async (ev) => {
       // разметку соседей дорисовывают позже (карточки, образы, подвал) — перемеряем пачкой
       let mo = 0;
       new MutationObserver((list) => {
-        if (mo || list.every((m) => stage.contains(m.target) || (host && host.contains(m.target)) || (dock && dock.contains(m.target)))) return;
+        if (mo || list.every((m) => stage.contains(m.target) || (host && host.contains(m.target)))) return;
         mo = setTimeout(() => { mo = 0; remeasure(); }, 200);
       }).observe(D.body, { childList: true, subtree: true });
     }
@@ -830,8 +840,7 @@ self.onmessage = async (ev) => {
     setTimeout(begin, 6000);                 // лоадер не прислал ready — не ждём вечно
   }
 
-  D.addEventListener('grinchin:loader-progress', captureOrigin);
-  D.addEventListener('grinchin:ready', () => { if (!stage) boot(); captureOrigin(); begin(); });
+  D.addEventListener('grinchin:ready', () => { if (!stage) boot(); begin(); });
   D.addEventListener('grinchin:overlay', (e) => { const d = e.detail || {}; S.overlay = !!d.open || R.hasAttribute('data-overlay'); wake(); });
   D.addEventListener('grinchin:add', () => { if (!RMQ.matches) { S.nodT = now(); wake(); } });
   // K5 шлёт subscribe в начале показа пакета — оборот чуть позже, на «посадке» ленты

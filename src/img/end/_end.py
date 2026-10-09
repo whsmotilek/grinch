@@ -142,6 +142,9 @@ pim.save(OUT / "paper.jpg", quality=80, optimize=True, progressive=True)
 # зерно слегка сглажено, чтобы лого оставалось чётким. Сравнение вариантов — scratchpad cands*.jpg (K5, 09.10).
 q = nd.gaussian_filter(sheet, .8)
 cr = np.clip(q / np.percentile(q, 95), 0, 1) ** .35
+# заломы ослаблены вдвое (проверка 09.10: лого было темнее v1, #02B31F против #02CA22; пятна «как плесень»).
+# 1−(1−x)·.45 → доминанта ×0,92 от бренда ≈ #02CA22, самые тёмные заломы ×0,7
+cr = 1 - (1 - cr) * .45
 ci = Image.fromarray(u8(cr))
 ci.save(OUT / "crease.jpg", quality=58, optimize=True, progressive=True)
 ci.convert("RGB").save(OUT / "crease.avif", quality=50)

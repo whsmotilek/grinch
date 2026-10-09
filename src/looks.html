@@ -1,68 +1,61 @@
 <section id="looks" data-g="looks" aria-labelledby="looks-title">
-  <!-- K3. Чёрный холст. 4 ЦЕЛЫХ кадра как фотопечать (белое поле 12/12/40, мягкая тень, наклон ≤1,5°).
-       Подписи — вне отпечатка и без наклона. Малярная лента держит углы только двух отпечатков ('01 и '04).
-       Имена вещей синхронизирует street.js из GV_PRODUCTS (статичный текст — запасной). -->
+  <!-- K3. Чёрный холст. 3 отпечатка (белое поле 12/12/40, мягкая тень, наклон ≤1,5°), кадры ЦЕЛЫЕ:
+       ’01 — диптих pg-011-010 + pg-011-024 в одном отпечатке, ’02 — G у подола (pg-015-038), ’03 — бирка в горловине (pg-015-040).
+       Подписи вне отпечатка, без наклона и на одной базовой линии. Лента держит два отпечатка из трёх.
+       Имена вещей синхронизирует street.js из GV_PRODUCTS (статичный текст — запасной). Пакет — только в подписке (K5). -->
   <div class="wrap">
     <div class="looks-head">
-      <h2 id="looks-title" class="looks-title">Образы</h2>
-      <p class="looks-count" aria-hidden="true"><span data-looks-now>1</span>/4</p>
+      <h2 id="looks-title" class="looks-title t-d1">Образы</h2>
+      <p class="looks-count" aria-hidden="true"><span data-looks-now>1</span>/3</p>
     </div>
-  </div>
-  <div class="looks-rail" data-looks-rail>
-    <figure class="look" data-look="01">
-      <div class="look-print">
-        <picture class="look-photo">
-          <source type="image/avif" srcset="{{asset:img/street/look-a-480.avif}} 480w, {{asset:img/street/look-a-960.avif}} 960w" sizes="(max-width: 767px) 74vw, (max-width: 1099px) 42vw, 21vw">
-          <img src="{{asset:img/street/look-a-960.jpg}}" srcset="{{asset:img/street/look-a-480.jpg}} 480w, {{asset:img/street/look-a-960.jpg}} 960w" sizes="(max-width: 767px) 74vw, (max-width: 1099px) 42vw, 21vw"
-               alt="Образ '01: джинсы КАРАКУЛИ с джинсовой курткой и худи" width="960" height="1280" loading="lazy" decoding="async">
-        </picture>
-        <span class="tape tape--white tape--pin-1 tape--at-tr" data-stick aria-hidden="true"></span>
-      </div>
-      <figcaption class="look-cap">
-        <span class="look-n">'01</span>
-        <a href="#drop" data-product="jeans-scribble">Джинсы КАРАКУЛИ</a>
-      </figcaption>
-    </figure>
-    <figure class="look" data-look="02">
-      <div class="look-print">
-        <picture class="look-photo">
-          <source type="image/avif" srcset="{{asset:img/street/look-b-480.avif}} 480w, {{asset:img/street/look-b-960.avif}} 960w" sizes="(max-width: 767px) 74vw, (max-width: 1099px) 42vw, 21vw">
-          <img src="{{asset:img/street/look-b-960.jpg}}" srcset="{{asset:img/street/look-b-480.jpg}} 480w, {{asset:img/street/look-b-960.jpg}} 960w" sizes="(max-width: 767px) 74vw, (max-width: 1099px) 42vw, 21vw"
-               alt="Образ '02: джинсы КАРАКУЛИ в паре с джинсовой курткой, взгляд вниз" width="960" height="1200" loading="lazy" decoding="async">
-        </picture>
-      </div>
-      <figcaption class="look-cap">
-        <span class="look-n">'02</span>
-        <a href="#drop" data-product="jeans-scribble">Джинсы КАРАКУЛИ</a>
-      </figcaption>
-    </figure>
-    <figure class="look" data-look="03">
-      <div class="look-print">
-        <picture class="look-photo">
-          <source type="image/avif" srcset="{{asset:img/street/look-c-480.avif}} 480w, {{asset:img/street/look-c-960.avif}} 960w" sizes="(max-width: 767px) 74vw, (max-width: 1099px) 42vw, 21vw">
-          <img src="{{asset:img/street/look-c-960.jpg}}" srcset="{{asset:img/street/look-c-480.jpg}} 480w, {{asset:img/street/look-c-960.jpg}} 960w" sizes="(max-width: 767px) 74vw, (max-width: 1099px) 42vw, 21vw"
-               alt="Образ '03: жаккардовая G у подола белой футболки, крупно" width="960" height="1024" loading="lazy" decoding="async">
-        </picture>
-      </div>
-      <figcaption class="look-cap">
-        <span class="look-n">'03</span>
-        <a href="#drop" data-product="tee-blank">Футболка ФОН</a>
-        <a href="#drop" data-product="longsleeve-blank">Лонгслив ФОН</a>
-      </figcaption>
-    </figure>
-    <figure class="look look--wide" data-look="04">
-      <div class="look-print">
-        <picture class="look-photo">
-          <source type="image/avif" srcset="{{asset:img/street/bag-640.avif}} 640w, {{asset:img/street/bag-1280.avif}} 1280w" sizes="(max-width: 767px) 84vw, (max-width: 1099px) 42vw, 30vw">
-          <img src="{{asset:img/street/bag-1280.jpg}}" srcset="{{asset:img/street/bag-640.jpg}} 640w, {{asset:img/street/bag-1280.jpg}} 1280w" sizes="(max-width: 767px) 84vw, (max-width: 1099px) 42vw, 30vw"
-               alt="Образ '04: чёрный пакет, запечатанный зелёной лентой GRINCHIN, в руке" width="1280" height="720" loading="lazy" decoding="async">
-        </picture>
-        <span class="tape tape--white tape--pin-3 tape--at-t" data-stick aria-hidden="true"></span>
-      </div>
-      <figcaption class="look-cap">
-        <span class="look-n">'04</span>
-        <span class="look-note">так приходит заказ</span>
-      </figcaption>
-    </figure>
+    <div class="looks-rail" data-looks-rail>
+      <figure class="look look--duo" data-look="01">
+        <div class="look-print">
+          <picture class="look-photo">
+            <source type="image/avif" srcset="{{asset:img/street/look-a-480.avif}} 480w, {{asset:img/street/look-a-960.avif}} 960w" sizes="(max-width: 767px) 40vw, 18vw">
+            <img src="{{asset:img/street/look-a-960.jpg}}" srcset="{{asset:img/street/look-a-480.jpg}} 480w, {{asset:img/street/look-a-960.jpg}} 960w" sizes="(max-width: 767px) 40vw, 18vw"
+                 alt="Джинсы КАРАКУЛИ на модели: с джинсовой курткой и светлым худи" width="960" height="1280" loading="lazy" fetchpriority="low" decoding="async">
+          </picture>
+          <picture class="look-photo">
+            <source type="image/avif" srcset="{{asset:img/street/look-b-480.avif}} 480w, {{asset:img/street/look-b-960.avif}} 960w" sizes="(max-width: 767px) 42vw, 19vw">
+            <img src="{{asset:img/street/look-b-960.jpg}}" srcset="{{asset:img/street/look-b-480.jpg}} 480w, {{asset:img/street/look-b-960.jpg}} 960w" sizes="(max-width: 767px) 42vw, 19vw"
+                 alt="Джинсы КАРАКУЛИ на модели: с чёрной футболкой, взгляд вниз" width="960" height="1200" loading="lazy" fetchpriority="low" decoding="async">
+          </picture>
+          <span class="tape tape--white tape--pin-3 tape--at-t" data-stick aria-hidden="true"></span>
+        </div>
+        <figcaption class="look-cap">
+          <span class="look-n">’01</span>
+          <a href="#drop" data-product="jeans-scribble">Джинсы КАРАКУЛИ</a>
+        </figcaption>
+      </figure>
+      <figure class="look" data-look="02">
+        <div class="look-print">
+          <picture class="look-photo">
+            <source type="image/avif" srcset="{{asset:img/street/look-c-480.avif}} 480w, {{asset:img/street/look-c-960.avif}} 960w" sizes="(max-width: 767px) 72vw, 22vw">
+            <img src="{{asset:img/street/look-c-960.jpg}}" srcset="{{asset:img/street/look-c-480.jpg}} 480w, {{asset:img/street/look-c-960.jpg}} 960w" sizes="(max-width: 767px) 72vw, 22vw"
+                 alt="Жаккардовая G у подола белой футболки, крупно" width="960" height="1024" loading="lazy" fetchpriority="low" decoding="async">
+          </picture>
+        </div>
+        <figcaption class="look-cap">
+          <span class="look-n">’02</span>
+          <a href="#drop" data-product="tee-blank">Футболка ФОН</a>
+          <a href="#drop" data-product="longsleeve-blank">Лонгслив ФОН</a>
+        </figcaption>
+      </figure>
+      <figure class="look" data-look="03">
+        <div class="look-print">
+          <picture class="look-photo">
+            <source type="image/avif" srcset="{{asset:img/street/look-d-480.avif}} 480w, {{asset:img/street/look-d-960.avif}} 960w" sizes="(max-width: 767px) 72vw, 20vw">
+            <img src="{{asset:img/street/look-d-960.jpg}}" srcset="{{asset:img/street/look-d-480.jpg}} 480w, {{asset:img/street/look-d-960.jpg}} 960w" sizes="(max-width: 767px) 72vw, 20vw"
+                 alt="Бирка G с рожками в горловине белой футболки" width="960" height="1152" loading="lazy" fetchpriority="low" decoding="async">
+          </picture>
+          <span class="tape tape--white tape--pin-1 tape--at-tl" data-stick aria-hidden="true"></span>
+        </div>
+        <figcaption class="look-cap">
+          <span class="look-n">’03</span>
+          <a href="#drop" data-product="tee-blank">Футболка ФОН</a>
+        </figcaption>
+      </figure>
+    </div>
   </div>
 </section>

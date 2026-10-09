@@ -1,20 +1,22 @@
 <section id="hero" data-g="hero" aria-labelledby="hero-title">
-  <!-- K3. Чёрный холст, ЦЕЛЫЙ кадр pg-011-018 (фон кадра = #000, край гасится маской), одна зелёная лента
-       запечатывает нижний правый угол экрана. Ничего декоративного поверх текста, кнопки, модели и G. -->
+  <!-- K3. Чёрный холст на весь экран под шапкой. ЦЕЛЫЙ кадр pg-011-018 (фон кадра = #000, край растушёван).
+       Одна лента — настоящая ПВХ с пакета pres_20: запечатывает нижний правый угол и заворачивает за край экрана.
+       Ничего декоративного поверх текста, кнопки, модели и G. -->
   <div class="wrap hero-in">
     <div class="hero-stage">
       <picture class="hero-shot">
-        <source type="image/avif" srcset="{{asset:img/street/hero-640.avif}} 640w, {{asset:img/street/hero-1024.avif}} 1024w" sizes="(max-width: 767px) 72vw, 56vh">
-        <img src="{{asset:img/street/hero-1024.jpg}}" srcset="{{asset:img/street/hero-640.jpg}} 640w, {{asset:img/street/hero-1024.jpg}} 1024w" sizes="(max-width: 767px) 72vw, 56vh"
+        <source type="image/avif" srcset="{{asset:img/street/hero-640.avif}} 640w, {{asset:img/street/hero-1024.avif}} 1024w" sizes="(max-width: 767px) 86vw, 62vh">
+        <img src="{{asset:img/street/hero-1024.jpg}}" srcset="{{asset:img/street/hero-640.jpg}} 640w, {{asset:img/street/hero-1024.jpg}} 1024w" sizes="(max-width: 767px) 86vw, 62vh"
              alt="Модель в варёной косухе с капюшоном и тёмных широких джинсах" width="1024" height="1536" decoding="async" fetchpriority="high">
       </picture>
       <div id="g3d" aria-hidden="true"></div>
     </div>
     <div class="hero-copy">
-      <h1 id="hero-title">Одежда для тех, кто не&nbsp;идёт по <s class="hero-strike">заданному</s> маршруту.</h1>
-      <p class="hero-meta">дроп 01 · 08 вещей · предзаказ</p>
+      <h1 id="hero-title">Одежда для&nbsp;тех, кто не&nbsp;идёт по&nbsp;<s class="hero-strike">заданному</s> маршруту.</h1>
+      <p class="hero-meta">на&nbsp;модели: <a href="#drop" data-product="jacket-biker">Косуха КАПЮШОН&nbsp;<span aria-hidden="true">→</span></a></p>
       <a class="btn btn--accent hero-btn" href="#drop" data-nav="drop">Смотреть дроп <span aria-hidden="true">↓</span></a>
     </div>
   </div>
   <span class="tape tape--green tape--hero" data-stick aria-hidden="true"></span>
+  <span class="hero-fold" aria-hidden="true"></span>
 </section>

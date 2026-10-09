@@ -91,20 +91,24 @@ png(mark_svg(512, pad=.14), 192, META / "icon-192.png")
 png(mark_svg(512, pad=.14), 512, META / "icon-512.png")
 png(mark_svg(512, pad=.24), 512, META / "icon-maskable-512.png")  # безопасная зона Android ~80 %
 
-# Превью для ссылок 1200×630: дверь со скотчем GRINCHIN (pres_21) + полоса статуса
-door = ROOT.parent / "assets/brand_raster/new/pg-021-090.jpg"
-door_b64 = base64.b64encode(door.read_bytes()).decode()
+# Превью для ссылок 1200×630 — композиция первого экрана v2: чёрный холст, целый кадр модели,
+# логотип, моно-статус и одна фирменная лента, запечатывающая угол (как в hero).
+def b64(p: pathlib.Path) -> str:
+    return base64.b64encode(p.read_bytes()).decode()
+model = SRC / "img/street/hero-1024.jpg"
+tape = SRC / "img/tape/green-1.webp"
 lvb, lbody = inner((SRC / "svg/logo.svg").read_text())
 og = f'''<div style="position:relative;width:1200px;height:630px;overflow:hidden;background:#000;font-family:'Martian Mono',Menlo,monospace">
-<img src="data:image/jpeg;base64,{door_b64}" style="position:absolute;inset:0;width:1200px;height:630px;object-fit:cover;object-position:50% 45%;filter:contrast(1.08) saturate(1.05) brightness(.82)">
-<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.0) 45%,rgba(0,0,0,.78) 100%)"></div>
-<div style="position:absolute;left:0;right:0;top:0;height:44px;background:{GREEN};color:#000;font-size:20px;font-weight:700;letter-spacing:.12em;display:flex;align-items:center;justify-content:center">ДРОП 01 · ПРЕДЗАКАЗ ОТКРЫТ</div>
-<svg viewBox="{gvb}" style="position:absolute;left:56px;bottom:50px;width:118px;color:{GREEN}" fill="currentColor">{gbody}</svg>
-<div style="position:absolute;left:196px;bottom:56px;color:#fff;font-size:24px;letter-spacing:.05em;line-height:1.45">одежда для тех, кто<br>не идёт по заданному маршруту</div>
+<img src="data:image/jpeg;base64,{b64(model)}" style="position:absolute;left:560px;top:-24px;height:690px;width:auto;-webkit-mask-image:radial-gradient(120% 90% at 50% 45%,#000 62%,transparent 92%)">
+<svg viewBox="{gvb}" style="position:absolute;left:1034px;top:96px;width:138px;color:{GREEN};filter:drop-shadow(0 0 18px rgba(0,255,42,.35))" fill="currentColor">{gbody}</svg>
+<svg viewBox="{lvb}" style="position:absolute;left:64px;top:214px;width:470px;color:{GREEN}" fill="currentColor">{lbody}</svg>
+<div style="position:absolute;left:66px;top:352px;color:#fff;font-size:22px;letter-spacing:.08em">ДРОП 01 · 08 ВЕЩЕЙ</div>
+<div style="position:absolute;left:66px;top:390px;color:#9a9a9a;font-size:22px;letter-spacing:.08em">ПРЕДЗАКАЗ · ОТПРАВКА С 01.12</div>
+<img src="data:image/webp;base64,{b64(tape)}" style="position:absolute;left:930px;top:560px;width:760px;transform:rotate(-20deg);transform-origin:0 50%;filter:drop-shadow(0 1px .5px rgba(0,0,0,.6)) drop-shadow(0 8px 10px rgba(0,0,0,.45))">
 </div>'''
 fonts = '<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400;700&display=swap" rel="stylesheet">'
 render(fonts + og, 1200, 630, META / "og.png")
-subprocess.run(["sips", "-s", "format", "jpeg", "-s", "formatOptions", "82", str(META / "og.png"), "--out", str(META / "og.jpg")],
+subprocess.run(["sips", "-s", "format", "jpeg", "-s", "formatOptions", "84", str(META / "og.png"), "--out", str(META / "og.jpg")],
                stdout=subprocess.DEVNULL, check=True)
 (META / "og.png").unlink()
 print("готово:", ", ".join(sorted(p.name for p in META.iterdir())))

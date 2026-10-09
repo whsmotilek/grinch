@@ -25,7 +25,15 @@
   /* ---------- утилиты ---------- */
   var nf = new Intl.NumberFormat("ru-RU");
   function money(n) { return nf.format(n).replace(/\s/g, " ") + " ₽"; }
-  function plain(n) { return nf.format(n).replace(/\s/g, " "); }
+  /* неразрывные пробелы: после коротких слов, перед тире, в «с 01.12», «187 см», «2–7 дней» (FIXES п. 11) */
+  function typo(t) {
+    return String(t)
+      .replace(/(^|[\s(«])([А-Яа-яЁёA-Za-z]{1,2})\s+/g, "$1$2\u00A0")
+      .replace(/(^|[\s(«])([А-Яа-яЁёA-Za-z]{1,2})\s+/g, "$1$2\u00A0") // второй проход: «и в …»
+      .replace(/\s+—/g, "\u00A0—")
+      .replace(/(\d)\s+(?=(см|дней|дня|г\/м²|oz|₽)(?![А-Яа-яё]))/g, "$1\u00A0");
+  }
+  GV.typo = typo;
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   function $(s, el) { return (el || d).querySelector(s); }
   function $$(s, el) { return Array.prototype.slice.call((el || d).querySelectorAll(s)); }
@@ -40,10 +48,10 @@
     if (!anyStock(p)) return { text: "РАЗОБРАЛИ", alert: true };
     var l = lastSize(p);
     if (l) return { text: l + " — ПОСЛЕДНИЙ", alert: true };
-    return { text: "ПРЕДЗАКАЗ", alert: false };
+    return { text: "", alert: false }; // норма — «предзаказ» — уже в полосе статуса; на карточке только исключения
   }
-  function shipText(p) { return anyStock(p) ? "предзаказ · отправка с " + DROP.shipFrom : "разобрали"; }
-  var ARROW = '<svg class="gl" viewBox="0 0 16 12" aria-hidden="true"><path d="M0 6h14.5M9.5 1l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
+  function shipText(p) { return anyStock(p) ? "предзаказ · отправка с\u00A0" + DROP.shipFrom : "разобрали"; }
+  var ARROW = GV.arrow = '<svg class="gl" viewBox="0 0 16 12" aria-hidden="true"><path d="M0 6h14.5M9.5 1l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
   // грустная улыбка пустой корзины: та же дуга знака, перевёрнутая, без рогов
   var SMILE_SVG = '<svg viewBox="0 0 96 28" aria-hidden="true"><path d="M3 25C20 8 34 4 48 4s28 4 45 21" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>';
   // маркер выбранного размера: стрелка с квадратным концом, как перекладина G
@@ -54,10 +62,25 @@
   GV.toast = function (msg, ms) {
     if (!toastEl) return;
     toastEl.textContent = msg;
+    anchorToast();
     toastEl.classList.add("is-on");
     clearTimeout(toastT);
     toastT = setTimeout(function () { toastEl.classList.remove("is-on"); }, ms || 2400);
   };
+
+  // в открытой карточке тост встаёт над кнопкой покупки (на её колонке), а не посреди экрана и не на кнопке
+  function anchorToast() {
+    toastEl.classList.remove("is-anchored");
+    if (stackTop() !== "product") return;
+    var b = $("[data-ps-add]", sheetBody);
+    if (!b) return;
+    var r = b.getBoundingClientRect();
+    if (r.top < 120 || r.bottom > window.innerHeight) return; // кнопка вне экрана — обычное место внизу
+    var th = toastEl.offsetHeight || 44;
+    toastEl.style.setProperty("--tx", Math.round(r.left + r.width / 2) + "px");
+    toastEl.style.setProperty("--ty", Math.round(r.top - th - 12) + "px");
+    toastEl.classList.add("is-anchored");
+  }
 
   /* ---------- корзина: в памяти + localStorage (в try/catch) ---------- */
   var KEY = "grinchin.cart.v2";
@@ -120,11 +143,12 @@
   function cardHTML(p) {
     var st = statusOf(p), sizes = sizesOf(p);
     var row = anyStock(p) && canHover ?
-      '<div class="card-sizes" role="group" aria-label="Быстро в корзину: ' + esc(p.name) + '" style="--n:' + sizes.length + '">' +
+      // быстрые размеры — только для мыши: вне Tab и скрыты от скринридера, с клавиатуры покупка идёт через карточку
+      '<div class="card-sizes" aria-hidden="true" style="--n:' + sizes.length + '">' +
       sizes.map(function (s) {
         var ok = inStock(p, s);
         return '<button type="button" class="cell cs' + (ok ? "" : " is-out") + '" data-quick="' + p.id + '" data-size="' + s + '"' +
-          (ok ? ' aria-label="' + s + ' — в корзину"' : ' aria-disabled="true" tabindex="-1" aria-label="' + s + ' — нет"') + ">" + s + "</button>";
+          ' tabindex="-1"' + (ok ? "" : ' aria-disabled="true"') + ">" + s + "</button>";
       }).join("") + "</div>" : "";
     return '<article class="card" data-id="' + p.id + '" data-state="' + (anyStock(p) ? p.state : "soldout") + '">' +
       '<div class="card-media">' +
@@ -185,9 +209,10 @@
       '<h2 id="ps-title" class="ps-title">' + esc(p.name) + "</h2>" +
       '<p class="ps-line"><span>[' + esc(p.color) + ']</span><span class="ps-price">' + money(p.price) + "</span></p>" +
       '<p class="ps-ship">' + shipText(p) + "</p>" +
-      '<p class="ps-desc">' + esc(p.desc) + "</p>" +
-      '<div class="ps-tag" aria-hidden="true"><div class="pt-cell"><span>size:</span><b data-ps-tagsize>' + (all ? "?" : "—") + '</b></div>' +
-      '<div class="pt-cell"><span>price:</span><b>' + plain(p.price) + "</b></div></div>" +
+      '<p class="ps-desc">' + esc(typo(p.desc)) + "</p>" +
+      // бирка pres_12: цена одна (в строке выше), на бирке — размер и дата отправки
+      '<div class="ps-tag" aria-hidden="true"><div class="pt-cell"><span lang="en">size:</span><b data-ps-tagsize>' + (all ? "?" : "—") + '</b></div>' +
+      '<div class="pt-cell"><span lang="en">ship:</span><b>' + (all ? DROP.shipFrom : "—") + "</b></div></div>" +
       '<div class="ps-sizes-head"><span class="t-mono">размер:</span><button type="button" class="link" data-open="sizes">Размерная сетка</button></div>' +
       '<div class="ps-sizes" role="group" aria-label="Размер" style="--n:' + sizes.length + '">' +
       sizes.map(function (s) {
@@ -196,7 +221,7 @@
           (ok ? "" : ' aria-label="' + s + ' — нет"') + ">" + s + "</button>";
       }).join("") +
       '<span class="sz-mark" aria-hidden="true">' + MARK_SVG + "</span></div>" +
-      '<dl class="kv ps-fit"><div><dt>посадка:</dt><dd>' + esc(p.fit) + "</dd></div><div><dt>модель:</dt><dd>" + esc(p.model) + "</dd></div></dl>" +
+      '<dl class="kv ps-fit"><div><dt>посадка:</dt><dd>' + esc(p.fit) + "</dd></div><div><dt>модель:</dt><dd>" + esc(typo(p.model)) + "</dd></div></dl>" +
       '<div class="ps-notify" data-ps-notify hidden>' +
       '<p data-notify-head></p>' +
       '<form class="ps-notify-form" data-notify-form novalidate><label class="vh" for="ps-notify-input">Ник в Telegram или почта</label>' +
@@ -208,9 +233,9 @@
       '<button type="button" class="link ps-gocart" data-open="cart">Корзина' + ARROW + '</button>' +
       "</div>" +
       '<div class="ps-acc">' +
-      acc("Состав и уход", "<p>" + esc(p.composition) + ".</p><p>" + esc(p.care) + ".</p>") +
-      acc("Доставка и предзаказ", "<p>Предзаказ до " + DROP.preorderTill + ", отправка с " + DROP.shipFrom + ". СДЭК или Почта России, 2–7 дней.</p>") +
-      acc("Возврат", "<p>14 дней, если вещь не носили и бирка на месте. Обмен размера — бесплатно.</p>") +
+      acc("Состав и уход", "<p>" + esc(typo(p.composition)) + ".</p><p>" + esc(typo(p.care)) + ".</p>") +
+      acc("Доставка и предзаказ", "<p>" + typo("Предзаказ до " + DROP.preorderTill + ", отправка с " + DROP.shipFrom + ". СДЭК или Почта России, 2–7 дней.") + "</p>") +
+      acc("Возврат", "<p>" + typo("14 дней, если вещь не носили и бирка на месте. Обмен размера — бесплатно.") + "</p>") +
       "</div></div>" +
       ((pairs.length || look) ?
         '<div class="ps-more"><div class="ps-more-head"><h3 class="t-h3">С этим</h3>' +
@@ -236,17 +261,19 @@
     var btn = $("[data-ps-add]", sheetBody);
     if (!btn) return;
     var s = cur.size, out = s && !inStock(p, s);
-    mode = mode || (!anyStock(p) ? "notify-all" : !s ? "pick" : out ? "notify" : "add");
+    var subd = p.subs && (anyStock(p) ? p.subs[s] : p.subs["*"]);
+    mode = mode || (subd ? "subscribed" : !anyStock(p) ? "notify-all" : !s ? "pick" : out ? "notify" : "add");
     var label = {
       pick: "Выбери размер",
       add: "В корзину · " + money(p.price),
       done: "В корзине ✓",
       notify: "Сообщить, когда будет",
-      "notify-all": "Сообщить о перезапуске"
+      "notify-all": "Сообщить о перезапуске",
+      subscribed: "Подписан ✓" + (anyStock(p) && s ? " · " + s : "")
     }[mode];
     btn.textContent = label;
     btn.dataset.mode = mode === "notify-all" ? "notify" : mode;
-    btn.setAttribute("aria-disabled", mode === "pick" ? "true" : "false");
+    btn.setAttribute("aria-disabled", mode === "pick" || mode === "subscribed" ? "true" : "false");
   }
   function moveMark(b) {
     var mark = $(".sz-mark", sheetBody), box = $(".ps-sizes", sheetBody);
@@ -262,7 +289,7 @@
     var box = $("[data-ps-notify]", sheetBody), p = sheetProduct();
     if (!box || !p) return;
     box.hidden = !on;
-    if (on) $("[data-notify-head]", box).textContent = anyStock(p) ? (cur.size || "Размер") + " — нет. Напишем, когда будет." : "Разобрали. Напишем о перезапуске.";
+    if (on) $("[data-notify-head]", box).textContent = anyStock(p) ? (cur.size || "Размер") + "\u00A0— нет." : "Разобрали.";
     if (on && focus) { var inp = $("input", box); if (inp) inp.focus(); }
   }
   var doneT;
@@ -287,12 +314,17 @@
         if (mode === "pick") {
           var g = $(".ps-sizes", sheetBody);
           g.classList.remove("is-nudge"); void g.offsetWidth; g.classList.add("is-nudge");
-          GV.toast("Сначала размер.");
-          var first = $(".sz:not(.is-out)", sheetBody); if (first) first.focus();
+          var first = $(".sz:not(.is-out)", sheetBody); if (first) first.focus({ preventScroll: true });
+          // ряд размеров не на экране (телефон: кнопка плавает внизу) — сначала подвести к нему, потом подсказка у кнопки
+          var gr = g.getBoundingClientRect();
+          if (gr.top < 72 || gr.bottom > window.innerHeight - 96) {
+            g.scrollIntoView({ block: "center", behavior: instant() ? "auto" : "smooth" });
+            setTimeout(function () { GV.toast("Сначала размер."); }, instant() ? 0 : 380);
+          } else GV.toast("Сначала размер.");
           return;
         }
         if (mode === "notify") { showNotify(true, true); return; }
-        if (mode === "done") return;
+        if (mode === "done" || mode === "subscribed") return;
         if (GV.cart.add(p.id, cur.size)) {
           setBuy(p, "done");
           $(".ps-buy", sheetBody).classList.add("is-added");
@@ -316,6 +348,9 @@
       err.textContent = ""; inp.removeAttribute("aria-invalid");
       var box = $("[data-ps-notify]", sheetBody);
       box.innerHTML = '<p tabindex="-1">Есть. Напишем.</p>';
+      // задача решена: кнопка больше не предлагает то же действие
+      var p2 = sheetProduct();
+      if (p2) { (p2.subs = p2.subs || {})[anyStock(p2) ? cur.size : "*"] = 1; setBuy(p2); }
       $("p", box).focus();
     });
   }
@@ -348,7 +383,7 @@
         var p = byId[i.id], k = keyOf(i), lim = limitOf(i.id, i.size);
         return '<li class="cart-item">' +
           '<button type="button" class="ci-thumb" data-open-product="' + p.id + '" aria-label="Открыть: ' + esc(p.name) + '"><img src="' + p.img[0] + '" alt="" width="800" height="1000"></button>' +
-          '<div class="ci-info"><p class="ci-name">' + esc(p.name) + '</p><p class="t-mono ci-meta">size: ' + i.size + "<br>предзаказ · с " + DROP.shipFrom + "</p></div>" +
+          '<div class="ci-info"><p class="ci-name">' + esc(p.name) + '</p><p class="t-mono ci-meta"><span lang="en">size:</span> ' + i.size + "<br>предзаказ · с\u00A0" + DROP.shipFrom + "</p></div>" +
           '<p class="ci-price">' + money(p.price * i.qty) + "</p>" +
           '<div class="ci-row"><div class="qty" role="group" aria-label="Количество: ' + esc(p.name) + '">' +
           '<button type="button" class="cell" data-qty="-1" data-key="' + k + '" aria-label="Меньше"' + (i.qty <= 1 ? " disabled" : "") + ">−</button>" +
@@ -361,7 +396,7 @@
       '<div class="cart-foot">' +
       '<dl class="kv cart-sum"><div><dt>доставка:</dt><dd>при оформлении</dd></div>' +
       '<div class="cart-total"><dt>итого:</dt><dd>' + money(total()) + "</dd></div></dl>" +
-      (pre ? '<p class="t-mono cart-pre">Отправим всё вместе ' + DROP.shipFrom + ".</p>" : "") +
+      (pre ? '<p class="t-mono cart-pre">Отправим всё вместе с\u00A0' + DROP.shipFrom + ".</p>" : "") +
       (cartDemo ?
         '<div class="cart-demo" tabindex="-1"><p>Оплата откроется к старту продаж. Корзина сохранится.</p>' +
         '<button type="button" class="btn btn--line btn--wide" data-nav="next">Сообщить о старте</button></div>' :
@@ -447,13 +482,29 @@
     if (s.name === "menu") { var b = $(".hd-burger"); if (b) b.setAttribute("aria-expanded", "false"); }
     if (s.name === "cart") cartDemo = false;
     emit("grinchin:overlay", { name: s.name, open: false });
-    if (stack.length) root.dataset.overlay = stackTop(); else { delete root.dataset.overlay; lock(false); }
+    if (stack.length) root.dataset.overlay = stackTop(); else { delete root.dataset.overlay; lock(false); cleanUrl(); }
     setInert();
     if (restore !== false) {
       var o = s.opener;
-      if (o && d.contains(o) && !o.closest("[inert]") && o !== d.body) o.focus({ preventScroll: true });
+      if (o && d.contains(o) && !o.closest("[inert]") && o !== d.body && o !== root) o.focus({ preventScroll: true });
       else if (stack.length) focusIn(stack[stack.length - 1].el);
+      else focusMain(); // открыто адресом (?open=, битый #hash): фокус не теряется на <body>
     }
+  }
+  // после закрытия последнего оверлея адрес не должен снова его открыть при перезагрузке
+  function cleanUrl() {
+    try {
+      var u = new URL(location.href), ch = false;
+      if (u.searchParams.has("open")) { u.searchParams.delete("open"); ch = true; }
+      if (u.hash && !d.getElementById(u.hash.slice(1))) { u.hash = ""; ch = true; }
+      if (ch) history.replaceState(null, "", u.pathname + u.search + u.hash);
+    } catch (e) { /* file:// и песочница */ }
+  }
+  function focusMain() {
+    var m = d.getElementById("main");
+    if (!m) return;
+    if (!m.hasAttribute("tabindex")) m.setAttribute("tabindex", "-1");
+    m.focus({ preventScroll: true });
   }
   GV.open = function (name, arg) {
     var el = d.getElementById(OV[name]);
@@ -579,6 +630,8 @@
     }
     scrollRaf = requestAnimationFrame(step);
   };
+  // верх элемента без transform-ов (reveal-анимация K4 сдвигает блоки translateY во время перехода)
+  function layoutTop(el) { var y = 0; while (el) { y += el.offsetTop; el = el.offsetParent; } return y; }
   GV.navigate = function (target, opts) {
     opts = opts || {};
     var t = d.getElementById(target);
@@ -587,7 +640,7 @@
       emit("grinchin:navigate", { target: target });
       var el = (opts.look && $('[data-look="' + opts.look + '"]', t)) || t;
       var hh = ($("#header") || {}).offsetHeight || 0;
-      var y = target === "hero" ? 0 : el.getBoundingClientRect().top + window.scrollY - hh;
+      var y = target === "hero" ? 0 : layoutTop(el) - hh - (el === t ? 0 : 24);
       GV.scrollTo(y);
       try { history.replaceState(null, "", target === "hero" ? location.pathname + location.search : "#" + target); } catch (e) { /* file:// и песочница */ }
       if (!t.hasAttribute("tabindex")) t.setAttribute("tabindex", "-1");
@@ -648,6 +701,11 @@
     var h = (location.hash || "").slice(1);
     if (h && !d.getElementById(h)) GV.open("404");
   }
+  // ручная правка адреса на несуществующий #раздел — тоже «Тупик.»
+  window.addEventListener("hashchange", function () {
+    var h = (location.hash || "").slice(1);
+    if (h && !d.getElementById(h) && !stack.length) GV.open("404");
+  });
   if (isShot) setTimeout(applyOpen, 0);
   else {
     d.addEventListener("grinchin:ready", applyOpen, { once: true });

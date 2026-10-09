@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 """v2 (K3): лента и фото «улицы» из СОБСТВЕННЫХ материалов бренда. Детерминирован (фиксированные seed).
 
-Запуск из site/:  python3 src/img/_street.py  [tape|photo]   (без аргумента — всё, ≈10 с)
+Запуск из site/:  python3 src/img/_street.py  [tape|photo|smile]   (без аргумента — всё, ≈10 с)
 
 Источники — ../../assets/brand_raster (растры из PDF в нативном разрешении):
-  old/p-009-058   мятая белая малярная лента, 3443 px — ЕДИНСТВЕННЫЙ источник формы/заломов/рваных концов
-                  → tape/pin-1…5.webp (белые куски разной формы), tape/green-1…3.webp (фирменная зелёная:
-                    форма и светотень скана, цвет бренда ПОД светотенью, печать GRINCHIN гротеском ПОД заломами)
-  new/pg-011-018  модель, косуха + джинсы, на чёрном → street/hero-*.{avif,jpg} (целый кадр, ретушь зелёной точки)
-  new/pg-011-010  модель, «Каракули» + худи        → street/look-a-*
-  new/pg-011-024  модель, «Каракули», взгляд вниз  → street/look-b-*
-  new/pg-015-038  жаккардовая G у подола футболки  → street/look-c-*
-  new/pg-020-088  пакет с фирменной лентой          → street/bag-*      (образ '04 и пакет подписки у K5)
-  new/pg-021-090  дверь, GRINCHIN зелёным скотчем   → street/door-*     (БЕЗ обработки, только пережатие)
-  old/p-018-122/118/120  N: наклеили → сорвали → скан → street/n-1…3-*
+  old/p-009-058   мятая белая малярная лента, 3443 px → tape/pin-1…5.webp (белые куски разной формы, натуральные/новые отрывы)
+  new/pg-020-088  пакет: диагональная ПВХ-лента целиком → tape/pvc.webp (печать, глянец, вспышка — свои; кромки по прямым,
+                  видимый конец срезан ножом). Сам пакет — только в подписке (K5, img/end/).
+  new/pg-011-018  модель, косуха + джинсы, на чёрном → street/hero-* (целый кадр, ретушь точки, край утоплен и растушёван)
+  new/pg-011-010, pg-011-024  «Каракули»          → street/look-a-*, look-b-* (диптих ’01)
+  new/pg-015-038  жаккардовая G у подола          → street/look-c-* (’02)
+  new/pg-015-040  бирка G в горловине              → street/look-d-* (’03)
+  new/pg-021-090  дверь, GRINCHIN зелёным скотчем  → street/door-* (БЕЗ обработки, только пережатие)
+                  + street/door-smile.webp, door-smile-shadow.webp — улыбка с рожками из кусков ленты ЭТОЙ ЖЕ двери
+                    (вектор svg/logo.svg → lg-smile, подогнан по габаритам букв на фото), позиция печатается в % кадра
+  old/p-018-122/118/120  N: наклеили → сняли → скан → street/n-1…3-*
 Чужие мудборды (old/p-002…012, new/pg-018/019) и Гринч (pg-008) НЕ используются.
 """
 from __future__ import annotations
@@ -436,17 +437,18 @@ def door_smile(door):
     print(f"  доклеено кусками: {patched} px, крошек: {int(hole.sum())} px")
     alpha = canvas[..., 3] * mask
     rgb_ = ndimage.gaussian_filter(canvas[..., :3], (.45, .45, 0))           # мягкость фото двери
-    # тень, как у букв на двери: мягкая, вниз-вправо
+    # тень, как у букв на двери: мягкая, вниз-вправо. Отдельным слоем — K4 проявляет её на «посадке» (.ds-shadow)
     shadow = np.roll(np.roll(ndimage.gaussian_filter(alpha, 2.2), 3, 0), 2, 1) * .55
-    out_a = alpha + shadow * (1 - alpha)
-    out_rgb = (rgb_ * alpha[..., None]) / np.maximum(out_a, 1e-4)[..., None]
-    rgba = np.dstack([out_rgb, out_a])
-    ys, xs = np.where(out_a > .01)
+    shadow = shadow * (1 - alpha)                     # под лентой тень не нужна — слой лежит под ней
+    both = np.maximum(alpha, shadow)
+    ys, xs = np.where(both > .01)
     y0, y1, x0, x1 = ys.min() - 2, ys.max() + 3, xs.min() - 2, xs.max() + 3
-    rgba = rgba[y0:y1, x0:x1]
-    p = OUT_S / "door-smile.webp"
-    Image.fromarray((np.clip(rgba, 0, 1) * 255 + .5).astype(np.uint8), "RGBA").save(p, quality=84, method=6, alpha_quality=92)
-    report(p)
+    tape_rgba = np.dstack([rgb_, alpha])[y0:y1, x0:x1]
+    sh_rgba = np.dstack([np.zeros_like(rgb_), shadow])[y0:y1, x0:x1]
+    for name, arr, q in (("door-smile.webp", tape_rgba, 84), ("door-smile-shadow.webp", sh_rgba, 70)):
+        p = OUT_S / name
+        Image.fromarray((np.clip(arr, 0, 1) * 255 + .5).astype(np.uint8), "RGBA").save(p, quality=q, method=6, alpha_quality=90)
+        report(p)
     # позиция в % от кадра двери — для CSS (#door-smile)
     pos = dict(left=x0 / W * 100, top=y0 / H * 100, width=(x1 - x0) / W * 100, height=(y1 - y0) / H * 100)
     print("  #door-smile: " + "; ".join(f"{k_}:{v:.3f}%" for k_, v in pos.items()))

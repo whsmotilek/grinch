@@ -370,10 +370,17 @@ self.onmessage = async (ev) => {
     stage.style.setProperty('--g-btn', M.btn + 'px');
     M.park = { x: comp.offsetLeft + comp.offsetWidth / 2, y: comp.offsetTop + comp.offsetHeight / 2, size: M.mob ? 36 : M.btn };
     // логотип подвала (K5: #footer-logo > .fo-logo): буква G — bbox 137..347 × 47..240 в 1854×390
+    // K5 кладёт невидимую копию вектора поверх лого: .fo-logo-geom [data-l] — реальные прямоугольники букв
     const lg = D.querySelector('#footer-logo .fo-logo') || D.getElementById('footer-logo');
-    if (lg) {
+    const gl = D.querySelector('#footer-logo .fo-logo-geom [data-l="G"]');
+    if (gl && gl.getBoundingClientRect().width > 4) {
+      const r = docRect(gl, sy);
+      let top = r.t;
+      D.querySelectorAll('#footer-logo .fo-logo-geom [data-l]').forEach((el) => { const b = el.getBoundingClientRect(); if (b.height) top = Math.min(top, b.top + sy); });
+      M.logo = { gx: r.l + r.w / 2, gTop: top, gW: r.w };
+    } else if (lg) {
       const r = docRect(lg, sy), kx = r.w / LOGO.w, ky = r.h / LOGO.h;
-      M.logo = { gx: r.l + 242 * kx, gTop: r.t + 47 * ky, gW: 210 * kx, top: r.t };
+      M.logo = { gx: r.l + 242 * kx, gTop: r.t + 47 * ky, gW: 210 * kx };
     } else M.logo = null;
     // отпечатки «Образов» (контракт: figure.look > .look-print)
     let prints = Array.from(D.querySelectorAll('#looks .look-print'));
@@ -580,6 +587,12 @@ self.onmessage = async (ev) => {
     // одноразовые жесты — поверх сглаженной позы
     const V = Object.assign({}, P);
     V.op *= jm;
+    // предохранитель подвала по ВИДИМОЙ позе: до верха букв ≥ 8 px + кадр прокрутки — иначе прозрачность 0 (сглаживание не догонит)
+    if (M.logo && (P.foot > 0 || T.foot > 0)) {
+      const gap = (M.logo.gTop - sy) - (V.y + V.size * 0.34);
+      const lead = 8 + Math.min(64, Math.abs(S.vel) / 55);           // запас на кадр прокрутки (прокрутка идёт в композиторе)
+      V.op *= clamp((gap - lead) / Math.max(12, V.size * 0.3), 0, 1);
+    }
     const tb = (t - S.birthT) / 700;                                // рождение на месте: 0,6 → 1, поворот, проявление
     if (tb >= 0 && tb < 1) {
       const k = eo3(tb);
@@ -637,7 +650,6 @@ self.onmessage = async (ev) => {
     S.carrier = c;
     stage.dataset.carrier = c;
     if (hostSvg) hostSvg.classList.toggle('is-on', c === 'host');
-    comp.classList.toggle('is-vis', c === 'comp');
     if (cv) cv.classList.toggle('is-on', c === 'gl');
     S.lastPost = null; S.lastCv = ''; S.lastOp = '';
   }
@@ -654,6 +666,8 @@ self.onmessage = async (ev) => {
     if (comp.classList.contains('is-live') !== live) comp.classList.toggle('is-live', live);
     const cop = (parked ? V.op : 0).toFixed(3);
     if (comp._o !== cop) { comp._o = cop; comp.style.setProperty('--cop', cop); }
+    const cv2 = c === 'comp' && V.op > 0.01;                       // невидимый компаньон не ловит Tab и тапы
+    if (comp.classList.contains('is-vis') !== cv2) comp.classList.toggle('is-vis', cv2);
     if (c === 'comp') twinPose(compTw, V);
     if (c === 'gl' && cv && glh) {
       const glOp = V.op * clamp((t - S.glIn) / 300, 0, 1);
@@ -720,10 +734,10 @@ self.onmessage = async (ev) => {
     S.warmAsked = true;
     setTimeout(() => idle(() => glh && glh.warm(), 2000), Math.max(0, S.birthT + 900 - now()));
   }
-  function onBuilt() { S.built = true; maybeWarm(); }
+  function onBuilt() { S.built = true; S.tBuilt = now(); maybeWarm(); }
   function onGLReady() {
     if (S.mode !== 'gl') return;
-    S.glReady = true; S.glIn = S.started && !SHOT ? now() : -1e9; S.lastPost = null; S.res = [0, 0]; S.carrier = '';
+    S.glReady = true; S.tReady = now(); S.glIn = S.started && !SHOT ? now() : -1e9; S.lastPost = null; S.res = [0, 0]; S.carrier = '';
     stage.dataset.mode = 'gl'; GV.g.mode = 'gl'; GV.g.engine = glh && glh.kind;
     if (host) host.classList.add('is-gl');
     buildGyro(); wake();
@@ -739,6 +753,7 @@ self.onmessage = async (ev) => {
     S.carrier = ''; wake();
   }
   function startGL() {
+    S.tStart = now();
     const o = engineOpts(), p0 = initPose();
     makeCanvas();
     const w0 = Math.round(M.Wc * M.dpr), h0 = Math.round(w0 / ASPECT);
@@ -836,7 +851,7 @@ self.onmessage = async (ev) => {
       }).observe(D.body, { childList: true, subtree: true });
     }
     const ld = R.getAttribute('data-loader');
-    if (SHOT || ld === 'off' || ld === 'done') begin();
+    if (SHOT || ld === 'off' || ld === 'done' || R.getAttribute('data-ready') === '1') begin();   // ready уже был
     setTimeout(begin, 6000);                 // лоадер не прислал ready — не ждём вечно
   }
 

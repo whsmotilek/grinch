@@ -21,6 +21,9 @@ document.documentElement.classList.add("js");})();
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Inter:wght@400;600&family=Martian+Mono:wght@400;700&display=swap"></noscript>
 <!-- GSAP грузится в конце body (перед motion.js): не держит разбор страницы; preload — чтобы скачивание началось сразу -->
 <link rel="preload" as="script" href="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.0/gsap.min.js">
+<!-- three.js для 3D-G (импорт в воркере) — качаем заранее, чтобы знак был готов к рождению и на холодном кэше -->
+<link rel="preload" as="fetch" crossorigin href="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.186.1/three.module.min.js">
+<link rel="preload" as="fetch" crossorigin href="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.186.1/three.core.min.js">
 <link rel="preload" as="script" href="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.0/ScrollTrigger.min.js">
 <!--@css:tokens.css-->
 <!--@css:base.css-->

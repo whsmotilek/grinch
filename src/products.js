@@ -110,8 +110,7 @@ window.GV_PRODUCTS.forEach(function (p) { p.name = p.type + " " + p.word; });
    По реальным кадрам: '01 и '02 — джинсы КАРАКУЛИ, '03 — футболка и лонгслив ФОН, '04 — пакет («так приходит заказ»), без вещей.
    Карточка товара показывает «Из образа ’NN» по первому образу, где вещь есть; у кого образа нет — ссылки нет. */
 window.GV_LOOKS = [
-  { n: "01", items: ["jeans-scribble"] },
-  { n: "02", items: ["jeans-scribble"] },
-  { n: "03", items: ["tee-blank", "longsleeve-blank"] },
-  { n: "04", items: [] }
+  { n: "01", items: ["jeans-scribble"] },              // диптих pg-011-010 + pg-011-024
+  { n: "02", items: ["tee-blank", "longsleeve-blank"] }, // жаккардовая G у подола, pg-015-038
+  { n: "03", items: ["tee-blank"] }                      // бирка G в горловине, pg-015-040
 ];

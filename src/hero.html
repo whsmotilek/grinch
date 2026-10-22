@@ -1,22 +1,22 @@
-<section id="hero" data-g="hero" aria-labelledby="hero-title">
-  <!-- K3. Чёрный холст на весь экран под шапкой. ЦЕЛЫЙ кадр pg-011-018 (фон кадра = #000, край растушёван).
-       Одна лента — настоящая ПВХ с пакета pres_20: запечатывает нижний правый угол и заворачивает за край экрана.
-       Ничего декоративного поверх текста, кнопки, модели и G. -->
-  <div class="wrap hero-in">
-    <div class="hero-stage">
-      <picture class="hero-shot">
-        <source type="image/avif" srcset="{{asset:img/street/hero-640.avif}} 640w, {{asset:img/street/hero-1024.avif}} 1024w" sizes="(max-width: 767px) 86vw, 62vh">
-        <img src="{{asset:img/street/hero-1024.jpg}}" srcset="{{asset:img/street/hero-640.jpg}} 640w, {{asset:img/street/hero-1024.jpg}} 1024w" sizes="(max-width: 767px) 86vw, 62vh"
-             alt="Модель в варёной косухе с капюшоном и тёмных широких джинсах" width="1024" height="1536" decoding="async" fetchpriority="high">
-      </picture>
-      <div id="g3d" aria-hidden="true"></div>
-    </div>
-    <div class="hero-copy">
-      <h1 id="hero-title">Одежда для&nbsp;тех, кто не&nbsp;идёт по&nbsp;<s class="hero-strike">заданному</s> маршруту.</h1>
-      <p class="hero-meta">на&nbsp;модели: <a href="#drop" data-product="jacket-biker">Косуха КАПЮШОН&nbsp;<span aria-hidden="true">→</span></a></p>
-      <a class="btn btn--accent hero-btn" href="#drop" data-nav="drop">Смотреть дроп <span aria-hidden="true">↓</span></a>
-    </div>
+<section id="hero" aria-labelledby="hero-title">
+  <!-- улица: наружка pres_11 — мятая бумага, вертикальный знак, модель в дениме, теги поверх -->
+  <div class="hero-bg" aria-hidden="true">
+    <div class="hero-word"><!--@svg:logo-letters--></div>
+    <img class="hero-model" src="{{asset:img/street/model-hero.webp}}" alt="" width="880" height="1100" decoding="async" fetchpriority="high">
+    <span class="hero-graf hero-graf--a"></span>
+    <span class="hero-graf hero-graf--b"></span>
   </div>
-  <span class="tape tape--green tape--hero" data-stick aria-hidden="true"></span>
-  <span class="hero-fold" aria-hidden="true"></span>
+  <div id="g3d" aria-hidden="true"></div>
+  <div class="hero-copy">
+    <h1 id="hero-title">Одежда для тех, кто не&nbsp;идёт по <span class="ht-strike">заданному</span> маршруту.</h1>
+    <a class="btn btn--accent hero-btn" href="#drop" data-nav="drop">Смотреть дроп <span aria-hidden="true">↓</span></a>
+  </div>
+  <!-- куски настоящей ленты: держат «плакат» и перекрещивают стык с дропом -->
+  <span class="tp-piece hero-pin hero-pin--tl" aria-hidden="true"></span>
+  <span class="tp-piece hero-pin hero-pin--tr" aria-hidden="true"></span>
+  <span class="gm-slot" data-mark-slot="1"></span>
 </section>
+<div class="x-tapes x-tapes--hero" aria-hidden="true">
+    <div class="tp tp--brand"><span class="tp-txt">GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN</span></div>
+    <div class="tp tp--brand"><span class="tp-txt">GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN</span></div>
+</div>

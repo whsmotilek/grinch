@@ -1,8 +1,9 @@
-/* GRINCHIN — общие токены. Владелец: координатор. Источник цветов — pres_07 (замер, research/03 §2).
+/* GRINCHIN — общие токены. Владелец: координатор. v3 (23.10.2026): главный акцент #8ED308 из новой айдентики (Grinchin2.pdf, стр. 6);
+   #00DB24 из интерфейса убран. Правило: один зелёный объект на экран; на белом/бумаге лайм — только заливкой под чёрным текстом.
    Модули используют ТОЛЬКО эти переменные, свои цвета литералами не заводят. */
 :root{
-  --c-black:#000000; --c-forest:#10340C; --c-green:#00DB24; --c-acid:#00FF2A;
-  --c-olive:#6DA108; --c-smile:#8ED308; --c-lime:#A9FF01;
+  --c-black:#000000; --c-forest:#10340C; --c-green:#8ED308; --c-acid:#A6EA1F;
+  --c-olive:#6DA108; --c-smile:#8ED308; --c-lime:#B9F43A;
   --c-paper:#F4F3F3; --c-white:#FFFFFF; --c-ink-2:#B7B7B2; --c-muted:#8A8A8A;
   --c-line:#1F1F1F; --c-line-paper:#D9D8D6; --c-error:#FF4D4D;
 
@@ -18,7 +19,7 @@
 
   --r-0:0; --r-sm:2px; --r-pill:999px;
   --shadow-contact:0 18px 24px -18px rgba(0,0,0,.45);
-  --glow-green:0 0 28px rgba(0,255,42,.45);
+  --glow-green:0 0 28px rgba(142,211,8,.45);
   --focus-ring:0 0 0 3px var(--c-acid);
 
   --status-h:28px; --header-h:60px;

@@ -1,10 +1,21 @@
+<!-- K5 · 404. «Тупик.» + маскот выглядывает из-за ленты ограждения ([data-mascot-slot="404"], поза peek —
+     ленты — растр K3 (скан скотча) узором внутри SVG маскота, уходят за края экрана; панель их обрезает).
+     При data-mascot="none" — просто ограждение из полос .tape-strip.
+     Открывает K1: GV.open('404') / ?open=404 / битый #hash. -->
 <div id="page-404" class="ov ov--full" role="dialog" aria-modal="true" aria-labelledby="p404-title" hidden>
-  <div class="ov-panel p404-panel">
-    <p class="mono-label p404-code">404 · маршрута нет</p>
-    <div class="p404-sign">
-      <h2 id="p404-title" class="p404-title">STOP.<span>Тупик.</span></h2>
-      <div class="smirk" data-mood="look"></div>
+  <div class="ov-panel e404">
+    <button class="e404-logo" type="button" data-close data-home aria-label="GRINCHIN — на главную"><!--@svg:logo--></button>
+    <div class="e404-in">
+      <div class="e404-txt">
+        <p class="e404-code">404 · маршрута нет</p>
+        <h2 id="p404-title" class="e404-title">Тупик.</h2>
+        <p class="e404-sub">Знаки можно игнорировать. Тупики&nbsp;— нет.</p>
+      </div>
+      <div class="e404-stage" aria-hidden="true">
+        <div class="e404-mz" data-mascot-slot="404"></div>
+        <div class="e404-fence"><span class="tape-strip tape-strip--black e404-t e404-t1"></span><span class="tape-strip tape-strip--lime e404-t e404-t2"></span></div>
+      </div>
+      <button class="btn btn--accent e404-home" type="button" data-close data-home>На&nbsp;главную <svg class="gl" viewBox="0 0 16 12" aria-hidden="true"><path d="M0 6h14.5M9.5 1l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
     </div>
-    <button class="btn btn--accent" type="button" data-close data-home>Через щель — на главную <span aria-hidden="true">→</span></button>
   </div>
 </div>

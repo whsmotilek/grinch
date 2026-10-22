@@ -1,22 +1,38 @@
-<section id="hero" aria-labelledby="hero-title">
-  <!-- улица: наружка pres_11 — мятая бумага, вертикальный знак, модель в дениме, теги поверх -->
-  <div class="hero-bg" aria-hidden="true">
-    <div class="hero-word"><!--@svg:logo-letters--></div>
-    <img class="hero-model" src="{{asset:img/street/model-hero.webp}}" alt="" width="880" height="1100" decoding="async" fetchpriority="high">
-    <span class="hero-graf hero-graf--a"></span>
-    <span class="hero-graf hero-graf--b"></span>
+<!-- K4 · HERO v3. IGNORE THE SIGNS постером. Оси: data-hero (asphalt|static), data-heroimg (model|mascot|crop).
+     #g3d — место 3D-G (рисует K2), обёртка .hx-g двигается по прокрутке (asphalt). #hero-media — кадр по data-heroimg.
+     Зелёный в кадре — только G: кнопка белая, подпись серая. Лент поверх текста нет. -->
+<section id="hero" class="hx" aria-labelledby="hero-title">
+ <div class="hx-sticky">
+  <div class="hx-bg" aria-hidden="true"></div>
+  <div class="hx-media-wrap" aria-hidden="true"><div id="hero-media" class="hx-media"></div></div>
+  <!-- варианты кадра: в DOM попадает только нужный (до загрузки картинок), остальные не качаются -->
+  <template id="hx-media-model"><picture class="hx-pic hx-pic--model">
+    <source type="image/avif" srcset="{{asset:img/hero/hero-640.avif}} 640w, {{asset:img/hero/hero-1024.avif}} 1024w" sizes="(max-width: 767px) 80vw, 62vh">
+    <img src="{{asset:img/hero/hero-1024.jpg}}" srcset="{{asset:img/hero/hero-640.jpg}} 640w, {{asset:img/hero/hero-1024.jpg}} 1024w" sizes="(max-width: 767px) 80vw, 62vh"
+         alt="" width="1024" height="1536" decoding="async" fetchpriority="high"></picture></template>
+  <template id="hx-media-crop"><picture class="hx-pic hx-pic--crop">
+    <img src="{{asset:img/hero/crop-880.webp}}" srcset="{{asset:img/hero/crop-560.webp}} 560w, {{asset:img/hero/crop-880.webp}} 880w" sizes="(max-width: 767px) 90vw, 60vw"
+         alt="" width="880" height="864" decoding="async" fetchpriority="high"></picture></template>
+  <template id="hx-media-mascot"><div class="hx-mascot" data-mascot-slot="hero" data-pose="hero">
+    <svg class="hx-mascot-fb" viewBox="0 0 400 640" aria-hidden="true"><path d="M200 34c-58 0-98 46-98 108 0 34 12 62 30 80l-6 22c-62 18-92 64-100 132l-14 264h376l-14-264c-8-68-38-114-100-132l-6-22c18-18 30-46 30-80 0-62-40-108-98-108z"/><path class="hx-mascot-fb-grin" d="M150 168c18 14 34 20 50 20s32-6 50-20c-6 22-24 38-50 38s-44-16-50-38z"/></svg>
+  </div></template>
+  <script>
+  (function(){var h=document.documentElement,v=h.getAttribute('data-heroimg')||'model',t=document.getElementById('hx-media-'+v)||document.getElementById('hx-media-model');
+  var m=document.getElementById('hero-media');m.setAttribute('data-v',t.id.slice(9));m.appendChild(t.content.cloneNode(true));})();
+  </script>
+  <div class="hx-lane" aria-hidden="true"><i></i></div>
+  <div class="hx-g"><div id="g3d" data-g-dock="hero" aria-hidden="true"></div></div>
+  <div class="hx-stage">
+    <h1 id="hero-title" class="hx-title" lang="en"><span class="hx-ln"><span>Ignore</span></span> <span class="hx-ln"><span>the</span></span> <span class="hx-ln"><span>signs</span></span></h1>
   </div>
-  <div id="g3d" aria-hidden="true"></div>
-  <div class="hero-copy">
-    <h1 id="hero-title">Одежда для тех, кто не&nbsp;идёт по <span class="ht-strike">заданному</span> маршруту.</h1>
-    <a class="btn btn--accent hero-btn" href="#drop" data-nav="drop">Смотреть дроп <span aria-hidden="true">↓</span></a>
+  <div class="hx-foot">
+    <p class="hx-sub">одежда для&nbsp;тех, кто не&nbsp;идёт по&nbsp;заданному маршруту</p>
+    <a class="btn hx-cta" href="#drop" data-nav="drop">Смотреть дроп <span aria-hidden="true">↓</span></a>
   </div>
-  <!-- куски настоящей ленты: держат «плакат» и перекрещивают стык с дропом -->
-  <span class="tp-piece hero-pin hero-pin--tl" aria-hidden="true"></span>
-  <span class="tp-piece hero-pin hero-pin--tr" aria-hidden="true"></span>
-  <span class="gm-slot" data-mark-slot="1"></span>
+ </div>
 </section>
-<div class="x-tapes x-tapes--hero" aria-hidden="true">
-    <div class="tp tp--brand"><span class="tp-txt">GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN</span></div>
-    <div class="tp tp--brand"><span class="tp-txt">GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN&emsp;GRINCHIN</span></div>
+<!-- бегущая лента (data-marquee="on"): одна, лайм/чёрная — куски настоящих лент K3 (.tape-strip--lime с печатью GRiNCHiN
+     + .tape-strip--black с IGNORE THE SIGNS), постоянная скорость, только transform; ни на чём не лежит -->
+<div class="hx-marquee" aria-hidden="true">
+  <div class="hx-mq-band"><div class="hx-mq-track"><span class="hx-mq-unit"><i class="hx-mq-logo tape-strip tape-strip--lime"></i><b class="hx-mq-txt tape-strip tape-strip--black">Ignore the signs</b></span></div></div>
 </div>

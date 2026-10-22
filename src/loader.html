@@ -1,22 +1,159 @@
-<!-- B · лоадер «точка → стоп-линия → ухмылка → лента → сайт». Точка видна до JS (CSS). -->
+<!-- K4 · прелоадер v3: «точка → линия → тело → улыбка с рожками → вдох → GRiNCHiN → лого в шапку» + раскрытие эллипсом из клюва.
+     Движок v2 (свой rAF-таймлайн, без GSAP, стартует с первой отрисовки), сценарий v1 (вдох, клюв), новое лого.
+     Режим решается до первой отрисовки: ?shot=1, &skip=1, reduced-motion → без прелоадера; повторный визит в сессии → короткий (~0,8 с).
+     API: GV.loader {mode, started, ready, done, duration, seek(t)}. События: grinchin:loader-progress {t, phase}, grinchin:ready.
+     Слот маскота: [data-mascot-slot="preloader"] — пустой по умолчанию, K5 может оживить. -->
 <script>
-/* до первой отрисовки: решаем, нужен ли лоадер. shot/reduced → нет; повторный визит → короткий */
-(function(){var h=document.documentElement,m='full';
-try{if(h.dataset.shot==='1'||/[?&]shot=1/.test(location.search)||matchMedia('(prefers-reduced-motion: reduce)').matches)m='off';
+(function(){var h=document.documentElement,m='full',q=location.search;
+try{if(h.dataset.shot==='1'||/[?&]shot=1/.test(q)||/[?&]skip=1/.test(q)||matchMedia('(prefers-reduced-motion: reduce)').matches)m='off';
 else if(sessionStorage.getItem('gv-seen')==='1')m='short';}catch(e){}
 h.setAttribute('data-loader',m);})();
 </script>
-<div id="loader" class="ld" aria-hidden="true">
-  <svg class="ld-grain" aria-hidden="true"><filter id="ld-grain-f"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .9 -.35"/></filter><rect width="100%" height="100%" filter="url(#ld-grain-f)"/></svg>
-  <div class="ld-mark">
+<style>
+html[data-loader="full"],html[data-loader="short"]{overflow:hidden}
+html[data-loader="full"] #logo,html[data-loader="short"] #logo{visibility:hidden}
+html[data-loader="off"] #loader,html[data-loader="done"] #loader{display:none}
+#loader{position:fixed;inset:0;z-index:var(--z-loader,100);display:grid;place-items:center;pointer-events:none;contain:strict}
+/* крышка: сплошная заливка; при раскрытии в ней прорезается эллипс из клюва улыбки (clip-path: path evenodd) */
+.ld-cover{position:absolute;inset:0;background:#0b0b0b}
+/* статичное зерно: одна плитка, без feTurbulence; гаснет до раскрытия — крышка в момент прорези без картинки */
+.ld-grain{position:absolute;inset:0;background:url("{{img:img/loader/grain.webp}}") 0 0/160px 160px;opacity:.055}
+.ld-pos{position:relative;width:min(74vw,800px);transform:translateY(-35.6%)}
+.ld-mark{position:relative;width:100%;aspect-ratio:1660/458;transform-origin:0 0}
+.ld-mark>svg,.ld-letters,.ld-letters svg{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible}
+.ld-smile{transform-origin:50% 98.6%}
+.ld-line{fill:transparent;stroke:#fff;stroke-width:2.5px;vector-effect:non-scaling-stroke;stroke-linejoin:round;opacity:0;transform-box:fill-box;transform-origin:50% 50%}
+.ld-horn{fill:none;stroke:var(--c-green,#8ED308);stroke-width:2px;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;opacity:0}
+.ld-letters{color:var(--c-green,#8ED308);clip-path:inset(-20% 100% -20% 0)}
+/* точка — на средней линии будущей улыбки (х 50 %, у 85,6 % знака); видна до JS */
+.ld-dot{position:absolute;left:50%;top:85.6%;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:var(--c-green,#8ED308);
+  animation:ld-pop .45s cubic-bezier(.16,1,.3,1) both}
+html[data-loader="short"] .ld-dot{display:none}
+@keyframes ld-pop{from{transform:scale(.2);opacity:0}to{transform:scale(1);opacity:1}}
+.ld-cap{position:absolute;left:0;right:0;bottom:max(28px,7vh);margin:0;text-align:center;opacity:0;
+  font:500 12px/1 var(--font-mono,ui-monospace,monospace);letter-spacing:.24em;text-transform:uppercase;color:#8a8a8a}
+#loader .ld-mascot{position:absolute;left:50%;bottom:calc(max(28px,7vh) + 30px);width:min(120px,26vw);aspect-ratio:1;transform:translateX(-50%)}
+#loader .ld-mascot:empty{display:none}
+@media (max-width:767px){.ld-pos{width:84vw}}
+</style>
+<div id="loader" aria-hidden="true">
+  <div class="ld-cover"><div class="ld-grain"></div></div>
+  <div class="ld-pos"><div class="ld-mark">
     <span class="ld-dot"></span>
-    <svg class="ld-smile" viewBox="0 0 1854 390" aria-hidden="true">
-      <path class="ld-horn" d="M30 2l77 142 -5 3 -60-73c0 0-9 29 5 80"/><path class="ld-horn" d="M1812 74l-59 73 -5-3 76-142c11 32 18 65 22 99"/>
-      <path class="ld-line" d="M927 195c0 0 8 0 26 0 20 0 41 0 63 0 56 0 113 0 187 0 93 0 177 0 266 0 82 0 163 0 226 0 65 0 97 0 113 0 13 0 4 0 4 0l-59 0 -5 0 76 0c11 0 18 0 22 0 6 0-10 0-89 0 -76 0-182 0-293 0 -103 0-212 0-346 0 -136 0-191 0-191 0 0 0-54 0-190 0 -135 0-244 0-347 0 -111 0-217 0-292 0 -80 0-96 0-89 0 4 0 11 0 21 0l77 0 -5 0 -60 0c0 0-9 0 5 0 15 0 48 0 113 0 62 0 143 0 225 0 90 0 173 0 266 0 74 0 131 0 187 0 23 0 44 0 64 0 17 0 25 0 25 0z"/>
+    <svg class="ld-smile" viewBox="0 0 1660 458" aria-hidden="true">
+      <path class="ld-line" d=""/>
+      <path class="ld-horn" pathLength="1" d=""/><path class="ld-horn" pathLength="1" d=""/>
     </svg>
     <div class="ld-letters"><!--@svg:logo-letters--></div>
-    <div class="ld-tape"></div>
-  </div>
-  <p class="ld-cap">ищем обходной путь…</p>
+  </div></div>
+  <div class="ld-mascot" data-mascot-slot="preloader"></div>
+  <p class="ld-cap">ignore the signs</p>
 </div>
-<script type="application/json" id="mx-shapes">{"smile":"M927 386c0 0 8-12 26-24 20-13 41-24 63-32 56-20 113-35 187-41 93-7 177-2 266 0 82 2 163 5 226-17 65-23 97-62 113-118 13-51 4-80 4-80l-59 73 -5-3 76-142c11 32 18 65 22 99 6 55-10 156-89 204 -76 46-182 41-293 35 -103-6-212-21-346-8 -136 13-191 56-191 56 0 0-54-43-190-56 -135-13-244 2-347 8 -111 6-217 11-292-35 -80-48-96-149-89-204 4-34 11-67 21-99l77 142 -5 3 -60-73c0 0-9 29 5 80 15 56 48 95 113 118 62 22 143 19 225 17 90-2 173-7 266 0 74 6 131 21 187 41 23 8 44 19 64 32 17 12 25 24 25 24z","body":"M927 386c0 0 8-12 26-24 20-13 41-24 63-32 56-20 113-35 187-41 93-7 177-2 266 0 82 2 163 5 226-17 65-23 97-62 113-118 8-19 6-19 6-19l-18 0 -2 0 23 0c3 0 5 0 7 0 28 21 12 122-67 170 -76 46-182 41-293 35 -103-6-212-21-346-8 -136 13-191 56-191 56 0 0-54-43-190-56 -135-13-244 2-347 8 -111 6-217 11-292-35 -80-48-96-149-67-170 1 0 3 0 6 0l23 0 -2 0 -17 0c0 0-3 0 6 19 15 56 48 95 113 118 62 22 143 19 225 17 90-2 173-7 266 0 74 6 131 21 187 41 23 8 44 19 64 32 17 12 25 24 25 24z","flat":"M927 195c0 0 8 0 26 0 20 0 41 0 63 0 56 0 113 0 187 0 93 0 177 0 266 0 82 0 163 0 226 0 65 0 97 0 113 0 13 0 4 0 4 0l-59 0 -5 0 76 0c11 0 18 0 22 0 6 0-10 0-89 0 -76 0-182 0-293 0 -103 0-212 0-346 0 -136 0-191 0-191 0 0 0-54 0-190 0 -135 0-244 0-347 0 -111 0-217 0-292 0 -80 0-96 0-89 0 4 0 11 0 21 0l77 0 -5 0 -60 0c0 0-9 0 5 0 15 0 48 0 113 0 62 0 143 0 225 0 90 0 173 0 266 0 74 0 131 0 187 0 23 0 44 0 64 0 17 0 25 0 25 0z","half_l":"M927 388c0 0-54-43-190-56 -135-13-244 2-347 8 -111 6-217 11-292-35 -80-48-96-149-89-204 4-34 11-67 21-99l77 142 -5 3 -60-73c0 0-9 29 5 80 15 56 48 95 113 118 62 22 143 19 225 17 90-2 173-7 266 0 74 6 131 21 187 41 23 8 44 19 64 32 17 12 25 24 25 24z","half_r":"M927 386c0 0 8-12 26-24 20-13 41-24 63-32 56-20 113-35 187-41 93-7 177-2 266 0 82 2 163 5 226-17 65-23 97-62 113-118 13-51 4-80 4-80l-59 73 -5-3 76-142c11 32 18 65 22 99 6 55-10 156-89 204 -76 46-182 41-293 35 -103-6-212-21-346-8 -136 13-191 56-191 56z","arr_l":"M807 234l-417 0 0 66 -220-100 220-100 0 66 417 0z","arr_r":"M1047 234l417 0 0 66 220-100 -220-100 0 66 -417 0z","beak":[927,388]}</script>
+<!-- формы: одна структура команд (M + 57×C + Z) у flat/body/smile → морф интерполяцией чисел; half/arr — для истории STOP→ST’ART (motion.js).
+     Генератор: v3/build/K4/_tools/make_logo.py (из logo_p1.svg) -->
+<script type="application/json" id="gv-shapes">{"w":1660,"h":458,"beak":[829.8,451.5],"lineY":392,"flat":"M1640 392C1636.3 392 1633.2 392 1629.5 392C1616.4 392 1595 392 1566.4 392C1535.8 392 1500.6 392 1462.6 392C1429.6 392 1395.8 392 1361.7 392C1310.4 392 1259.3 392 1208.3 392C1164.1 392 1120 392 1075.5 392C1025.2 392 975 392 926.2 392C898.9 392 872.2 392 847.3 392C841.5 392 835.9 392 829.8 392C826.1 392 822.1 392 818 392C798 392 776 392 753.2 392C710.7 392 667 392 622.9 392C585.4 392 548.1 392 510.8 392C471.4 392 432 392 392.5 392C348.7 392 304.8 392 260.9 392C216.1 392 173.4 392 133.6 392C95 392 63.9 392 42.6 392C33.6 392 26.9 392 22.4 392C22 392 21.3 392 20.5 392C16.2 392 13.8 392 13.8 392C13.8 392 10.2 392 9.1 392C4.9 392 7.3 392 13.8 392C21.9 392 51.5 392 52.3 392C71.7 392 90.8 392 109.8 392C109.6 392 75.6 392 58.1 392C56.7 392 55.6 392 54.8 392C42.1 392 46.6 392 69 392C84.5 392 106.9 392 135.7 392C164.4 392 195.7 392 228.9 392C257.2 392 286.1 392 314.9 392C351 392 387 392 423.1 392C456 392 489 392 521.9 392C556.6 392 591.3 392 625.8 392C671.4 392 716.1 392 758.8 392C778.1 392 796.2 392 811.7 392C818.2 392 824 392 830.4 392C831.9 392 833.7 392 835.5 392C846.4 392 860.2 392 875.2 392C900.6 392 928.2 392 956.5 392C984 392 1012.1 392 1040.4 392C1072.7 392 1105.2 392 1137.6 392C1170.8 392 1203.9 392 1237 392C1282.1 392 1327.2 392 1372.2 392C1407.8 392 1442.9 392 1476.6 392C1508.4 392 1536.9 392 1560.3 392C1588.3 392 1604.5 392 1610.2 392C1614.1 392 1611.3 392 1604.1 392C1603.7 392 1603 392 1602.1 392C1583.8 392 1567.6 392 1551.2 392C1550.8 392 1550.5 392 1550.1 392C1569.3 392 1588.4 392 1607.6 392C1608.6 392 1609.3 392 1609.9 392C1624.3 392 1637.4 392 1645.4 392C1650.7 392 1653.8 392 1652.8 392C1652.3 392 1651 392 1646.8 392C1646.5 392 1646 392 1645.4 392C1644.4 392 1643.5 392 1640 392Z","body":"M1627.7 262.8C1627 264.3 1626.5 265.7 1629.5 261.6C1616.4 296.5 1595 325.4 1566.4 349.1C1535.8 374.4 1500.6 390.3 1462.6 400.6C1429.6 409.5 1395.8 413.1 1361.7 413.5C1310.4 414 1259.3 410.4 1208.3 405C1164.1 400.4 1120 395.4 1075.5 394.5C1025.2 393.4 975 399.1 926.2 411.4C898.9 418.4 872.2 427.3 847.3 441.1C841.5 444.3 835.9 447.9 829.8 451.5C826.1 448.9 822.1 446.1 818 443.4C798 430.5 776 422.3 753.2 415.8C710.7 404 667 397.1 622.9 395.2C585.4 393.4 548.1 395.7 510.8 399.1C471.4 402.8 432 407.2 392.5 410.3C348.7 413.7 304.8 415.3 260.9 411.7C216.1 408 173.4 397 133.6 375.8C95 355.3 63.9 326.7 42.6 288.2C33.6 272.1 37.6 266.2 36.8 263.6C36.8 263.4 36.6 263.1 36.5 262.9C35.7 264.8 13.8 272.9 13.8 272.9C13.8 272.9 34.6 266.1 34.4 264.8C33.7 259.8 34.1 254.8 35.3 249.8C36.7 243.7 42.1 231.5 42.2 231.2C45.7 238.3 49.1 245.3 52.6 252.3C52.5 252.3 46.4 246.9 43.3 244.1C43 244.7 42.8 245.1 42.7 245.5C40.4 252.3 41.2 258.7 45.2 264.9C84.5 276.5 106.9 300.4 135.7 318.8C164.4 337.1 195.7 348 228.9 354.5C257.2 359.8 286.1 362.5 314.9 362.6C351 362.8 387 362.2 423.1 361.4C456 360.7 489 358.7 521.9 358C556.6 357.3 591.3 358.3 625.8 362.8C671.4 368.8 716.1 378.9 758.8 396.9C778.1 404.9 796.2 415.3 811.7 429.6C818.2 435.7 824 442.7 830.4 449.6C831.9 447.5 833.7 445.1 835.5 442.7C846.4 428.9 860.2 418.7 875.2 409.9C900.6 395.1 928.2 385.7 956.5 378.2C984 370.7 1012.1 365.2 1040.4 361.9C1072.7 358.5 1105.2 357.1 1137.6 357.9C1170.8 358.6 1203.9 360.1 1237 361.3C1282.1 362.9 1327.2 364.3 1372.2 361.5C1407.8 359.3 1442.9 354.3 1476.6 342.1C1508.4 330.6 1536.9 313.8 1560.3 289.2C1618.4 266.8 1621.3 261.9 1622.3 256.2C1623 252.5 1622.5 248.8 1621.2 245.1C1621.2 244.9 1621 244.6 1620.9 244.2C1617.6 246.9 1614.7 249.6 1611.7 252.4C1611.6 252.4 1611.6 252.3 1611.5 252.3C1615 245.3 1618.4 238.2 1621.9 231.2C1622.1 231.5 1622.2 231.8 1622.3 232C1624.9 237.7 1627.2 243.4 1628.7 249.3C1629.6 253.3 1630.2 257.3 1630 261.3C1629.9 263.6 1629.7 265.9 1646.8 269.1C1646.5 270.4 1646 271.7 1645.4 272.9C1628.5 266.7 1628.3 264.8 1627.7 262.8Z","smile":"M1640 230.7C1636.3 241.7 1633.2 251.8 1629.5 261.6C1616.4 296.5 1595 325.4 1566.4 349.1C1535.8 374.4 1500.6 390.3 1462.6 400.6C1429.6 409.5 1395.8 413.1 1361.7 413.5C1310.4 414 1259.3 410.4 1208.3 405C1164.1 400.4 1120 395.4 1075.5 394.5C1025.2 393.4 975 399.1 926.2 411.4C898.9 418.4 872.2 427.3 847.3 441.1C841.5 444.3 835.9 447.9 829.8 451.5C826.1 448.9 822.1 446.1 818 443.4C798 430.5 776 422.3 753.2 415.8C710.7 404 667 397.1 622.9 395.2C585.4 393.4 548.1 395.7 510.8 399.1C471.4 402.8 432 407.2 392.5 410.3C348.7 413.7 304.8 415.3 260.9 411.7C216.1 408 173.4 397 133.6 375.8C95 355.3 63.9 326.7 42.6 288.2C33.6 272.1 26.9 254.8 22.4 236.9C22 235 21.3 233.2 20.5 231.5C16.2 244.9 13.8 272.9 13.8 272.9C13.8 272.9 10.2 254.6 9.1 245.4C4.9 209.5 7.3 173.7 13.8 138.3C21.9 94.2 51.5 7.3 52.3 5.3C71.7 56 90.8 105.8 109.8 155.7C109.6 155.8 75.6 117.6 58.1 97.5C56.7 101.6 55.6 104.6 54.8 107.6C42.1 155.5 46.6 201.7 69 246C84.5 276.5 106.9 300.4 135.7 318.8C164.4 337.1 195.7 348 228.9 354.5C257.2 359.8 286.1 362.5 314.9 362.6C351 362.8 387 362.2 423.1 361.4C456 360.7 489 358.7 521.9 358C556.6 357.3 591.3 358.3 625.8 362.8C671.4 368.8 716.1 378.9 758.8 396.9C778.1 404.9 796.2 415.3 811.7 429.6C818.2 435.7 824 442.7 830.4 449.6C831.9 447.5 833.7 445.1 835.5 442.7C846.4 428.9 860.2 418.7 875.2 409.9C900.6 395.1 928.2 385.7 956.5 378.2C984 370.7 1012.1 365.2 1040.4 361.9C1072.7 358.5 1105.2 357.1 1137.6 357.9C1170.8 358.6 1203.9 360.1 1237 361.3C1282.1 362.9 1327.2 364.3 1372.2 361.5C1407.8 359.3 1442.9 354.3 1476.6 342.1C1508.4 330.6 1536.9 313.8 1560.3 289.2C1588.3 259.7 1604.5 224.3 1610.2 184.1C1614.1 157.1 1611.3 130.6 1604.1 104.5C1603.7 102.7 1603 100.9 1602.1 98.1C1583.8 117.1 1567.6 136.8 1551.2 156.5C1550.8 156.3 1550.5 156.1 1550.1 155.9C1569.3 105.6 1588.4 55.3 1607.6 5C1608.6 7.6 1609.3 9.2 1609.9 11C1624.3 51.4 1637.4 92.2 1645.4 134.4C1650.7 162.8 1653.8 191.5 1652.8 220.4C1652.3 236.8 1651 253.1 1646.8 269.1C1646.5 270.4 1646 271.7 1645.4 272.9C1644.4 258.9 1643.5 245.1 1640 230.7Z","hornL":"M22.4 236.9C22 235 21.3 233.2 20.5 231.5C16.2 244.9 13.8 272.9 13.8 272.9C13.8 272.9 10.2 254.6 9.1 245.4C4.9 209.5 7.3 173.7 13.8 138.3C21.9 94.2 51.5 7.3 52.3 5.3C71.7 56 90.8 105.8 109.8 155.7C109.6 155.8 75.6 117.6 58.1 97.5C56.7 101.6 55.6 104.6 54.8 107.6","hornR":"M1602.1 98.1C1583.8 117.1 1567.6 136.8 1551.2 156.5C1550.8 156.3 1550.5 156.1 1550.1 155.9C1569.3 105.6 1588.4 55.3 1607.6 5C1608.6 7.6 1609.3 9.2 1609.9 11C1624.3 51.4 1637.4 92.2 1645.4 134.4C1650.7 162.8 1653.8 191.5 1652.8 220.4C1652.3 236.8 1651 253.1 1646.8 269.1C1646.5 270.4 1646 271.7 1645.4 272.9","half_l":"M829.8 451.5C826.1 448.9 822.1 446.1 818 443.4C798 430.5 776 422.3 753.2 415.8C710.7 404 667 397.1 622.9 395.2C585.4 393.4 548.1 395.7 510.8 399.1C471.4 402.8 432 407.2 392.5 410.3C348.7 413.7 304.8 415.3 260.9 411.7C216.1 408 173.4 397 133.6 375.8C95 355.3 63.9 326.7 42.6 288.2C33.6 272.1 26.9 254.8 22.4 236.9C22 235 21.3 233.2 20.5 231.5C16.2 244.9 13.8 272.9 13.8 272.9C13.8 272.9 10.2 254.6 9.1 245.4C4.9 209.5 7.3 173.7 13.8 138.3C21.9 94.2 51.5 7.3 52.3 5.3C71.7 56 90.8 105.8 109.8 155.7C109.6 155.8 75.6 117.6 58.1 97.5C56.7 101.6 55.6 104.6 54.8 107.6C42.1 155.5 46.6 201.7 69 246C84.5 276.5 106.9 300.4 135.7 318.8C164.4 337.1 195.7 348 228.9 354.5C257.2 359.8 286.1 362.5 314.9 362.6C351 362.8 387 362.2 423.1 361.4C456 360.7 489 358.7 521.9 358C556.6 357.3 591.3 358.3 625.8 362.8C671.4 368.8 716.1 378.9 758.8 396.9C778.1 404.9 796.2 415.3 811.7 429.6C818.2 435.7 824 442.7 830.4 449.6Z","half_r":"M830.4 449.6C831.9 447.5 833.7 445.1 835.5 442.7C846.4 428.9 860.2 418.7 875.2 409.9C900.6 395.1 928.2 385.7 956.5 378.2C984 370.7 1012.1 365.2 1040.4 361.9C1072.7 358.5 1105.2 357.1 1137.6 357.9C1170.8 358.6 1203.9 360.1 1237 361.3C1282.1 362.9 1327.2 364.3 1372.2 361.5C1407.8 359.3 1442.9 354.3 1476.6 342.1C1508.4 330.6 1536.9 313.8 1560.3 289.2C1588.3 259.7 1604.5 224.3 1610.2 184.1C1614.1 157.1 1611.3 130.6 1604.1 104.5C1603.7 102.7 1603 100.9 1602.1 98.1C1583.8 117.1 1567.6 136.8 1551.2 156.5C1550.8 156.3 1550.5 156.1 1550.1 155.9C1569.3 105.6 1588.4 55.3 1607.6 5C1608.6 7.6 1609.3 9.2 1609.9 11C1624.3 51.4 1637.4 92.2 1645.4 134.4C1650.7 162.8 1653.8 191.5 1652.8 220.4C1652.3 236.8 1651 253.1 1646.8 269.1C1646.5 270.4 1646 271.7 1645.4 272.9C1644.4 258.9 1643.5 245.1 1640 230.7C1636.3 241.7 1633.2 251.8 1629.5 261.6C1616.4 296.5 1595 325.4 1566.4 349.1C1535.8 374.4 1500.6 390.3 1462.6 400.6C1429.6 409.5 1395.8 413.1 1361.7 413.5C1310.4 414 1259.3 410.4 1208.3 405C1164.1 400.4 1120 395.4 1075.5 394.5C1025.2 393.4 975 399.1 926.2 411.4C898.9 418.4 872.2 427.3 847.3 441.1C841.5 444.3 835.9 447.9 829.8 451.5Z","arr_l":"M800 340C796.8 340 793.7 340 790.5 340C775 340 759.5 340 744.1 340C715 340 686 340 657 340C632.4 340 607.7 340 583 340C556.9 340 530.7 340 504.6 340C475.6 340 446.7 340 417.8 340C388.7 340 359.6 340 330.5 340C325.8 360.6 321.1 381.3 316.5 401.9C305.4 396.9 294.4 392 283.3 387C282.1 386.5 281 385.9 279.8 385.4C271.4 381.6 263 377.9 254.6 374.1C249 371.5 243.4 369 237.8 366.5C216.3 356.8 194.8 347.2 173.3 337.5C145.5 325 117.8 312.5 90 300C125.6 284 161.2 268 196.8 252C214 244.2 231.2 236.5 248.4 228.7C250.8 227.7 253.1 226.6 255.5 225.5C280.3 220.8 305.2 216.1 330 211.5C337.7 227.6 345.5 243.8 353.2 260C377.4 260 401.6 260 425.8 260C446.8 260 467.8 260 488.7 260C514.9 260 541.2 260 567.4 260C591.4 260 615.3 260 639.3 260C664.5 260 689.7 260 715 260C743.3 264.9 771.7 269.9 800 274.8C800 289.9 800 305 800 320.1C800 326.7 800 333.4 800 340Z","arr_r":"M860 260C861.9 260 863.8 260 865.7 260C877 260 888.3 260 899.6 260C918.9 260 938.1 260 957.3 260C976.1 260 994.9 260 1013.7 260C1035.2 260 1056.6 260 1078 260C1099.9 260 1121.8 260 1143.7 260C1173.5 260 1203.2 260 1233 260C1256.4 260 1279.8 260 1303.1 260C1312.1 247.1 1321 234.3 1330 221.4C1344.4 218.1 1358.8 214.8 1373.2 211.5C1389.3 218.7 1405.3 225.9 1421.3 233.1C1422.7 233.7 1424 234.3 1425.4 234.9C1440.9 241.9 1456.5 248.9 1472 255.9C1472.3 256 1472.5 256.1 1472.7 256.2C1505.2 270.8 1537.6 285.4 1570 300C1568.6 300.6 1567.2 301.3 1565.8 301.9C1537.5 314.6 1509.2 327.3 1481 340.1C1461.9 348.6 1442.9 357.2 1423.9 365.7C1413.1 370.6 1402.3 375.5 1391.5 380.3C1390.6 380.7 1389.8 381.1 1388.9 381.5C1379.5 385.7 1370.1 389.9 1360.8 394.1C1353.6 397.4 1346.4 400.6 1339.2 403.9C1336.1 382.6 1333 361.3 1330 340C1302 340 1274 340 1246.1 340C1221.5 340 1196.9 340 1172.4 340C1135.3 340 1098.2 340 1061.1 340C1028.9 340 996.8 340 964.6 340C929.7 338.6 894.9 337.2 860 335.8C860 315.5 860 295.1 860 274.8C860 269.8 860 264.9 860 260Z"}</script>
+<script>
+(function(){'use strict';
+var D=document,h=D.documentElement,W=window,mode=h.getAttribute('data-loader')||'off';
+var GV=W.GV=W.GV||{},L=GV.loader={mode:mode,started:false,ready:false,done:false,duration:0};
+var fire=function(n,d){D.dispatchEvent(new CustomEvent(n,{detail:d}));};
+var dcl=D.readyState!=='loading',want=false;
+/* ready — не раньше DOMContentLoaded (подписчики соседей уже на месте) и после их DCL-обработчиков */
+function sendReady(){if(L.ready)return;if(!dcl){want=true;return;}L.ready=true;h.setAttribute('data-ready','1');
+  if(mode==='off')fire('grinchin:loader-progress',{t:1,phase:'done'});fire('grinchin:ready');}
+if(!dcl)D.addEventListener('DOMContentLoaded',function(){setTimeout(function(){dcl=true;if(want)sendReady();},0);},{once:true});
+var ld=D.getElementById('loader');
+if(mode==='off'||!ld||!W.requestAnimationFrame){if(mode!=='off')h.setAttribute('data-loader','done');sendReady();return;}
+L.started=true;try{sessionStorage.setItem('gv-seen','1');}catch(e){}
+var short=mode==='short',S=JSON.parse(D.getElementById('gv-shapes').textContent);
+var q=function(s){return ld.querySelector(s);},mk=q('.ld-mark'),cover=q('.ld-cover'),grain=q('.ld-grain'),smile=q('.ld-smile'),line=q('.ld-line'),
+  lt=q('.ld-letters'),dot=q('.ld-dot'),cap=q('.ld-cap'),horns=[].slice.call(ld.querySelectorAll('.ld-horn'));
+horns[0].setAttribute('d',S.hornL);horns[1].setAttribute('d',S.hornR);
+var NUM=/-?\d*\.?\d+(?:e[-+]?\d+)?/gi;
+function pl(a,b){var na=a.match(NUM).map(Number),nb=b.match(NUM).map(Number),pr=b.split(NUM);return function(t){var s=pr[0];for(var i=0;i<na.length;i++)s+=(+(na[i]+(nb[i]-na[i])*t).toFixed(1))+' '+pr[i+1];return s;};}
+var toBody=pl(S.flat,S.body),toSmile=pl(S.body,S.smile);
+line.setAttribute('d',short?S.smile:S.flat);
+function rgb(c){c=String(c).trim();if(c[0]==='#'){var x=c.slice(1);if(x.length===3)x=x.replace(/./g,'$&$&');return[0,2,4].map(function(i){return parseInt(x.substr(i,2),16);});}var m=c.match(/\d+(\.\d+)?/g);return m?m.slice(0,3).map(Number):[0,0,0];}
+function mix(a,b,t,al){return 'rgba('+a.map(function(v,i){return Math.round(v+(b[i]-v)*t);}).join(',')+','+(al==null?1:al)+')';}
+var GR=rgb(getComputedStyle(h).getPropertyValue('--c-green')||'#8ED308'),WH=[255,255,255];
+var E={p1io:function(t){return t<.5?2*t*t:1-2*(1-t)*(1-t);},p2io:function(t){return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;},
+  p3io:function(t){return t<.5?8*t*t*t*t:1-Math.pow(-2*t+2,4)/2;},p2o:function(t){return 1-Math.pow(1-t,3);},p2i:function(t){return t*t*t;},
+  si:function(t){return 1-Math.cos(t*Math.PI/2);},so:function(t){return Math.sin(t*Math.PI/2);},sio:function(t){return -(Math.cos(Math.PI*t)-1)/2;},lin:function(t){return t;}};
+var T=[],C=[];function tr(at,du,e,fn){T.push({at:at,du:du,e:e,fn:fn,d:0});}function call(at,fn){C.push({at:at,fn:fn,d:0});}
+/* тайминг: полный ≈ 2,3 с (ready ≈ 2,0 с), повтор ≈ 0,75 с */
+var t0=.18,tM=.58,tH=.95,tB=1.36,tL=short?.04:1.2,tF=short?.3:1.8,fd=short?.42:.5;
+/* куда садится знак: контент-бокс svg лого в шапке (viewBox вписан с xMidYMid) — посадка пиксель в пиксель */
+var flip=null;function target(){if(flip)return flip;var a=mk.getBoundingClientRect(),l=D.querySelector('#logo svg'),b=l&&l.getBoundingClientRect(),ok=b&&b.width>4&&b.height>2;
+  var x=0,y=0,s=.2,c=GR;
+  if(ok){var A=1660/458,cw=b.width,ch=b.height;if(cw/ch>A)cw=ch*A;else ch=cw/A;x=b.left+(b.width-cw)/2-a.left;y=b.top+(b.height-ch)/2-a.top;s=cw/a.width;c=rgb(getComputedStyle(l).color);}
+  else{x=0;y=-a.top-a.height;}
+  var bx=a.left+a.width*S.beak[0]/1660,by=a.top+a.height*S.beak[1]/458,vw=innerWidth,vh=innerHeight,R=0;
+  [[0,0],[vw,0],[0,vh],[vw,vh]].forEach(function(p){R=Math.max(R,Math.hypot(p[0]-bx,(p[1]-by)/.8));});
+  flip={x:x,y:y,s:s,c:c,ok:ok,bx:bx,by:by,R:R*1.04,vw:vw,vh:vh};return flip;}
+var CLIP=!!(W.CSS&&CSS.supports&&CSS.supports('clip-path','path(evenodd,"M0 0H1V1H0Z")'));
+function hole(p){var f=target();if(!CLIP){cover.style.transform='translateY('+(100*p).toFixed(2)+'%)';return;}
+  var rx=Math.max(.01,f.R*p),ry=rx*.8,x=f.bx-rx,y=f.by;
+  cover.style.clipPath='path(evenodd,"M0 0H'+f.vw+'V'+f.vh+'H0Z M'+x.toFixed(1)+' '+y.toFixed(1)+'a'+rx.toFixed(1)+' '+ry.toFixed(1)+' 0 1 0 '+(2*rx).toFixed(1)+' 0a'+rx.toFixed(1)+' '+ry.toFixed(1)+' 0 1 0 '+(-2*rx).toFixed(1)+' 0Z")';}
+if(!short){
+  tr(.3,.5,E.so,function(p){cap.style.opacity=(.85*p).toFixed(3);});
+  tr(t0,.25,E.si,function(p){dot.style.animation='none';dot.style.opacity=1-p;dot.style.transform='scale('+(1-.5*p)+')';});
+  tr(t0,.5,E.p3io,function(p){line.style.opacity=1;line.style.transform='scaleX('+(.005+.995*p)+')';});
+  tr(tM,.42,E.p2io,function(p){line.setAttribute('d',toBody(p));});
+  tr(tM,.45,E.sio,function(p){line.style.fill=mix(GR,GR,0,p);line.style.stroke=mix(WH,GR,p);});
+  tr(tH,.38,E.p2o,function(p){line.setAttribute('d',toSmile(p));});
+  tr(tH,.32,E.p1io,function(p){horns.forEach(function(e){e.style.opacity=1;e.style.strokeDashoffset=1-p;});});
+  tr(tH+.32,.25,E.so,function(p){horns.forEach(function(e){e.style.opacity=1-p;});});
+  /* «вдох» v1: готовая улыбка чуть приподнимается от клюва и опускается */
+  tr(tB,.4,E.lin,function(p){smile.style.transform=p<1?'scale('+(1+.022*Math.sin(Math.PI*p)).toFixed(4)+')':'';});
+}else{
+  line.style.fill=mix(GR,GR,1);line.style.stroke=mix(GR,GR,1);
+  tr(0,.16,E.so,function(p){line.style.opacity=p;});
+}
+/* буквы: маска слева направо + посадка на 3 px. Никаких лент поверх знака */
+tr(tL,short?.26:.5,E.p2io,function(p){lt.style.clipPath='inset(-20% '+(100-100*p).toFixed(2)+'% -20% 0%)';lt.style.transform=short?'':'translateY('+(3*(1-p)).toFixed(2)+'px)';});
+/* ворота перед раскрытием: картинка hero и шрифты, не дольше 0,5 с */
+var paused=false,skipping=false;
+call(tF-.02,function(){if(skipping)return;var img=D.querySelector('#hero-media img'),w=[];
+  if(img&&!img.complete)w.push(new Promise(function(r){img.addEventListener('load',r,{once:true});img.addEventListener('error',r,{once:true});}));
+  if(D.fonts&&D.fonts.status!=='loaded')w.push(D.fonts.ready);
+  if(!w.length)return;paused=true;var go=function(){paused=false;last=0;};
+  Promise.race([Promise.all(w),new Promise(function(r){setTimeout(r,500);})]).then(go,go);});
+tr(tF-.25,.22,E.so,function(p){grain.style.opacity=(.055*(1-p)).toFixed(4);if(!short)cap.style.opacity=(.85*(1-p)).toFixed(3);});
+/* посадка: знак — в лого шапки (FLIP), цвет — в цвет лого; сайт раскрывается эллипсом из клюва */
+tr(tF,fd,E.p3io,function(p){var f=target();mk.style.transform='translate('+(f.x*p).toFixed(2)+'px,'+(f.y*p).toFixed(2)+'px) scale('+(1+(f.s-1)*p).toFixed(5)+')';
+  var c=mix(GR,f.c,p);lt.style.color=c;line.style.fill=c;line.style.stroke=mix(GR,f.c,p,1-p);});
+call(tF+.02,function(){h.setAttribute('data-hero-in','1');fire('grinchin:loader-progress',{t:+(tF/END).toFixed(3),phase:'reveal'});});
+tr(tF+.04,fd+.02,E.p2i,hole);
+/* ready — когда раскрыт центр кадра: K2 рождает знак синхронно */
+call(tF+(short?.12:.2),sendReady);
+/* лого в шапке проявляется ровно в кадр посадки — подмена незаметна */
+call(tF+fd,function(){var l=D.getElementById('logo');if(l)l.style.visibility='visible';});
+var END=0;T.forEach(function(k){END=Math.max(END,k.at+k.du);});C.forEach(function(k){END=Math.max(END,k.at);});L.duration=END;
+function ph(t){return t<tM?'line':t<tL?'smile':t<tF?'word':'reveal';}
+function apply(t,force){for(var i=0;i<T.length;i++){var k=T[i];if(t<k.at||(k.d&&!force))continue;var p=Math.min(1,(t-k.at)/k.du);k.fn(k.e(p));if(p>=1)k.d=1;}
+  for(i=0;i<C.length;i++){k=C[i];if(t>=k.at&&!k.d){k.d=1;if(!(force&&i===0))k.fn();}}}
+var time=0,last=0,rate=1,held=false,ended=false;
+function finish(){if(ended)return;ended=true;['pointerdown','keydown','wheel','touchmove'].forEach(function(n){W.removeEventListener(n,skip,true);});
+  var l=D.getElementById('logo');if(l)l.style.visibility='';ld.style.display='none';h.setAttribute('data-hero-in','1');h.setAttribute('data-loader','done');
+  L.done=true;fire('grinchin:loader-progress',{t:1,phase:'done'});sendReady();}
+function tick(now){if(ended||held)return;
+  if(!paused){if(last){var dt=Math.min(now-last,100)/1000;time=Math.min(END,time+dt*rate);}last=now;apply(time);
+    fire('grinchin:loader-progress',{t:+(time/END).toFixed(3),phase:ph(time)});if(time>=END){finish();return;}}
+  else last=0;
+  requestAnimationFrame(tick);}
+/* пропуск: клик / клавиша / колесо / свайп — доигрывает остаток за 0,35 с */
+function skip(e){if(ended||skipping)return;if(e&&e.type==='keydown'&&/^(Tab|Shift|Control|Alt|Meta)$/.test(e.key))return;
+  skipping=true;paused=false;rate=Math.max(1,(END-time)/.35);}
+['pointerdown','keydown','wheel','touchmove'].forEach(function(n){W.addEventListener(n,skip,{capture:true,passive:true});});
+L.timer=setTimeout(function(){if(!ended)skip();},6000);
+fire('grinchin:loader-progress',{t:0,phase:'start'});
+requestAnimationFrame(tick);
+/* для покадровой проверки: остановить и поставить таймлайн в момент t (с) */
+L.seek=function(t){held=true;time=t;flip=null;
+  dot.style.animation='none';dot.style.opacity=1;dot.style.transform='';line.style.cssText='';line.setAttribute('d',short?S.smile:S.flat);smile.style.transform='';
+  horns.forEach(function(e){e.style.cssText='';});lt.style.cssText='';mk.style.transform='';cover.style.cssText='';grain.style.opacity='';cap.style.opacity='';ld.style.display='';
+  if(short){line.style.fill=mix(GR,GR,1);line.style.stroke=mix(GR,GR,1);}
+  if(t<tF)h.removeAttribute('data-hero-in');
+  T.forEach(function(k){k.d=0;});C.forEach(function(k){k.d=0;});apply(t,true);if(t>=END)finish();};
+})();
+</script>

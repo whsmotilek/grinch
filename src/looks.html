@@ -1,19 +1,72 @@
 <section id="looks" aria-labelledby="looks-title">
-  <div class="tx-layer tx-layer--paper tx-layer--wall" aria-hidden="true"></div>
-  <div class="wrap">
-    <div class="sec-head">
-      <h2 id="looks-title" class="h-poster">Образы</h2>
+  <!-- K3. «Образы» — улица v1: стена, отпечатки на ленте. Фото без Вити: ’01 pg-011-010, ’02 pg-011-018 крупно — косуха от подбородка до бёдер (в hero этот кадр целиком),
+       ’03 жаккардовая G у подола (pg-015-038), ’04 бирка в горловине (pg-015-040). Наклонён только отпечаток, подписи
+       ровные. Лента — на белом поле отпечатка и над ним, НЕ на лице / вещи / подписи; одна лаймовая на экран.
+       Имена вещей синхронизирует cards-art.js из GV_PRODUCTS (статичный текст — запасной), клик — карточка товара. -->
+  <div class="lk-wall" aria-hidden="true"></div>
+  <div class="lk-in">
+    <div class="lk-head">
+      <h2 id="looks-title" class="lk-title">Образы</h2>
+      <p class="lk-count" aria-hidden="true"><span data-lk-now>1</span>/4</p>
+    </div>
+    <div class="lk-rail" data-lk-rail>
+      <figure class="lk-look" data-look="01">
+        <div class="lk-print">
+          <picture class="lk-photo">
+            <source type="image/avif" srcset="{{asset:img/street/look-a-480.avif}} 480w, {{asset:img/street/look-a-960.avif}} 960w" sizes="(max-width: 767px) 70vw, 22vw">
+            <img src="{{asset:img/street/look-a-960.jpg}}" srcset="{{asset:img/street/look-a-480.jpg}} 480w, {{asset:img/street/look-a-960.jpg}} 960w" sizes="(max-width: 767px) 70vw, 22vw"
+                 alt="Джинсы КАРАКУЛИ на модели: с джинсовой курткой и светлым худи" width="960" height="1280" loading="lazy" fetchpriority="low" decoding="async">
+          </picture>
+          <span class="tape tape--black tape--2 lk-tape lk-tape--tl" data-stick aria-hidden="true"></span>
+        </div>
+        <figcaption class="lk-cap">
+          <span class="lk-n">’01</span>
+          <a href="#drop" data-product="jeans-scribble">Джинсы КАРАКУЛИ</a>
+        </figcaption>
+      </figure>
+      <figure class="lk-look" data-look="02">
+        <div class="lk-print">
+          <picture class="lk-photo">
+            <source type="image/avif" srcset="{{asset:img/street/look-j-480.avif}} 480w, {{asset:img/street/look-j-960.avif}} 960w" sizes="(max-width: 767px) 70vw, 24vw">
+            <img src="{{asset:img/street/look-j-960.jpg}}" srcset="{{asset:img/street/look-j-480.jpg}} 480w, {{asset:img/street/look-j-960.jpg}} 960w" sizes="(max-width: 767px) 70vw, 24vw"
+                 alt="Косуха КАПЮШОН на модели крупно: две молнии, лацканы на кнопках, ремень с пряжкой" width="960" height="1200" loading="lazy" fetchpriority="low" decoding="async">
+          </picture>
+          <span class="tape tape--lime tape--1 lk-tape lk-tape--t" data-stick aria-hidden="true"></span>
+        </div>
+        <figcaption class="lk-cap">
+          <span class="lk-n">’02</span>
+          <a href="#drop" data-product="jacket-biker">Косуха КАПЮШОН</a>
+        </figcaption>
+      </figure>
+      <figure class="lk-look" data-look="03">
+        <div class="lk-print">
+          <picture class="lk-photo">
+            <source type="image/avif" srcset="{{asset:img/street/look-c-480.avif}} 480w, {{asset:img/street/look-c-960.avif}} 960w" sizes="(max-width: 767px) 70vw, 20vw">
+            <img src="{{asset:img/street/look-c-960.jpg}}" srcset="{{asset:img/street/look-c-480.jpg}} 480w, {{asset:img/street/look-c-960.jpg}} 960w" sizes="(max-width: 767px) 70vw, 20vw"
+                 alt="Жаккардовая G у подола белой футболки, крупно" width="960" height="1024" loading="lazy" fetchpriority="low" decoding="async">
+          </picture>
+          <span class="tape tape--black tape--3 lk-tape lk-tape--tr" data-stick aria-hidden="true"></span>
+        </div>
+        <figcaption class="lk-cap">
+          <span class="lk-n">’03</span>
+          <a href="#drop" data-product="tee-blank">Футболка ФОН</a>
+          <a href="#drop" data-product="longsleeve-blank">Лонгслив ФОН</a>
+        </figcaption>
+      </figure>
+      <figure class="lk-look" data-look="04">
+        <div class="lk-print">
+          <picture class="lk-photo">
+            <source type="image/avif" srcset="{{asset:img/street/look-d-480.avif}} 480w, {{asset:img/street/look-d-960.avif}} 960w" sizes="(max-width: 767px) 70vw, 19vw">
+            <img src="{{asset:img/street/look-d-960.jpg}}" srcset="{{asset:img/street/look-d-480.jpg}} 480w, {{asset:img/street/look-d-960.jpg}} 960w" sizes="(max-width: 767px) 70vw, 19vw"
+                 alt="Бирка G в горловине белой футболки" width="960" height="1152" loading="lazy" fetchpriority="low" decoding="async">
+          </picture>
+          <span class="tape tape--black tape--1 lk-tape lk-tape--t" data-stick aria-hidden="true"></span>
+        </div>
+        <figcaption class="lk-cap">
+          <span class="lk-n">’04</span>
+          <a href="#drop" data-product="tee-blank">Футболка ФОН</a>
+        </figcaption>
+      </figure>
     </div>
   </div>
-  <div class="looks-wall" data-looks>
-    <!-- .look рендерит shop.js из GV_LOOKS (разметка по контракту: .look/.look-photo/.look-tape/.look-tag) -->
-  </div>
-  <!-- кампейн-кадры бренда для образов: motion.js кладёт их в .look-photo по data-look (грузятся лениво) -->
-  <template id="look-shots">
-    <picture data-look="01"><source type="image/avif" srcset="{{asset:img/street/look-01.avif}}"><img class="look-shot" src="{{asset:img/street/look-01.jpg}}" alt="Зелёная футболка GRINCHIN на вешалке под навесом" width="800" height="1000" loading="lazy" decoding="async"></picture>
-    <picture data-look="02"><source type="image/avif" srcset="{{asset:img/street/look-02.avif}}"><img class="look-shot" src="{{asset:img/street/look-02.jpg}}" alt="Белая футболка GRINCHIN со спины, кадр в лифте" width="800" height="1000" loading="lazy" decoding="async"></picture>
-    <picture data-look="03"><source type="image/avif" srcset="{{asset:img/street/look-03.avif}}"><img class="look-shot" src="{{asset:img/street/look-03.jpg}}" alt="Модель в косухе и джинсах на постере из мятой бумаги" width="800" height="1000" loading="lazy" decoding="async"></picture>
-    <picture data-look="04"><source type="image/avif" srcset="{{asset:img/street/look-04.avif}}"><img class="look-shot" src="{{asset:img/street/look-04.jpg}}" alt="Модель в варёном сером дениме на постере из мятой бумаги" width="800" height="1000" loading="lazy" decoding="async"></picture>
-  </template>
-  <span class="gm-slot" data-mark-slot="3"></span>
 </section>

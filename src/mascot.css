@@ -1,1 +1,52 @@
-/* v3 — заглушка, наполняет владелец по CONTRACT_V3 */
+/* GRINCHIN v3 · маскот (K5). Цвета — только из токенов: оттенки лайма и чёрного смешиваются из --c-green / --c-black / --c-white.
+   Слот без размеров по умолчанию тянется по ширине родителя; высоту даёт viewBox. */
+.mz{--mz-l:var(--c-green,#8ED308);
+  --mz-ld:color-mix(in srgb,var(--mz-l) 74%,#000);
+  --mz-ll:color-mix(in srgb,var(--mz-l) 55%,#fff);
+  --mz-k:color-mix(in srgb,var(--c-black,#000) 96%,#fff);
+  --mz-k2:color-mix(in srgb,var(--c-black,#000) 88%,#fff);
+  --mz-k3:color-mix(in srgb,var(--c-black,#000) 82%,#fff);
+  --mz-k4:color-mix(in srgb,var(--c-black,#000) 70%,#fff);
+  --mz-w:var(--c-white,#fff);
+  display:block;position:relative;line-height:0;-webkit-tap-highlight-color:transparent}
+.mz[hidden]{display:none}
+.mz-svg{display:block;width:100%;height:auto;overflow:visible}
+.mz-svg *{stroke-linejoin:round}
+.mz .k{fill:var(--mz-k)}
+.mz .kk{fill:var(--c-black,#000)}
+.mz .k2{fill:var(--mz-k2)}
+.mz .k3{fill:var(--mz-k3)}
+.mz .l{fill:var(--mz-l)}
+.mz .ld{fill:var(--mz-ld)}
+.mz .in{fill:color-mix(in srgb,var(--mz-l) 20%,#000)}
+.mz .tg{fill:color-mix(in srgb,var(--mz-l) 48%,#000)}
+.mz .w{fill:var(--mz-w)}
+.mz .sh{fill:var(--c-black,#000);opacity:.22}
+.mz .o,.mz .sk{stroke:var(--c-black,#000)}
+.mz .cav-l{stroke:var(--mz-l)}
+.mz .s-k2{stroke:var(--mz-k2)}
+.mz .s-k3{stroke:var(--mz-k3)}
+.mz .s-k4{stroke:var(--mz-k4)}
+.mz .s-l{stroke:var(--mz-l)}
+.mz .s-ld{stroke:var(--mz-ld)}
+.mz .s-ll{stroke:var(--mz-ll)}
+.mz .s-w,.mz .s-hi{stroke:var(--mz-w)}
+.mz .gs{stop-color:var(--mz-l)}
+.mz-tx{font:800 13px/1 var(--font-display,"Arial Black",sans-serif);letter-spacing:.06em;fill:var(--mz-w);opacity:.82}
+.mz-tm{font:900 20px/1 var(--font-display,"Arial Black",sans-serif);fill:var(--c-black,#000)}
+/* одно настроение на экране; остальные лежат готовыми — смена без перерисовки */
+.mz-mood{display:none}
+.mz-svg[data-mood="smirk"] .mz-mood[data-m="smirk"],.mz-svg[data-mood="wink"] .mz-mood[data-m="wink"],
+.mz-svg[data-mood="grumpy"] .mz-mood[data-m="grumpy"],.mz-svg[data-mood="joy"] .mz-mood[data-m="joy"],
+.mz-svg[data-mood="sad"] .mz-mood[data-m="sad"]{display:inline}
+.mz-eye,.mz-hand,.mz-mood{transform-box:fill-box;transform-origin:50% 50%}
+/* ореол Капюшона: та же мимика толстой лаймовой обводкой с прозрачностью — дёшево, без фильтров */
+/* «выглядывает»: ленты K3 — HTML-полосы во всю ширину экрана (обрезает контейнер), голова и кисти — SVG-слои */
+.mz-peek{position:relative}
+.mz-peek>.mz-head{position:relative;z-index:2}
+.mz-peek>.mz-hands{position:absolute;inset:0;z-index:4;width:100%;height:100%;overflow:visible}
+.mz-strip{position:absolute;left:50%;width:400vw;transform:translate(-50%,-50%) rotate(var(--r));pointer-events:none}
+.mz-glow{opacity:.3}
+.mz-glow *{fill:none!important;stroke:var(--mz-l)!important;stroke-width:calc(11px * var(--mz-s,.3))!important;vector-effect:non-scaling-stroke}
+.mz-glow :not(g):not(.l):not(.s-l):not(clipPath):not(clipPath *){display:none}
+@media (prefers-reduced-motion:reduce){.mz *{transition:none!important;animation:none!important}}

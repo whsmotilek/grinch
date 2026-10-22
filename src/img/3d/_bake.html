@@ -1,0 +1,51 @@
+<!doctype html>
+<!-- K2 · запекание matcap «под материал v1» (MeshPhysical + процедурное окружение PMREM + френелевый rim).
+     Не входит в сборку. Запуск: python3 -m http.server в src/img/3d, headless Chrome → window.__bake() → dataURL.
+     В рантайме сайта остаётся дешёвый MeshMatcapMaterial, а вид — как у тяжёлого физического материала v1. -->
+<html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000}canvas{display:block}</style></head>
+<body><canvas id="c" width="256" height="256"></canvas>
+<script type="module">
+import * as T from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.186.1/three.module.min.js';
+const N = 256, cv = document.getElementById('c');
+const R = new T.WebGLRenderer({ canvas: cv, antialias: true, preserveDrawingBuffer: true, alpha: false });
+R.setPixelRatio(1); R.setSize(N, N, false);
+R.toneMapping = T.NeutralToneMapping; R.toneMappingExposure = 1.05; R.outputColorSpace = T.SRGBColorSpace;
+const cG = new T.Color('#8ED308'), cA = new T.Color('#A6EA1F'), cL = new T.Color('#B9F43A'), cF = new T.Color('#10340C');
+// окружение v1 (three-g.js v1: envScene) — софтбокс сверху-слева, лаймовые полосы-блики
+function envScene() {
+  const s = new T.Scene();
+  s.add(new T.Mesh(new T.SphereGeometry(20, 32, 16), new T.ShaderMaterial({ side: T.BackSide, depthWrite: false, uniforms: { g: { value: cG } },
+    vertexShader: 'varying vec3 v;void main(){v=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+    fragmentShader: 'uniform vec3 g;varying vec3 v;void main(){float h=v.y*.5+.5;gl_FragColor=vec4(mix(vec3(.004),g*.06,h),1.);}' })));
+  const panel = (w, h, c, k, x, y, z) => { const m = new T.Mesh(new T.PlaneGeometry(w, h), new T.MeshBasicMaterial({ color: c.clone().multiplyScalar(k), side: T.DoubleSide })); m.position.set(x, y, z); m.lookAt(0, 0, 0); s.add(m); };
+  const W = new T.Color(1, 1, 1);
+  panel(9, 4, W, 5, -5, 7, 7); panel(1.4, 12, cA, 7, 9, 0, -1); panel(12, 1.2, cL, 3, 0, -7, 5); panel(3, 3, W, 2.2, 7, 5, 5); panel(1, 10, cA, 4, -9, 0, 2);
+  return s;
+}
+const pm = new T.PMREMGenerator(R); const envRT = pm.fromScene(envScene(), 0.035);
+function rim(m, color, k, p) {
+  m.onBeforeCompile = (sh) => { Object.assign(sh.uniforms, { uRimC: { value: color }, uRimK: { value: k }, uRimP: { value: p } });
+    sh.fragmentShader = 'uniform vec3 uRimC;uniform float uRimK;uniform float uRimP;\n' + sh.fragmentShader.replace('#include <emissivemap_fragment>',
+      '#include <emissivemap_fragment>\n totalEmissiveRadiance += uRimC * uRimK * pow(1.0 - saturate(abs(dot(normal, normalize(vViewPosition)))), uRimP);'); };
+  m.customProgramCacheKey = () => 'rim' + k + p; return m;
+}
+const MATS = {
+  // лайм: глянец с лаком (как лицо v1)
+  lime: () => rim(new T.MeshPhysicalMaterial({ color: cG, roughness: .4, clearcoat: .9, clearcoatRoughness: .2, emissive: cG, emissiveIntensity: .015 }), cA, .5, 2.6),
+  // скотч: сатин — блик шире и мягче, лака меньше
+  tape: () => rim(new T.MeshPhysicalMaterial({ color: cG, roughness: .62, clearcoat: .35, clearcoatRoughness: .5, emissive: cG, emissiveIntensity: .015, sheen: .35, sheenColor: cL }), cA, .4, 2.8),
+  // борт/фаска: тёмный лес с лаком (v1 side)
+  side: () => rim(new T.MeshPhysicalMaterial({ color: cF.clone().lerp(cG, .22), roughness: .32, metalness: .08, clearcoat: 1, clearcoatRoughness: .12 }), cA, .4, 3.2),
+  // чёрный глянец с лаймовым контуром
+  black: () => rim(new T.MeshPhysicalMaterial({ color: new T.Color('#0a0a0a'), roughness: .28, clearcoat: 1, clearcoatRoughness: .06 }), cG, .55, 5.0),
+};
+const scene = new T.Scene(); scene.environment = envRT.texture; scene.background = new T.Color('#000');
+const key = new T.DirectionalLight(0xffffff, 1.5); key.position.set(-3, 4, 5);
+const rimL = new T.DirectionalLight(cA, 3.2); rimL.position.set(4, 1.5, -3);
+const kick = new T.DirectionalLight(cL, .6); kick.position.set(-2, -4, 3);
+scene.add(key, rimL, kick, new T.AmbientLight(0xffffff, .04));
+const ball = new T.Mesh(new T.SphereGeometry(1, 160, 96)); scene.add(ball);
+const cam = new T.OrthographicCamera(-1, 1, 1, -1, .1, 10); cam.position.set(0, 0, 4); cam.lookAt(0, 0, 0);
+window.__bake = (name) => { ball.material = MATS[name](); R.render(scene, cam); return cv.toDataURL('image/png'); };
+window.__ready = true;
+</script></body></html>

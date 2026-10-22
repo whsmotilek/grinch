@@ -1,1 +1,204 @@
-/* v3 — заглушка, наполняет владелец по CONTRACT_V3 */
+/* GRINCHIN v3 — нарисованные вещи, «Образы», фирменные ленты. Владелец: K3. Цвета — только токены (tokens.css).
+   ============================================================================================================
+   ЛЕНТЫ — СИСТЕМА (для всех модулей: K4 hero/бегущая лента, K5 подписка/подвал — пользуйтесь этими классами)
+   Материал — НАСТОЯЩИЙ скан мятой ленты (assets/brand_raster/old/p-009-058), печать — новое лого GRiNCHiN
+   (только буквы), как на упаковке (Grinchin2.pdf стр. 12). Генератор: img/tape/_tape.py. Лента не едет и не растёт —
+   её один раз ПРИЛЕПЛЯЮТ. Никогда поверх текста, кнопок, лиц и вещей. Лайм — один зелёный объект на экран.
+
+   Кусок:  <span class="tape tape--lime tape--1" data-stick aria-hidden="true" style="--w:160px; --rot:-6deg"></span>
+     .tape            абсолютный, pointer-events:none; родитель — position:relative
+     .tape--lime      лайм #8ED308, чёрная печать GRiNCHiN (на бумаге и на чёрном)
+     .tape--black     чёрная, лаймовая печать (на светлом; на чёрном фоне видна по бликам и печати)
+     .tape--1         кусок целиком: оба конца рваные, диагональный залом            760×227
+     .tape--2         рваный конец слева, срез ножом справа                         600×289
+     .tape--3         срез ножом слева, рваный конец справа                         600×270
+     переменные: --w длина (высота — из пропорции), --rot угол, --origin точка поворота, --tx/--ty сдвиг до поворота,
+                 --flip -1 — зеркально по X, --lift 0….3 мягкая тень под приподнятыми местами (по умолч. .14)
+     data-stick       прилепится сам один раз при входе в экран (после grinchin:ready). GV.art.watchTapes() подхватывает
+                      новые куски (вызовите после вставки разметки); вручную: GV.art.stick(el) → Promise.
+     Растр грузится только рядом с экраном (.is-near), ?shot=1 и reduced-motion — сразу на месте.
+   Длинная полоса (бегущая лента, кресты): .tape-strip.tape-strip--lime | --black — фон-плитка, бесшовная по X,
+     высота элемента = толщина ленты, концы — у потребителя (mask/clip). Двигать только transform / background-position.
+   ============================================================================================================
+   АРТ КАРТОЧЕК: .card-media > .art.art--{a|b|c|d}.art--card  (рисует GV.art.render; .card-media — 4:5, как у K1)
+     .art-base — <img> рисунка (SVG-файл), .art-meta — код/выноски (inline SVG 400×500), .art-mark — пометка от руки
+     (стрелка — inline SVG, буквы — <img>), .art-tag — навесная бирка (стиль c).
+   Галерея товара: .art.art--gallery (кадр 4:5, внутри .ps-slide K1), .art--detail — кадр «деталь крупно».
+   ============================================================================================================ */
+
+/* ---------------- ленты ---------------- */
+.tape{
+  --w:150px; --rot:0deg; --tx:0px; --ty:0px; --flip:1; --lift:.14; --origin:50% 50%;
+  position:absolute; z-index:3; display:block; width:var(--w); aspect-ratio:var(--ar);
+  pointer-events:none; user-select:none; transform-origin:var(--origin);
+  transform:translate(var(--tx),var(--ty)) rotate(var(--rot)) scaleX(var(--flip));
+}
+.tape::before,.tape::after{content:""; position:absolute; inset:0; background:none center/100% 100% no-repeat}
+.tape::before{filter:brightness(0) blur(7px); opacity:var(--lift); transform:translateY(5px) scale(1.01)}
+.tape::after{filter:drop-shadow(0 .5px .6px rgb(0 0 0 / .32))}
+.tape.is-near::before,.tape.is-near::after,html:not(.js) .tape::before,html:not(.js) .tape::after{background-image:var(--src)}
+.tape--lime.tape--1{--ar:760/227; --src:url("{{asset:img/tape/lime-1.webp}}")}
+.tape--lime.tape--2{--ar:600/289; --src:url("{{asset:img/tape/lime-2.webp}}")}
+.tape--lime.tape--3{--ar:600/270; --src:url("{{asset:img/tape/lime-3.webp}}")}
+.tape--black.tape--1{--ar:760/227; --src:url("{{asset:img/tape/black-1.webp}}")}
+.tape--black.tape--2{--ar:600/289; --src:url("{{asset:img/tape/black-2.webp}}")}
+.tape--black.tape--3{--ar:600/270; --src:url("{{asset:img/tape/black-3.webp}}")}
+.tape--black{--lift:.2}
+
+.js .tape[data-stick]:not(.is-stuck){opacity:0}
+.tape.is-landing{animation:tape-land .36s cubic-bezier(.3,.7,.2,1) both}
+.tape.is-landing::before{animation:tape-land-shadow .36s cubic-bezier(.3,.7,.2,1) both}
+@keyframes tape-land{
+  0%  {opacity:0; translate:var(--from-x,-6px) var(--from-y,-14px); scale:1.07 1.07}
+  22% {opacity:1}
+  68% {translate:0 0; scale:1.012 .975}
+  100%{opacity:1; translate:0 0; scale:1 1}
+}
+@keyframes tape-land-shadow{
+  0%  {opacity:calc(var(--lift) * 2.2); transform:translateY(16px) scale(1.06)}
+  100%{opacity:var(--lift); transform:translateY(5px) scale(1.01)}
+}
+.tape-strip{display:block; background:var(--strip) 0 50% / auto 100% repeat-x}
+.tape-strip--lime{--strip:url("{{asset:img/tape/lime-strip.webp}}")}
+.tape-strip--black{--strip:url("{{asset:img/tape/black-strip.webp}}")}
+
+/* ---------------- арт: каркас ---------------- */
+.art{position:relative; width:100%; aspect-ratio:4/5; container:art / inline-size; color:var(--c-black)}
+.card-media > .art{position:absolute; inset:0; width:auto; height:auto; aspect-ratio:auto}
+.art > .art-base{position:absolute; inset:0; display:block; width:100%; height:100%; object-fit:contain; margin:0}
+.art > .art-ov{position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none}
+.art > .art-note,.art > .art-tag{position:absolute; display:block; height:auto; max-width:none; object-fit:fill; pointer-events:none; margin:0}
+.art > .art-tag{transform:rotate(var(--tag-r,6deg)); transform-origin:50% 8%}
+
+/* код вещи и выноски техкарты — моно бренда (Martian Mono), в единицах рисунка 400×500 */
+.art-code{font-family:var(--font-mono); font-size:9.5px; font-weight:500; letter-spacing:.06em; fill:#141414}
+.art-hair{stroke:#141414; stroke-opacity:.45; stroke-width:.7; fill:none}
+.art-co-line{stroke:#141414; stroke-width:.9; fill:none}
+.art-co-dot{fill:var(--c-paper); stroke:#141414; stroke-width:1.1}
+.art-co-box{fill:var(--c-paper); stroke:#141414; stroke-width:1}
+.art-co-n{font-family:var(--font-mono); font-size:10.5px; font-weight:700; fill:#141414}
+.art-legend text{font-family:var(--font-mono); font-size:9.5px; letter-spacing:.03em; fill:#141414; text-transform:uppercase}
+.art-legend-n{font-weight:700}
+
+/* пометка от руки: стрелка с бумажной подложкой (читается и на чёрном дениме) */
+.art-line,.art-tip{fill:none; stroke-linecap:round; stroke-linejoin:round}
+.art-halo{stroke:var(--c-paper); stroke-width:4.6}
+.art-ink{stroke:#141414; stroke-width:1.5}
+.art-line{stroke-dasharray:1 1}
+
+/* ---------------- стиль a · техкарта ---------------- */
+@container art (max-width: 259px){ .art--a .art-meta{display:none} }
+@container art (max-width: 299px){ .art--a .art-co-box,.art--a .art-co-n{display:none} }
+
+/* ---------------- стиль b · маркер: пометка всегда на месте ---------------- */
+.art--b .art-meta{display:none}
+.art--b .art-line{stroke-dashoffset:0}
+
+/* ---------------- стиль c · деталь: лупа и нитка — в рисунке, бирка поверх ---------------- */
+@container art (max-width: 259px){ .art--c .art-meta{display:none} }
+
+/* ---------------- стиль d · техкарта в покое + правка от руки ---------------- */
+.art--d .art-mark{opacity:0; transition:opacity .18s ease}
+.art--d .art-line{stroke-dashoffset:1; transition:stroke-dashoffset 0s linear .2s}
+.art--d .art-tip{opacity:0; transition:opacity 0s linear .2s}
+.art--d .art-note{clip-path:inset(-4% 100% -4% 0); transition:clip-path 0s linear .2s}
+.art--d .art-code{opacity:0; transition:opacity .2s ease}
+.art--d .art-base{transition:transform .3s var(--ease-out)}
+@container art (max-width: 259px){
+  .art--d .art-meta{display:none}
+  .art--b .art-note,.art--d .art-note{transform:scale(1.28); transform-origin:75% 100%}   /* на телефоне буквы крупнее, стрелка на месте */
+}
+
+/* «включено»: наведение (только мышь) или .is-marked (тач — карточка прошла центр экрана; галерея) */
+.art--d.is-marked .art-mark{opacity:1; transition:none}
+.art--d.is-marked .art-note{clip-path:inset(-4% 0 -4% 0); transition:clip-path .26s linear}
+.art--d.is-marked .art-line{stroke-dashoffset:0; transition:stroke-dashoffset .36s cubic-bezier(.2,.7,.2,1) .2s}
+.art--d.is-marked .art-tip{opacity:1; transition:opacity .08s linear .54s}
+.art--d.is-marked .art-code{opacity:1}
+@media (hover:hover) and (pointer:fine){
+  .card:hover .art--d .art-mark,.card:focus-within .art--d .art-mark{opacity:1; transition:none}
+  .card:hover .art--d .art-note,.card:focus-within .art--d .art-note{clip-path:inset(-4% 0 -4% 0); transition:clip-path .26s linear}
+  .card:hover .art--d .art-line,.card:focus-within .art--d .art-line{stroke-dashoffset:0; transition:stroke-dashoffset .36s cubic-bezier(.2,.7,.2,1) .2s}
+  .card:hover .art--d .art-tip,.card:focus-within .art--d .art-tip{opacity:1; transition:opacity .08s linear .54s}
+  .card:hover .art--d .art-code,.card:focus-within .art--d .art-code{opacity:1}
+  .card:hover .art--d .art-base{transform:translateY(-4px)}
+  /* лаймовая плашка под доступными размерами — как на бирке; буква чёрная (лайм только заливкой под чёрным) */
+  html[data-cards="d"] .card .szt--quick .szt-c{background:linear-gradient(var(--c-green),var(--c-green)) center/0 0 no-repeat;
+    transition:background-size .25s var(--ease-out)}
+  html[data-cards="d"] .card:hover .szt--quick .szt-c:not(.is-n):not([aria-disabled="true"]){background-size:min(36px, calc(100% - 10px)) 24px}
+  html[data-cards="d"] .card:hover .szt--quick .szt-c:not(.is-n):not([aria-disabled="true"]) .szt-l{color:#000}
+}
+/* галерея: пометка дописывается один раз, когда кадр показан (CSS-анимация при вставке) */
+.art--gallery.art--d.is-marked .art-note{animation:art-wipe .26s linear .5s both}
+.art--gallery.art--d.is-marked .art-line{animation:art-draw .36s cubic-bezier(.2,.7,.2,1) .7s both}
+.art--gallery.art--d.is-marked .art-tip{animation:art-tip .08s linear 1.04s both}
+@keyframes art-wipe{from{clip-path:inset(-4% 100% -4% 0)} to{clip-path:inset(-4% 0 -4% 0)}}
+@keyframes art-draw{from{stroke-dashoffset:1} to{stroke-dashoffset:0}}
+@keyframes art-tip{from{opacity:0} to{opacity:1}}
+@container art (max-width: 299px){ .art--gallery .art-legend{display:none} }
+
+@media (prefers-reduced-motion:reduce){
+  .tape.is-landing,.tape.is-landing::before{animation:none}
+  .art *,.art{transition:none!important; animation:none!important}
+}
+html[data-shot="1"] .art *{transition:none!important; animation:none!important}
+
+/* ---------------- «ОБРАЗЫ» ----------------
+   Чёрная стена с мятой бумагой (как v1), отпечатки в белом поле наклонены, подписи ровные и на одной линии.
+   Desktop — 4 отпечатка разной высоты «стеной»; mobile — свайп со счётчиком и scroll-snap-stop. */
+#looks{position:relative; isolation:isolate; overflow:hidden; background:var(--c-black); color:var(--c-white);
+  padding:clamp(64px, 8vw, 120px) 0 clamp(72px, 9vw, 128px)}
+#looks .lk-wall{position:absolute; inset:0; z-index:-1; pointer-events:none; opacity:.09;
+  background:url("{{asset:img/street/paper.webp}}") 50% 0 / 720px auto repeat}
+#looks .lk-in{max-width:1440px; margin:0 auto; padding:0 clamp(16px, 3.4vw, 48px)}
+#looks .lk-head{display:flex; align-items:baseline; justify-content:space-between; gap:24px; margin-bottom:clamp(36px, 5vw, 72px)}
+#looks .lk-title{margin:0; font:900 clamp(2.75rem, 8vw, 7.5rem)/.86 var(--font-display); letter-spacing:-.05em; text-transform:uppercase}
+#looks .lk-count{display:none; margin:0; font:500 .875rem/1 var(--font-mono); color:var(--text-2)}
+
+#looks .lk-rail{display:grid; grid-template-columns:1.05fr 1.15fr .95fr .9fr; column-gap:clamp(24px, 3vw, 48px); align-items:start}
+#looks .lk-look{margin:0; min-width:0; display:flex; flex-direction:column; gap:22px}
+#looks .lk-look[data-look="01"]{padding-top:clamp(20px, 3vw, 48px)}
+#looks .lk-look[data-look="02"]{padding-top:0}
+#looks .lk-look[data-look="03"]{padding-top:clamp(56px, 7vw, 112px)}
+#looks .lk-look[data-look="04"]{padding-top:clamp(24px, 3.4vw, 56px)}
+#looks .lk-print{position:relative; background:#fff; padding:12px 12px 40px; transform:rotate(var(--r, 0deg));
+  box-shadow:0 1px 1px rgb(0 0 0 / .4), 0 22px 34px -22px rgb(0 0 0 / .9)}
+#looks .lk-look[data-look="01"] .lk-print{--r:-1.4deg}
+#looks .lk-look[data-look="02"] .lk-print{--r:1.1deg}
+#looks .lk-look[data-look="03"] .lk-print{--r:-.8deg}
+#looks .lk-look[data-look="04"] .lk-print{--r:1.6deg}
+#looks .lk-photo{display:block; background:var(--c-black)}
+#looks .lk-photo img{display:block; width:100%; height:auto; outline:1px solid rgb(0 0 0 / .07); outline-offset:-1px}
+
+/* лента — на белом поле отпечатка и над ним, не на фото (верх поля 12 px, кусок уходит наружу) */
+#looks .lk-tape{--w:clamp(104px, 9vw, 150px)}
+#looks .lk-tape--t{left:50%; top:0; --tx:-50%; --ty:-80%; --rot:-3deg}
+#looks .lk-tape--tl{left:-6px; top:0; --tx:-46%; --ty:-58%; --rot:-34deg; --w:clamp(96px, 8vw, 132px)}
+#looks .lk-tape--tr{right:-6px; top:0; --tx:46%; --ty:-58%; --rot:31deg; --w:clamp(96px, 8vw, 132px)}
+
+#looks .lk-cap{display:flex; flex-wrap:wrap; align-items:baseline; column-gap:14px; row-gap:4px; min-height:48px}
+#looks .lk-n{font:500 .875rem/1.4 var(--font-mono); letter-spacing:.02em; color:var(--c-white)}
+#looks .lk-cap a{font:600 .9375rem/1.4 var(--font-text); color:var(--c-white); text-decoration:underline;
+  text-decoration-thickness:1px; text-underline-offset:.22em; text-decoration-color:rgb(255 255 255 / .4)}
+#looks .lk-cap a:hover{color:var(--accent); text-decoration-color:currentColor}
+#looks .lk-cap a:focus-visible{outline:2px solid var(--c-acid); outline-offset:3px}
+
+/* падение отпечатка (v1: «шлепок» скотча) — один раз при входе, только transform/opacity */
+.js #looks .lk-print{transition:transform .5s cubic-bezier(.2,.9,.25,1.12), opacity .3s ease}
+.js #looks .lk-look:not(.is-in) .lk-print{opacity:0; transform:translateY(-28px) rotate(calc(var(--r, 0deg) * 3))}
+html[data-shot="1"] #looks .lk-print{transition:none}
+@media (prefers-reduced-motion:reduce){ .js #looks .lk-print{transition:none} }
+
+@media (max-width:767px){
+  #looks .lk-count{display:block}
+  #looks .lk-rail{display:flex; gap:22px; overflow-x:auto; overscroll-behavior-x:contain; scroll-snap-type:x mandatory;
+    scroll-padding-left:clamp(16px, 3.4vw, 48px); margin:0 calc(-1 * clamp(16px, 3.4vw, 48px));
+    padding:34px clamp(16px, 3.4vw, 48px) 8px; scrollbar-width:none}
+  #looks .lk-rail::-webkit-scrollbar{display:none}
+  #looks .lk-look{flex:0 0 min(72vw, 320px); scroll-snap-align:start; scroll-snap-stop:always; justify-content:flex-start}
+  #looks .lk-look[data-look]{padding-top:0}
+  #looks .lk-print{padding:10px 10px 32px}
+  #looks .lk-tape{--w:104px}
+  #looks .lk-tape--tl,#looks .lk-tape--tr{--w:92px}
+  #looks .lk-cap a{display:inline-block; padding-block:12px; margin-block:-12px}
+}

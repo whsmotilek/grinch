@@ -1,1 +1,163 @@
-/* v3 — заглушка, наполняет владелец по CONTRACT_V3 */
+/* GRINCHIN v3 · финал страницы (K5): #next «Разобрали — вернём», #footer, 404.
+   Свои префиксы (nx-, fo-, e404-). Шрифты — из типошкалы K1 (--t-*), если она есть; иначе те же значения здесь.
+   Один зелёный на экран: в подписке — кнопка (после успеха — лаймовая лента на пакете), в подвале — логотип. */
+
+/* ============ #next ============ */
+#next{position:relative;isolation:isolate;background:var(--c-black);color:var(--c-white);padding:72px 0 80px}
+.nx-grid{display:grid;gap:36px}
+.nx-copy{container-type:inline-size;min-width:0}
+.nx-title{font:var(--t-h1,900 clamp(2.1rem,1.2rem + 2.3vw,3.5rem)/1.02 var(--font-display));letter-spacing:-.035em;
+  font-size:min(var(--t-h1-size,clamp(2.1rem,1.2rem + 2.3vw,3.5rem)),11.5cqi);text-wrap:balance}
+@media (max-width:767px){.nx-title{font-size:min(var(--t-h1-size,clamp(1.6rem,7.6vw,2.25rem)),11.5cqi);line-height:1.04}}
+.nx-sub{margin-top:14px;max-width:34ch;font:var(--t-body,400 1rem/1.5 var(--font-text));color:var(--text-2)}
+.nx-side{min-width:0}
+
+/* переключатель Telegram / Почта: выбранный — белым, зелёная на экране только кнопка */
+.nx-switch{display:flex;gap:8px;margin:0 0 16px;padding:0;border:0;min-width:0}
+.nx-switch label{position:relative;display:block}
+.nx-switch input{position:absolute;inset:0;margin:0;opacity:0;cursor:pointer}
+.nx-switch span{display:grid;place-items:center;text-align:center;min-height:44px;padding:0 18px;
+  border:1.5px solid color-mix(in srgb,var(--c-white) 28%,transparent);border-radius:var(--r-sm);
+  font:var(--t-ui,600 .9375rem/1 var(--font-text));color:var(--c-white);transition:background-color .15s,border-color .15s,color .15s}
+.nx-switch label:hover span{border-color:var(--c-white)}
+.nx-switch input:checked+span{background:var(--c-white);border-color:var(--c-white);color:var(--c-black)}
+.nx-switch input:focus-visible+span{outline:2px solid var(--c-white);outline-offset:3px}
+
+/* поле-бирка (навесная бирка: подпись «ник:» в углу, значение крупно) — белая рамка, без второго зелёного */
+.nx-tag{display:grid;grid-template-columns:minmax(0,1fr);border:2px solid var(--c-white);border-radius:var(--r-sm);
+  outline:2px solid transparent;outline-offset:3px;transition:outline-color .15s}
+.nx-cell{display:grid;gap:6px;padding:12px 16px;cursor:text;min-width:0}
+.nx-k{font:var(--t-mono,500 .75rem/1.3 var(--font-mono));letter-spacing:.02em;color:color-mix(in srgb,var(--c-white) 72%,transparent)}
+.nx-input{width:100%;min-width:0;min-height:44px;margin:0;padding:0;border:0;border-radius:0;background:transparent;
+  font:var(--t-d2,800 clamp(1.5rem,1.1rem + 1.4vw,2.25rem)/1.1 var(--font-display));letter-spacing:-.035em;color:var(--c-white);caret-color:var(--c-green)}
+.nx-input::placeholder{color:color-mix(in srgb,var(--c-white) 58%,transparent);opacity:1}
+.nx-input:focus,.nx-input:focus-visible{outline:none}
+.nx-tag:focus-within{outline-color:var(--c-white)}
+.nx-tag:has(.nx-input[aria-invalid="true"]){border-color:var(--c-error)}
+.nx-submit{min-height:56px;margin:0;border:0;border-radius:0}
+.nx-submit:focus-visible{outline:2px solid var(--c-black);outline-offset:-6px}
+.nx-err{min-height:1.4em;margin-top:10px;font:var(--t-mono,500 .75rem/1.4 var(--font-mono));color:var(--c-error)}
+
+/* успех: сцена 1200×720 (вектор), ленты — внутри кадра (overflow:hidden), на текст не попадают физически */
+.nx-done{display:grid;gap:20px;max-width:620px}
+.nx-done[hidden]{display:none}
+.nx-bag{position:relative;margin:0;aspect-ratio:1200/720;overflow:hidden;border-radius:var(--r-sm);background:#0d0d0d}
+.nx-scene,.nx-svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.nx-vs0{stop-color:#2a2a2a}.nx-vs1{stop-color:#070707}
+.nx-bag-sh{fill:#000;opacity:.55;transform:translate(10px,16px)}
+.nx-tee{fill:#e4e3df}
+.nx-teel{fill:none;stroke:#c9c8c3;stroke-width:3}
+.nx-ow{fill:var(--c-white);stroke:#9a9a96;stroke-width:2}.nx-ow2{fill:var(--c-black)}
+.nx-owa{fill:var(--c-white)}.nx-owt{font:800 17px/1 var(--font-display);letter-spacing:.04em;fill:var(--c-white)}
+.nx-gs{stop-color:var(--c-white)}
+.nx-film{fill:color-mix(in srgb,var(--c-white) 6%,transparent);stroke:color-mix(in srgb,var(--c-white) 34%,transparent);stroke-width:3}
+.nx-zip{fill:none;stroke:color-mix(in srgb,var(--c-white) 36%,transparent);stroke-width:4}
+.nx-shine{fill:var(--c-white);opacity:.08}
+.nx-print{fill:var(--c-black);opacity:.9}
+.nx-ign{font:800 19px/1 var(--font-display);letter-spacing:.08em;fill:var(--c-black);opacity:.9}
+/* ленты крест-накрест: растровые полосы K3 (.tape-strip, плитка бесшовна по X); концы уходят за кадр — их режет overflow */
+.nx-x{position:absolute;left:50%;top:51.4%;width:150%;height:12.8%;transform:translate(-50%,-50%) rotate(var(--r));
+  box-shadow:0 10px 18px -8px rgba(0,0,0,.7)}
+.nx-x--l{--r:23.6deg}
+.nx-x--k{--r:-23.6deg}
+/* маскот выглядывает из-за нижней кромки кадра справа */
+.nx-mz{position:absolute;right:3%;bottom:-2%;width:24%;transform-origin:50% 100%}
+.nx-mz[data-mz-char="uhmyl"]{bottom:5%;right:4%;width:26%;padding:2.2% 2%;background:var(--c-black);border:2px solid color-mix(in srgb,var(--c-white) 22%,transparent);border-radius:14px} /* лицо-наклейка: на лаймовой ленте иначе не читается */
+.nx-done-t{font:var(--t-d2,800 clamp(1.5rem,1.1rem + 1.4vw,2.25rem)/1.1 var(--font-display));letter-spacing:-.035em;color:var(--c-white)}
+.nx-done-t:focus{outline:none}
+.nx-done-s{margin-top:8px;font:var(--t-body,400 1rem/1.5 var(--font-text));color:var(--text-2)}
+
+@media (min-width:600px){
+  .nx-tag{grid-template-columns:minmax(0,1fr) auto}
+  .nx-submit{min-height:0}
+}
+@media (min-width:1100px){
+  #next{padding:120px 0}
+  .nx-grid{grid-template-columns:minmax(0,1fr) minmax(420px,560px);column-gap:clamp(48px,6vw,120px);align-items:start}
+}
+
+/* ============ #footer ============ */
+#footer{position:relative;isolation:isolate;overflow:hidden;background:#111a10;color:var(--c-white);
+  padding:72px 0 calc(24px + env(safe-area-inset-bottom))}
+@media (min-width:1100px){#footer{padding-top:112px}}
+.fo-paper{position:absolute;inset:0;z-index:-1;background:center bottom/cover no-repeat}
+html:not(.js) .fo-paper,#footer.is-near .fo-paper{
+  background-image:url("{{asset:img/end/paper.jpg}}");
+  background-image:image-set(url("{{asset:img/end/paper.avif}}") type("image/avif"),url("{{asset:img/end/paper.jpg}}") type("image/jpeg"))}
+.fo-service{display:grid;gap:40px}
+.fo-k{margin-bottom:12px;font:var(--t-mono,500 .75rem/1.3 var(--font-mono));letter-spacing:.02em;color:color-mix(in srgb,var(--c-white) 72%,transparent)}
+.fo-list{margin:0;padding:0;list-style:none;border-top:1px solid color-mix(in srgb,var(--c-white) 18%,transparent)}
+.fo-list>li{border-bottom:1px solid color-mix(in srgb,var(--c-white) 18%,transparent)}
+.fo-row,.fo-line{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;min-height:48px;margin:0;padding:0;
+  border:0;background:none;font:var(--t-ui,500 1rem/1.3 var(--font-text));color:var(--c-white);text-align:left;list-style:none}
+.fo-row{cursor:pointer}
+.fo-row::-webkit-details-marker{display:none}
+.fo-row .gl{width:14px;height:auto;flex:none;color:color-mix(in srgb,var(--c-white) 60%,transparent)}
+.fo-acc>summary::after{content:"+";font:500 1rem/1 var(--font-mono);color:color-mix(in srgb,var(--c-white) 60%,transparent);flex:none}
+.fo-acc[open]>summary::after{content:"−"}
+button.fo-row:hover,.fo-acc>summary:hover{text-decoration:underline;text-underline-offset:4px}
+.fo-row:focus-visible{outline:2px solid var(--c-white);outline-offset:2px}
+.fo-acc>p{margin:0;padding:0 0 16px;max-width:46ch;font:var(--t-body-s,400 .875rem/1.5 var(--font-text));color:color-mix(in srgb,var(--c-white) 78%,transparent)}
+.fo-acc[open]>p{animation:fo-in .2s var(--ease-out,ease-out) both}
+@keyframes fo-in{from{opacity:0;transform:translateY(-4px)}}
+.fo-line{cursor:default;color:color-mix(in srgb,var(--c-white) 88%,transparent)}
+.fo-soon{font:var(--t-mono,500 .75rem/1.3 var(--font-mono));color:color-mix(in srgb,var(--c-white) 60%,transparent)}
+@media (min-width:768px){.fo-service{grid-template-columns:repeat(2,minmax(0,1fr));gap:48px;max-width:920px}}
+
+/* логотип на мятой бумаге: форма — вектор нового лого (маска), цвет — бренд, заломы — ТОТ ЖЕ лист, что и фон
+   (end.js совмещает --cx/--cy/--cw/--ch с фоном подвала). Размер задаёт невидимый inline-вектор (пропорции нового лого) */
+.fo-logo-box{position:relative;margin-top:calc(var(--fo-mz-w) * 1.1 + 24px);--fo-mz-w:clamp(78px,15vw,210px)}
+.fo-logo{position:relative;width:100%;background-color:var(--c-green);
+  background-position:var(--cx,50%) var(--cy,50%);background-size:var(--cw,cover) var(--ch,);background-repeat:no-repeat;
+  background-blend-mode:multiply;
+  -webkit-mask:url("{{img:svg/logo.svg}}") center/100% 100% no-repeat;mask:url("{{img:svg/logo.svg}}") center/100% 100% no-repeat}
+html:not(.js) .fo-logo,#footer.is-near .fo-logo{
+  background-image:url("{{asset:img/end/crease.jpg}}");
+  background-image:image-set(url("{{asset:img/end/crease.avif}}") type("image/avif"),url("{{asset:img/end/crease.jpg}}") type("image/jpeg"))}
+.fo-geom{display:block;visibility:hidden;line-height:0}
+.fo-geom svg{display:block;width:100%;height:auto}
+/* «IGNORE THE SIGNS» под логотипом — как на упаковке (Grinchin2, стр. 10) */
+.fo-sign{margin:clamp(14px,2vw,26px) 0 0;text-align:center;font:800 clamp(.95rem,.5rem + 2.4vw,2.6rem)/1 var(--font-display);letter-spacing:.08em;color:var(--c-white)}
+/* маскот сидит на букве H (x 1057–1242, верх y≈93 из 1660×458): линия сиденья его вектора (y=694 из 800) — на верхе буквы */
+.fo-mz{position:absolute;z-index:2;top:0;width:var(--fo-mz-w);left:calc(var(--fo-seat-x,69.3%) - var(--fo-mz-w) / 2);
+  margin-top:calc(var(--fo-seat-y,6%) - var(--fo-mz-w) * 1.1567)} /* % у margin — от ширины: верх буквы = доля ширины лого */
+/* Ухмыл — одно лицо (600×340): нижний край улыбки ложится на верх буквы */
+.fo-mz[data-mz-char="uhmyl"]{--fo-mz-w:clamp(84px,15vw,230px);margin-top:calc(var(--fo-seat-y,6%) - var(--fo-mz-w) * .64)}
+
+.fo-legal{display:flex;flex-wrap:wrap;gap:4px 0;margin-top:clamp(32px,4vw,48px);padding-top:16px;
+  border-top:1px solid color-mix(in srgb,var(--c-white) 18%,transparent);
+  font:var(--t-mono,500 .75rem/1.3 var(--font-mono));letter-spacing:.02em;color:color-mix(in srgb,var(--c-white) 72%,transparent)}
+.fo-legal span{white-space:nowrap}
+.fo-legal span+span::before{content:"·";padding:0 .7em}
+@media (max-width:599px){.fo-legal span:last-child{flex-basis:100%;white-space:normal}.fo-legal span:last-child::before{content:none}}
+
+/* ============ 404 ============ */
+.e404{inset:0;display:grid;grid-template-rows:auto 1fr;overflow:hidden;background:var(--c-black);color:var(--c-white);
+  padding:max(8px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(20px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+@media (min-width:768px){.e404{padding-inline:32px}}
+@media (min-width:1100px){.e404{padding-inline:48px}}
+.e404-logo{justify-self:start;display:grid;place-items:center;min-height:var(--header-h,60px);min-width:44px;padding:0;border:0;background:none;color:var(--c-white);cursor:pointer}
+.e404-logo svg{height:26px;width:auto;display:block}
+.e404-in{display:grid;grid-template-rows:auto minmax(0,1fr) auto;align-content:stretch;gap:clamp(12px,3vh,32px);padding:clamp(8px,3vh,32px) 0 0;min-height:0}
+.e404-code{width:fit-content;margin:0 0 clamp(14px,2.4vw,32px);font:var(--t-mono,500 .75rem/1.3 var(--font-mono));letter-spacing:.04em;color:color-mix(in srgb,var(--c-white) 72%,transparent)}
+.e404-title{margin:0 0 0 -.04em;font:900 clamp(3.4rem,2rem + 9vw,9rem)/.86 var(--font-display);letter-spacing:-.06em}
+.e404-sub{margin:14px 0 0;font:var(--t-body,400 1rem/1.5 var(--font-text));color:var(--text-2)}
+/* сцена: полоса во всю ширину, ленты уходят за края панели (панель их обрезает) */
+.e404-stage{position:relative;display:grid;place-items:end center;min-height:0;z-index:0;clip-path:inset(-100vh -100vw 0 -100vw)} /* ленты не опускаются ниже сцены — к кнопке не подходят */
+.e404-mz{position:relative;width:min(88vw,52vh,560px);transform:translateX(min(16vw,240px))}
+.e404-mz[data-mz-char="uhmyl"]{width:min(80vw,44vh,460px)}
+.e404-fence{display:none;position:relative;width:100%;height:clamp(120px,22vh,220px)}
+.e404-t{position:absolute;left:50%;width:400vw;height:clamp(38px,6vh,60px);transform:translate(-50%,-50%) rotate(var(--r))}
+.e404-t1{top:42%;--r:-6deg}.e404-t2{top:62%;--r:3deg} /* передняя поднимается к левому краю — подальше от кнопки */
+html[data-mascot="none"] .e404-fence{display:block}
+/* кнопка белая: зелёный на этом экране — маскот и надписи ленты */
+.e404-home{justify-self:start;min-width:min(100%,260px);position:relative;z-index:1;background:var(--c-white);color:var(--c-black)}
+.e404-home:hover{background:var(--c-white);box-shadow:none;text-decoration:underline;text-underline-offset:4px}
+.e404-home .gl{width:16px;height:auto}
+@media (max-width:599px){.e404-mz{transform:none}.e404-home{width:100%;justify-self:stretch}}
+@media (max-height:520px) and (orientation:landscape){.e404-title{font-size:3rem}.e404-mz{width:min(40vh,240px)}}
+
+@media (prefers-reduced-motion:reduce){
+  .fo-acc[open]>p{animation:none}
+  .nx-switch span,.nx-tag{transition:none}
+}

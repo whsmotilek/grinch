@@ -1,1 +1,90 @@
-/* v3 — заглушка, наполняет владелец по CONTRACT_V3 */
+/* GRINCHIN v3 · K2 · 3D: знак G в hero (#g3d), знак ONE WAY or ANOTHER (#brand-stage), рулон ленты (#roll-stage).
+   Стили 3D-G перенесены из game.css (игра удалена, файл удалён); позицию #g3d задаёт K4. Цвета — только токены. */
+
+/* ───────── 3D-G (#g3d) ─────────
+   Прямоугольник #g3d задаёт K4 (hero.html / motion.css: #g3d — inset:0 внутри обёртки .hx-g, которую K4 двигает
+   и масштабирует по прокрутке). Здесь позиции #g3d нет — знак рисуется строго внутри этого прямоугольника. */
+.g3d{position:absolute;inset:0;touch-action:pan-y;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;contain:layout}
+.g3d__cv{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:0;pointer-events:none}
+.g3d[data-mode="gl"] .g3d__cv{opacity:1}
+.g3d.is-born[data-mode="gl"] .g3d__cv{animation:g3d-in .32s var(--ease-out) both}
+.g3d.is-xfade .g3d__cv{animation:none;transition:opacity .45s var(--ease-out)}
+/* SVG того же контура: фолбэк и «пока компилируются шейдеры» */
+.g3d__svg{position:absolute;inset:7% 6%;width:88%;height:86%;display:block;overflow:visible;pointer-events:none;transform-origin:50% 55%}
+.g3d__svg-face{fill:var(--c-green)}
+.g3d__svg-side{fill:var(--c-forest)}
+.g3d[data-mat="black"] .g3d__svg-face{fill:var(--c-black);stroke:var(--c-green);stroke-width:2.5;stroke-linejoin:round}
+.g3d[data-mat="black"] .g3d__svg-side{fill:var(--c-green)}
+.g3d.is-born .g3d__svg{animation:g3d-born .7s var(--ease-out) both}
+.g3d[data-mode="gl"] .g3d__svg{opacity:0;visibility:hidden}
+.g3d.is-xfade[data-mode="gl"] .g3d__svg{transition:opacity .45s var(--ease-out),visibility 0s .45s}
+@keyframes g3d-born{from{opacity:0;transform:scale(.6) rotate(-8deg)}to{opacity:1;transform:none}}
+@keyframes g3d-in{from{opacity:0}to{opacity:1}}
+/* контактная тень — градиент, без filter */
+.g3d__shadow{position:absolute;left:24%;right:24%;bottom:2%;height:8%;pointer-events:none;
+  background:radial-gradient(closest-side,color-mix(in srgb,var(--c-black) 55%,transparent),transparent)}
+
+/* гироскоп: только сенсорные, по нажатию (iOS просит разрешение жестом); появляется после рождения знака.
+   Стоит слева от верха знака — не на заголовке и не под лентами */
+.g-gyro{position:absolute;left:0;top:2px;transform:translateX(calc(-100% - 6px));z-index:7;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:44px;min-width:44px;padding:0 14px;border:1px solid color-mix(in srgb,var(--c-white) 28%,transparent);border-radius:var(--r-pill);
+  background:color-mix(in srgb,var(--c-black) 70%,transparent);color:var(--c-white);
+  font:400 var(--fs-xs)/1 var(--font-mono);letter-spacing:.02em;pointer-events:auto;-webkit-tap-highlight-color:transparent;
+  opacity:0;transition:opacity .2s}
+.g-gyro.is-shown{opacity:1}
+.g-gyro-i{width:10px;height:10px;border-radius:50%;border:1.5px solid currentColor}
+.g-gyro[aria-pressed="true"] .g-gyro-i{background:var(--c-green);border-color:var(--c-green)}
+.g-gyro[data-state="denied"]{opacity:.5}
+.g-gyro:focus-visible{outline:2px solid var(--c-acid);outline-offset:3px}
+
+/* ───────── Знак ONE WAY or ANOTHER (data-brand="sign") ─────────
+   Каркас блока — K4 (about.html, motion.css): #brand-stage резервирует высоту заранее (220svh, без pin-спейсера →
+   CLS 0), внутри .bs-sign — sticky-кадр 100svh. K2 рисует в .bs-sign: подписи слева, знак справа; оборот идёт
+   по прокрутке через #brand-stage. Mobile (≤767): без sticky и без пустой прокрутки — блок по высоте содержимого,
+   оборот проигрывается при входе в кадр.
+   NB: у предков #brand-stage не должно быть overflow:hidden (ломает sticky) — только overflow-x:clip. */
+.k2-sign{position:relative;height:100%}
+.k2-sign__pin{position:relative;height:100%;box-sizing:border-box;
+  display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);align-items:center;gap:clamp(16px,3vw,48px);
+  padding:var(--header-h) clamp(16px,4vw,64px) 0}
+.k2-sign__cap{position:relative;display:grid;align-content:center;min-height:12em}
+.k2-sign__kicker{margin:0 0 1.2em;font:500 var(--fs-xs)/1 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--text-2)}
+.k2-sign__kicker i{font-style:normal;color:var(--c-green)}
+.k2-sign__l{grid-area:2/1;margin:0;color:var(--text);font:800 clamp(1.75rem,3.6vw,3.25rem)/1.05 var(--font-display);letter-spacing:-.01em;text-wrap:balance;
+  transition:opacity .45s var(--ease-out),transform .45s var(--ease-out)}
+.k2-sign[data-step="1"] .k2-sign__l2,.k2-sign[data-step="2"] .k2-sign__l1{opacity:0;transform:translateY(.4em)}
+.k2-sign__view{position:relative;height:min(84svh,900px);min-height:320px}
+.k2-sign__cv,.k2-sign__still{position:absolute;inset:0;width:100%;height:100%;display:block}
+.k2-sign__still{object-fit:contain;opacity:0;transition:opacity .35s var(--ease-out);pointer-events:none}
+/* заглушка, пока сцена компилируется; уходит с первым кадром WebGL */
+.k2-sign[data-state="wait"] .k2-sign__still--a,.k2-sign[data-state="gl"]:not(.is-live) .k2-sign__still--a{opacity:1}
+/* без WebGL: тот же сюжет двумя кадрами */
+.k2-sign[data-state="off"][data-step="1"] .k2-sign__still--a,.k2-sign[data-state="off"][data-step="2"] .k2-sign__still--b{opacity:1}
+@media (max-width:767px){
+  html[data-brand="sign"] #brand-stage{height:auto}
+  html[data-brand="sign"] #brand-stage .bs-sign{position:relative;height:auto;overflow:visible}
+  .k2-sign__pin{display:block;padding:40px 16px 24px}
+  .k2-sign__cap{min-height:0;margin-bottom:8px}
+  .k2-sign__l{font-size:clamp(1.5rem,7vw,2rem)}
+  .k2-sign__view{height:auto;min-height:0;aspect-ratio:1/1.08;margin:0 -16px;cursor:pointer}
+}
+@media (prefers-reduced-motion:reduce){
+  html[data-brand="sign"] #brand-stage{height:auto}
+  html[data-brand="sign"] #brand-stage .bs-sign{position:relative;height:auto;overflow:visible}
+  .k2-sign__pin{padding-top:48px;padding-bottom:48px}
+  .k2-sign__l{transition:none}
+  .k2-sign[data-state] .k2-sign__l1,.k2-sign[data-state] .k2-sign__l2{opacity:1;transform:none;grid-area:auto}
+  .k2-sign__view{display:grid;grid-template-columns:1fr 1fr;gap:8px;height:auto;min-height:0;aspect-ratio:auto}
+  .k2-sign__view .k2-sign__still{position:relative;inset:auto;height:auto;aspect-ratio:9/10;opacity:1;transition:none}
+}
+
+/* ───────── Рулон ленты (data-roll="on") ───────── */
+html[data-roll="off"] #roll-stage{display:none}
+#roll-stage{position:relative;height:clamp(300px,36vw,560px);background:var(--c-black);overflow:hidden;contain:layout paint}
+.k2-roll{position:absolute;inset:0}
+.k2-roll__cv,.k2-roll__still{position:absolute;inset:0;width:100%;height:100%;display:block}
+.k2-roll__still{object-fit:cover;opacity:0;transition:opacity .35s var(--ease-out)}
+.k2-roll[data-state="wait"] .k2-roll__still,.k2-roll[data-state="gl"]:not(.is-live) .k2-roll__still,.k2-roll[data-state="off"] .k2-roll__still{opacity:1}
+@media (max-width:767px){#roll-stage{height:86vw}}
+@media (prefers-reduced-motion:reduce){.k2-roll__still{transition:none}}
+html[data-shot="1"] .k2-sign__still,html[data-shot="1"] .k2-roll__still{transition:none}

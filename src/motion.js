@@ -100,13 +100,29 @@
   function buildScene(svg) {
     var S = shapes(), letters = $$('.ld-letters .lg-l').length ? $$('.ld-letters .lg-l') : $$('#logo .lg-l');
     if (!S || !S.arr_l || !letters.length) return null;
-    var id = 'bs' + (uid++), GR = '#8ED308', BLK = '#0b0b0b';
+    var GR = '#8ED308', BLK = '#0b0b0b';
     try { var c = getComputedStyle(H).getPropertyValue('--c-green').trim(); if (/^#[0-9a-f]{6}$/i.test(c)) GR = c; } catch (e) {}
-    svg.innerHTML = '';
-    var defs = svgEl('defs', {}, svg);
+    /* СЛОИ (T3 v3.1). Раньше вся сцена была одним SVG, и каждый кадр прокрутки менял атрибуты → перерисовка и растр
+       всего SVG, а полосы букв ещё и с clip-path по контуру буквы (60–120 мс растра на телефоне). Теперь всё, что едет,
+       едет transform/opacity композитных слоёв, а растрится один раз:
+         svg      — нижний столб (гаснет атрибутом, редко);
+         svgS     — знак STOP: улетает вверх CSS-transform слоя (внутри меняется только надпись, фаза .32–.5);
+         svgP     — табличка/половинки улыбки: подъезд под буквы — CSS-transform слоя; финальное угасание половинок —
+                    opacity слоя (остальное в табличке к этому моменту уже невидимо);
+         svgF     — целая улыбка (финал, opacity слоя);   svgL — сплошные буквы (финал, opacity слоя);
+         .bs-strips — полосы: div-ы сплошного цвета (растра нет) под маской буквы (.bs-l, маска растрится один раз).
+       Порядок отрисовки прежний: столб → знак → табличка → улыбка → сплошные буквы → полосы. */
+    var host = svg.parentNode;
+    (svg._bsx || []).forEach(function (e) { if (e.parentNode) e.parentNode.removeChild(e); });
+    svg._bsx = []; svg.innerHTML = '';
+    var after = svg;
+    var put = function (e) { host.insertBefore(e, after.nextSibling); after = e; svg._bsx.push(e); return e; };
+    var mkSvg = function () { return put(svgEl('svg', { 'class': 'bs-svg', 'aria-hidden': 'true', focusable: 'false' })); };
+    var svgS = mkSvg(), svgP = mkSvg(), svgF = mkSvg(), svgL = mkSvg();
+    var stripsHost = D.createElement('div'); stripsHost.className = 'bs-strips'; stripsHost.setAttribute('aria-hidden', 'true'); put(stripsHost);
     // — знак STOP на столбе: верхний столб уходит вместе со знаком, нижний — под табличкой, гаснет с ней
     var poleLo = svgEl('rect', { 'class': 'bs-pole' }, svg);
-    var sign = svgEl('g', {}, svg);
+    var sign = svgEl('g', {}, svgS);
     var poleHi = svgEl('rect', { 'class': 'bs-pole', x: -9, y: 0, width: 18, height: 10 }, sign);
     svgEl('path', { 'class': 'bs-sign-face', d: octagon(200), fill: '#f2f2ec' }, sign);          // заливка hex-атрибутом: не прозрачная
     svgEl('path', { 'class': 'bs-sign-ring', d: octagon(178) }, sign);
@@ -116,58 +132,82 @@
     var tART = svgEl('text', { 'class': 'bs-sign-txt', x: 0, y: 0, dy: '.36em', 'text-anchor': 'start', 'font-size': 104, opacity: 0 }, word);
     var apo = svgEl('tspan', { 'class': 'bs-apo', fill: GR }, tART); apo.textContent = '’';
     var rest = svgEl('tspan', {}, tART); rest.textContent = 'ART';
-    // — табличка ←→ в координатах лого
-    var plate = svgEl('g', {}, svg);
+    // — табличка ←→ в координатах лого; рисуется сразу в финальном месте/масштабе, подъезд — transform слоя
+    var plate = svgEl('g', {}, svgP);
     var plateBg = svgEl('g', {}, plate);
     svgEl('rect', { 'class': 'bs-plate-bg', x: 30, y: 150, width: 1600, height: 300, rx: 34 }, plateBg);
     svgEl('rect', { 'class': 'bs-plate-in', x: 58, y: 178, width: 1544, height: 244, rx: 18 }, plateBg);
     var hl = svgEl('path', { d: S.arr_l, fill: BLK }, plate), hr = svgEl('path', { d: S.arr_r, fill: BLK }, plate);
     var mkl = svgEl('path', { 'class': 'bs-marker', d: S.arr_l, pathLength: 1, 'stroke-dasharray': 1, 'stroke-dashoffset': 1 }, plate);
     var mkr = svgEl('path', { 'class': 'bs-marker', d: S.arr_r, pathLength: 1, 'stroke-dasharray': 1, 'stroke-dashoffset': 1 }, plate);
-    var full = svgEl('path', { d: S.smile, fill: GR, opacity: 0 }, plate);
+    var fullG = svgEl('g', {}, svgF); svgEl('path', { d: S.smile, fill: GR }, fullG);
     var morphL = lerpPath(S.arr_l, S.half_l), morphR = lerpPath(S.arr_r, S.half_r);
-    // — буквы: полосы ленты, клип по контуру буквы; в конце — сплошные буквы (без швов)
-    var logo = svgEl('g', {}, svg), strips = [], r = rnd('bs'), tones = [GR, mixHex(GR, '#000000', .1), mixHex(GR, '#ffffff', .12)];
-    var solid = svgEl('g', { fill: GR, opacity: 0 }, logo);
+    // — буквы: полосы ленты под маской буквы; в конце — сплошные буквы (без швов)
+    var logo = svgEl('g', {}, svgL), strips = [], boxes = [], r = rnd('bs'), tones = [GR, mixHex(GR, '#000000', .1), mixHex(GR, '#ffffff', .12)];
+    var solid = svgEl('g', { fill: GR }, logo);
     letters.forEach(function (lp, i) {
-      var d = lp.getAttribute('d'), cid = id + 'c' + i;
-      svgEl('path', { d: d }, svgEl('clipPath', { id: cid }, defs));
+      var d = lp.getAttribute('d');
       svgEl('path', { d: d }, solid);
-      var g = svgEl('g', { 'clip-path': 'url(#' + cid + ')' }, logo);
-      var probe = svgEl('path', { d: d }, g), bb; try { bb = probe.getBBox(); } catch (e) { bb = null; } g.removeChild(probe);
+      var probe = svgEl('path', { d: d }, logo), bb; try { bb = probe.getBBox(); } catch (e) { bb = null; } logo.removeChild(probe);
       if (!bb || !bb.width) bb = { x: 0, y: 0, width: 200, height: 300 };
+      bb = { x: bb.x, y: bb.y, width: bb.width, height: bb.height };
+      var box = D.createElement('div'); box.className = 'bs-l';
+      var mk = 'url("data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + bb.x + ' ' + bb.y + ' ' + bb.width + ' ' + bb.height +
+        '" preserveAspectRatio="none"><path d="' + d + '"/></svg>') + '")';
+      box.style.webkitMaskImage = mk; box.style.maskImage = mk;
+      stripsHost.appendChild(box); boxes.push({ el: box, bb: bb });
       var n = bb.height > 120 ? 4 : 2, sh = bb.height / n;
       for (var j = 0; j < n; j++) {
         var cx = bb.x + bb.width / 2, cy = bb.y + sh * (j + .5), rot = (r() - .5) * 10;
-        var s = svgEl('rect', { x: bb.x - 30, y: (bb.y + j * sh - 3).toFixed(1), width: bb.width + 60, height: (sh + 6).toFixed(1), fill: tones[(i + j) % 3] }, g);
-        strips.push({ el: s, cx: cx, cy: cy, rot: rot, dx: (r() > .5 ? 1 : -1) * (900 + r() * 900), dy: (r() - .5) * 700, da: (r() - .5) * 90, k: strips.length, last: '' });
+        var el = D.createElement('i'); el.className = 'bs-st'; el.style.background = tones[(i + j) % 3]; box.appendChild(el);
+        strips.push({ el: el, bb: bb, x: bb.x - 30, y: bb.y + j * sh - 3, w: bb.width + 60, h: sh + 6, cx: cx, cy: cy, rot: rot,
+          dx: (r() > .5 ? 1 : -1) * (900 + r() * 900), dy: (r() - .5) * 700, da: (r() - .5) * 90, k: strips.length });
       }
     });
-    var caps = $$('.bs-caps li', svg.parentNode), L = null, last = {};
+    var caps = $$('.bs-caps li', host), L = null, last = {};
     var set = function (el, a, v) { var key = (el._k || (el._k = ++uid)) + a; if (last[key] === v) return; last[key] = v; el.setAttribute(a, v); };
+    var css = function (el, a, v) { var key = (el._k || (el._k = ++uid)) + '$' + a; if (last[key] === v) return; last[key] = v; el.style[a] = v; };
     var tf = function (x, y, s) { return 'translate(' + x.toFixed(2) + ' ' + y.toFixed(2) + ') scale(' + s.toFixed(5) + ')'; };
+    var px = function (v) { return v.toFixed(2) + 'px'; };
     var wST = 0, wART = 0, wOP = 0;
     function measure() { try { wST = tST.getComputedTextLength(); wOP = tOP.getComputedTextLength(); wART = tART.getComputedTextLength(); } catch (e) { wST = 150; wOP = 160; wART = 260; } }
 
     function layout(fw, fh) {
-      svg.setAttribute('viewBox', '0 0 ' + fw + ' ' + fh);
+      [svg, svgS, svgP, svgF, svgL].forEach(function (e) { e.setAttribute('viewBox', '0 0 ' + fw + ' ' + fh); });
       var mob = fw < 768, top = mob ? 72 : 96, bot = mob ? 110 : 130, av = Math.max(200, fh - top - bot);
       var sr = Math.min(av * (mob ? .16 : .19), fw * (mob ? .22 : .12)), sx = fw / 2, sy = top + av * (mob ? .2 : .24);
       var pw = fw * (mob ? .86 : .44), ps = pw / LW, pcy = sy + sr + 26 + 150 * ps;      // центр таблички (лого y=300)
       var lw = Math.min(fw * (mob ? .86 : .56), 1000), ls = lw / LW, lcy = top + av * (mob ? .42 : .46);
       L = { fw: fw, fh: fh, sx: sx, sy: sy, k: sr / 200, sr: sr, ps: ps, px: sx - 830 * ps, py: pcy - 300 * ps, ls: ls, lx: fw / 2 - 830 * ls, ly: lcy - 229 * ls };
+      last = {};
       set(poleLo, 'x', (sx - 9 * L.k).toFixed(1)); set(poleLo, 'width', (18 * L.k).toFixed(1));
       set(poleLo, 'y', (pcy).toFixed(1)); set(poleLo, 'height', Math.max(0, fh - pcy).toFixed(1));
       set(poleHi, 'height', ((pcy - sy) / L.k).toFixed(1));
-      set(logo, 'transform', tf(L.lx, L.ly, ls));
-      measure(); last = {};
+      set(sign, 'transform', 'translate(' + sx.toFixed(1) + ' ' + sy.toFixed(1) + ') scale(' + L.k.toFixed(4) + ')');
+      svgS.style.transformOrigin = px(sx) + ' ' + px(sy);
+      // табличка и улыбка нарисованы в финальном месте (как буквы); подъезд — transform слоя, только уменьшение (k ≤ 1)
+      set(plate, 'transform', tf(L.lx, L.ly, ls)); set(fullG, 'transform', tf(L.lx, L.ly, ls)); set(logo, 'transform', tf(L.lx, L.ly, ls));
+      svgP.style.transformOrigin = '0 0';
+      // маркер виден только до подъезда (масштаб слоя = ps/ls): non-scaling-stroke считает толщину без CSS-масштаба слоя,
+      // поэтому толщину делим на него — на экране те же 7 px, что и раньше
+      // штрих пунктира с non-scaling-stroke тоже считается в координатах SVG без масштаба слоя — растягиваем его на 1/k0
+      var k0 = ps / ls, sw = (7 / k0).toFixed(3); mkl.style.strokeWidth = sw; mkr.style.strokeWidth = sw; L.k0 = k0;
+      set(mkl, 'stroke-dasharray', (1 / k0).toFixed(5)); set(mkr, 'stroke-dasharray', (1 / k0).toFixed(5));
+      boxes.forEach(function (B) {
+        var st = B.el.style; st.left = px(L.lx + B.bb.x * ls); st.top = px(L.ly + B.bb.y * ls); st.width = px(B.bb.width * ls); st.height = px(B.bb.height * ls);
+      });
+      strips.forEach(function (Q) {
+        var st = Q.el.style; st.left = px((Q.x - Q.bb.x) * ls); st.top = px((Q.y - Q.bb.y) * ls); st.width = px(Q.w * ls); st.height = px(Q.h * ls);
+        st.transformOrigin = px((Q.cx - Q.x) * ls) + ' ' + px((Q.cy - Q.y) * ls);
+      });
+      measure();
     }
 
     function apply(p) {
       if (!L) return;
       // 1) маркер обводит стрелки, стрелки гнутся в половинки улыбки (рожки — наконечники), чернь → лайм
       var m = seg(p, .05, .2), b = E.io(seg(p, .15, .32));
-      set(mkl, 'stroke-dashoffset', (1 - m).toFixed(3)); set(mkr, 'stroke-dashoffset', (1 - m).toFixed(3));
+      var dof = ((1 - m) / L.k0).toFixed(4); set(mkl, 'stroke-dashoffset', dof); set(mkr, 'stroke-dashoffset', dof);
       var mo = (m > 0 ? 1 : 0) * (1 - seg(p, .17, .23)); set(mkl, 'opacity', mo.toFixed(3)); set(mkr, 'opacity', mo.toFixed(3));
       var dl = morphL(b), dr = morphR(b); set(hl, 'd', dl); set(hr, 'd', dr); if (mo > 0) { set(mkl, 'd', dl); set(mkr, 'd', dr); }
       var col = mixHex(BLK, GR, seg(p, .2, .3)); set(hl, 'fill', col); set(hr, 'fill', col);
@@ -183,22 +223,25 @@
       set(tART, 'transform', 'translate(0 ' + (18 * (1 - E.back(a))).toFixed(1) + ')');
       // 3) знак со столбом уходит вверх целиком (столб не проходит через улыбку), табличка гаснет, когда знака уже нет
       var s = E.i(seg(p, .52, .64)), signY = L.sy - s * (L.sy + L.sr * 2.4 + 40);
-      set(sign, 'transform', 'translate(' + L.sx.toFixed(1) + ' ' + signY.toFixed(1) + ') rotate(' + (-8 * s).toFixed(2) + ') scale(' + L.k.toFixed(4) + ')');
-      set(sign, 'opacity', (1 - seg(p, .6, .64)).toFixed(3));
+      css(svgS, 'transform', 'translate(0px,' + px(signY - L.sy) + ') rotate(' + (-8 * s).toFixed(2) + 'deg)');
+      css(svgS, 'opacity', (1 - seg(p, .6, .64)).toFixed(3));
       var pb = 1 - seg(p, .55, .64); set(plateBg, 'opacity', pb.toFixed(3)); set(poleLo, 'opacity', pb.toFixed(3));
-      // 4) буквы собираются из влетающих полос
-      var f = seg(p, .86, .9);
+      // 4) буквы собираются из влетающих полос (координаты лого × масштаб → px)
+      var f = seg(p, .86, .9), ls = L.ls;
       for (var i = 0; i < strips.length; i++) {
         var Q = strips[i], t = E.o(seg(p, .55 + Q.k * .0045, .55 + Q.k * .0045 + .12));
-        var v = 'translate(' + (Q.dx * (1 - t)).toFixed(1) + ' ' + (Q.dy * (1 - t)).toFixed(1) + ') rotate(' + (Q.rot + Q.da * (1 - t)).toFixed(2) + ' ' + Q.cx.toFixed(1) + ' ' + Q.cy.toFixed(1) + ')';
-        set(Q.el, 'transform', v); set(Q.el, 'opacity', t > 0 && f < 1 ? '1' : '0');
+        css(Q.el, 'transform', 'translate(' + px(Q.dx * (1 - t) * ls) + ',' + px(Q.dy * (1 - t) * ls) + ') rotate(' + (Q.rot + Q.da * (1 - t)).toFixed(2) + 'deg)');
+        // до старта (t = 0) полоса лежит за пределами маски буквы (сдвиг ≥ 900 ед. при ширине буквы < 300) — невидима и так;
+        // держим её «включённой» с начала, чтобы слои и маски были готовы заранее, а не в кадре, когда полосы пошли
+        css(Q.el, 'opacity', f < 1 ? '1' : '0');
       }
       // 5) улыбка подъезжает под буквы: та же система координат → совпадение до пикселя
-      var l = E.io(seg(p, .7, .86));
-      set(plate, 'transform', tf(L.px + (L.lx - L.px) * l, L.py + (L.ly - L.py) * l, L.ps + (L.ls - L.ps) * l));
+      var l = E.io(seg(p, .7, .86)), k = (L.ps + (L.ls - L.ps) * l) / L.ls;
+      var X = L.px + (L.lx - L.px) * l - L.lx * k, Y = L.py + (L.ly - L.py) * l - L.ly * k;
+      css(svgP, 'transform', 'translate(' + px(X) + ',' + px(Y) + ') scale(' + k.toFixed(5) + ')');
       // 6) финал: полосы → сплошные буквы, половинки → целая улыбка (без шва в клюве)
-      set(solid, 'opacity', f.toFixed(3)); set(full, 'opacity', f.toFixed(3));
-      var hf = (1 - f).toFixed(3); set(hl, 'opacity', hf); set(hr, 'opacity', hf);
+      // .002 вместо 0: невидимо (меньше полутона), но слои растрятся заранее, а не в первом кадре финала
+      var fo = Math.max(.002, f).toFixed(3); css(svgL, 'opacity', fo); css(svgF, 'opacity', fo); css(svgP, 'opacity', (1 - f).toFixed(3));
       // подписи
       var ci = p < .3 ? 0 : p < .64 ? 1 : 2;
       caps.forEach(function (c, j) { c.classList.toggle('is-on', j === ci); });

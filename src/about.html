@@ -2,10 +2,18 @@
      sign  — 3D-знак ONE WAY or ANOTHER (рисует K2 в .bs-sign — sticky 100svh внутри высокого #brand-stage);
      story — починенная история STOP → ST’ART v1, собирается в НОВЫЙ логотип (рисует motion.js в .bs-story). -->
 <section id="about" class="ab" aria-labelledby="about-title">
-  <div class="ab-door">
-    <picture><source type="image/avif" srcset="{{asset:img/street/door.avif}}"><img class="ab-door-img" src="{{asset:img/street/door.jpg}}" alt="GRINCHIN, выклеенный зелёным скотчем на железной двери с граффити" width="1448" height="1086" loading="lazy" decoding="async"></picture>
-    <div class="ab-door-cap">
-      <h2 id="about-title" class="ab-title" lang="en">One way<br>or another.</h2>
+  <!-- Дверь (T2 v3.1). Desktop/планшет — кадр как был. Телефон (портрет) — .ab-door выше экрана на --door-run,
+       .ab-door-frame липнет под шапкой, door.js ведёт «камеру» .ab-door-cam по прокрутке: вдоль слова G→N,
+       потом отъезд до двери целиком. reduced-motion / ?shot=1 / без JS — статичный полный кадр.
+       На телефоне-портрете грузится door-cam.* — тот же кадр с запечённой растушёвкой верха/низа в #050505. -->
+  <div class="ab-door" data-door>
+    <div class="ab-door-frame">
+      <div class="ab-door-cam">
+        <picture><source media="(max-width: 767px) and (orientation: portrait)" type="image/avif" srcset="{{asset:img/street/door-cam.avif}}"><source media="(max-width: 767px) and (orientation: portrait)" type="image/jpeg" srcset="{{asset:img/street/door-cam.jpg}}"><source type="image/avif" srcset="{{asset:img/street/door.avif}}"><img class="ab-door-img" src="{{asset:img/street/door.jpg}}" alt="GRINCHIN, выклеенный зелёным скотчем на железной двери с граффити" width="1448" height="1086" loading="lazy" decoding="async"></picture>
+      </div>
+      <div class="ab-door-cap">
+        <h2 id="about-title" class="ab-title" lang="en">One way<br>or another.</h2>
+      </div>
     </div>
   </div>
   <div id="brand-stage" class="bs">

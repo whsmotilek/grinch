@@ -18,7 +18,8 @@
     ["cards", "Рисунки вещей", { a: "техкарта", b: "маркер", c: "деталь", d: "техкарта + пометка от руки" }],
     ["size", "Выбор размера", { vector: "кресты", hand: "маркером" }],
     ["brand", "Блок о бренде", { sign: "3D-знак ONE WAY or ANOTHER", story: "история STOP → ST’ART" }],
-    ["roll", "Рулон ленты 3D", { on: "есть", off: "нет" }],
+    ["roll", "Рулон ленты по странице", { page: "катится до подвала", quiet: "сдержанно: тоньше, без креста", off: "нет" }],
+    ["tape", "Цвет ленты", { lime: "лайм (чёрная, где свой зелёный)", black: "чёрная с лаймовой печатью" }],
     ["marquee", "Бегущая лента", { off: "нет", on: "есть, IGNORE THE SIGNS" }],
     ["mascot", "Маскот", { kapushon: "Капюшон + Ухмыл", grinchin: "Гринчин", uhmyl: "только Ухмыл", none: "без маскота" }],
     ["cart", "Корзина в шапке", { count: "счётчик после добавления", menu: "только в меню" }]
@@ -28,7 +29,7 @@
   var GEAR = '<svg class="mt-gear" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M8.6 1.5h2.8l.4 2.3 1.6.7 1.9-1.4 2 2-1.4 1.9.7 1.6 2.3.4v2.8l-2.3.4-.7 1.6 1.4 1.9-2 2-1.9-1.4-1.6.7-.4 2.3H8.6l-.4-2.3-1.6-.7-1.9 1.4-2-2 1.4-1.9-.7-1.6-2.3-.4V8.6l2.3-.4.7-1.6-1.4-1.9 2-2 1.9 1.4 1.6-.7z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><circle cx="10" cy="10" r="2.6" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>';
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
 
-  /* ---------- бирка: desktop — номера кнопками, телефон — одна кнопка в поле 24 px ---------- */
+  /* ---------- бирка: desktop — номера кнопками, телефон/планшет — одна узкая кнопка в поле (тап-зона 44 px — ниже) ---------- */
   var full = d.createElement("div");
   full.className = "mtag mtag--full";
   full.setAttribute("role", "group");
@@ -142,11 +143,48 @@
   mini.addEventListener("click", function () { open(); });
   d.addEventListener("grinchin:mode", sync);
 
+  /* ---------- тап-зона 44 px у узкой бирки (телефон/планшет) ----------
+     Сама бирка 14 px — живёт в поле страницы (16 px) и не закрывает контент. Палец шире: тап в полосе 44 px от края
+     на высоте бирки тоже открывает панель — НО только если под пальцем нет ничего нажимаемого (CTA, карточка, ссылка,
+     поле): им тап отдаётся как обычно. Отдельного слоя поверх страницы нет, поэтому рулон и прокрутка не задеты. */
+  var HIT = 44, PRESS = "a[href],button,input,select,textarea,label,summary,[role=button],[tabindex]:not([tabindex='-1']),article.card,dialog,.ov,#header,.mtag";
+  function shown(el) {
+    if (!el.getClientRects().length) return false;
+    var cs = getComputedStyle(el);
+    return cs.display !== "none" && cs.visibility !== "hidden" && +cs.opacity > 0.1;
+  }
+  d.addEventListener("click", function (e) {
+    if (e.defaultPrevented || e.button !== 0 || h.dataset.clean || h.dataset.overlay || dlg.open || !shown(mini)) return;
+    var r = mini.getBoundingClientRect(), x = e.clientX, y = e.clientY;
+    if (x < r.left || x > r.left + HIT || y < r.top - 6 || y > r.bottom + 6) return;
+    var t = e.target;
+    if (t && t.closest && t.closest(PRESS)) return; // попал в кнопку/карточку/ссылку — это их тап
+    e.preventDefault(); e.stopPropagation();
+    open();
+  }, true);
+
+  /* ---------- пункт «режим» в меню (второй вход в панель, полноценная цель 44+ px) ---------- */
+  var mrow = d.querySelector("[data-mode-open]");
+  function syncRow() {
+    if (!mrow) return;
+    var m = M.get("m"), mod = M.overrides && Object.keys(M.overrides()).length > 0;
+    var n = mrow.querySelector("[data-mode-name]"); if (n) n.textContent = m + " · " + NAMES[m] + (mod ? " + правки" : "");
+    mrow.hidden = !!h.dataset.clean;
+  }
+  if (mrow) {
+    mrow.addEventListener("click", function (e) {
+      e.preventDefault(); e.stopPropagation();
+      if (GV.closeAll) GV.closeAll();
+      setTimeout(function () { open(); }, 0); // после того, как меню вернёт фокус бургеру — панель заберёт его себе
+    });
+    d.addEventListener("grinchin:mode", syncRow);
+  }
+
   function mount() {
     d.body.appendChild(full);
     d.body.appendChild(mini);
     d.body.appendChild(dlg);
-    sync();
+    sync(); syncRow();
     // у подвала (контакты, юридическая строка) бирку прячем: как только подвал показался снизу
     var ft = d.getElementById("footer"), end = ft;
     if (!ft) { end = d.createElement("div"); end.className = "mt-end"; end.setAttribute("aria-hidden", "true"); d.body.appendChild(end); }

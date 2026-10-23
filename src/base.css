@@ -3,7 +3,7 @@
    Цвета — только токены tokens.css. Брейкпоинты: 768 / 1100. Стили разделов hero/looks/about/next/footer — в content.css (слой v1).
 
    ОБЩИЕ ПРИМИТИВЫ (соседям можно пользоваться):
-   .wrap        контейнер: один левый край на весь сайт — поля 24 / 40 / 64 px, max 1680 + safe-area
+   .wrap        контейнер: один левый край на весь сайт — поля слева 16 / 32 / 40–72 px (var(--gutter)), справа 24 / 32 / 64 (var(--gutter-r), дорожка рулона), max 1680 + safe-area
    .t-*         типошкала (ниже), шрифт целиком через переменные --t-* (font shorthand)
    .btn         кнопка (--accent зелёная, --dark чёрная, --line контурная, --wide на всю ширину; v1: --ghost, --ghost-dark)
    .link        текстовая ссылка с подчёркиванием
@@ -39,7 +39,14 @@
   --t-mono:400 .75rem/1.4 var(--font-mono);
   --t-mono-l:400 .875rem/1 var(--font-mono);
 
-  --gutter:24px; --maxw:1680px;
+  /* ПОЛЕ СТРАНИЦЫ — один левый край на весь сайт (v3.1, T4). Было 24 / 40 / 64 против 16 / 32 / clamp(40,4vw,72) у hero,
+     двери и истории — левые края секций прыгали (телефон 16↔24, 1440: 57,6↔64, 1920: 72↔120). Теперь поле = поле hero:
+     16 (телефон) · 32 (768–1099) · clamp(40px,4vw,72px) (desktop); шире 1680 + поля контейнер центрируется (1920: край 124 — решение координатора, см. отчёт T4).
+     Соседям — брать var(--gutter), а не свои числа.
+     --gutter-r — правое поле .wrap = дорожка ленты рулона (roll.js ведёт её по середине правого поля и требует ~30 px
+     от края контента). Телефон 24 (при 16 лента 2/3 пути уходила «в туннель» под карточки: замер T4 — 4721 → 1715 px
+     видимой ленты), desktop 64 (при 57,6 на 1440 пропадал зигзаг через образы/дверь). Асимметрия 8 / 6 px на глаз не видна. */
+  --gutter:16px; --gutter-r:24px; --maxw:1680px;
   --sec-1:72px; --sec-2:96px;
   --paper-2:color-mix(in srgb,var(--c-paper) 94.5%,var(--c-black));   /* подложка эскиза на листе */
   --ink-2:#5E5E5B;                                                      /* второй текст на бумаге, 6:1 */
@@ -50,8 +57,8 @@
   /* полосы статуса в v3 нет (решение K1, см. index.html) — липкая высота = только шапка */
   --status-h:0px;
 }
-@media (min-width:768px){:root{--gutter:40px}}
-@media (min-width:1100px){:root{--gutter:64px;--sec-1:120px;--sec-2:160px}}
+@media (min-width:768px){:root{--gutter:32px;--gutter-r:32px}}
+@media (min-width:1100px){:root{--gutter:clamp(40px,4vw,72px);--gutter-r:64px;--sec-1:120px;--sec-2:160px}}
 
 /* ---------- база ---------- */
 *,*::before,*::after{box-sizing:border-box}
@@ -81,8 +88,8 @@ section[id],#footer,#main [id]{scroll-margin-top:var(--header-h)}
   padding:0;background:var(--c-green);color:var(--c-black);font:var(--t-btn);text-transform:uppercase;letter-spacing:.06em;text-decoration:none}
 .skip:focus,.skip:focus-visible{width:auto;height:auto;overflow:visible;clip-path:none;padding:14px 18px;top:calc(8px + env(safe-area-inset-top))}
 
-.wrap{width:100%;max-width:calc(var(--maxw) + 2 * var(--gutter));margin-inline:auto;
-  padding-left:max(var(--gutter),env(safe-area-inset-left));padding-right:max(var(--gutter),env(safe-area-inset-right))}
+.wrap{width:100%;max-width:calc(var(--maxw) + var(--gutter) + var(--gutter-r));margin-inline:auto;
+  padding-left:max(var(--gutter),env(safe-area-inset-left));padding-right:max(var(--gutter-r),env(safe-area-inset-right))}
 
 /* ---------- типошкала ---------- */
 .t-d1{font:var(--t-d1);letter-spacing:-.05em;text-transform:uppercase}
@@ -328,6 +335,8 @@ html[data-cards="d"] .card:hover .szt--quick[data-sel]:not([data-sel=""]) .szt-c
 .mi-n{font-variant-numeric:tabular-nums}
 .mi-o{position:absolute;left:-.32em;right:-.38em;top:-.32em;bottom:-.3em;width:calc(100% + .7em);height:calc(100% + .62em);overflow:visible;pointer-events:none}
 .mi-o path{fill:none;stroke:var(--c-green);stroke-width:3;stroke-linecap:round;stroke-dasharray:1 1;stroke-dashoffset:1;opacity:0}
+/* один зелёный в меню (T4): если в меню стоит маскот (он лаймовый), обводка текущего пункта — белым маркером */
+.ov--menu:has(.menu-mascot:not(:empty)) .mi-o path{stroke:var(--c-white)}
 .ov--menu.is-open .mi.is-current .mi-o path{stroke-dashoffset:0;opacity:1;transition:stroke-dashoffset .42s cubic-bezier(.4,.1,.3,1) .32s,opacity 0s linear .32s}
 .menu-side{display:grid;align-content:start;gap:4px}
 .menu-sub{color:var(--c-white)}
@@ -335,6 +344,13 @@ html[data-cards="d"] .card:hover .szt--quick[data-sel]:not([data-sel=""]) .szt-c
 .acc--dark .acc-body{color:var(--text-2)}
 .menu-kv{margin-top:14px;color:var(--c-white)}
 .menu-kv dt{color:var(--text-2)}
+/* пункт «режим: 1 · Финал — настроить» (служебный, modes.js; при ?clean=1 скрыт): строка в ряд с аккордеонами */
+.menu-mode{display:flex;align-items:center;gap:8px;width:100%;min-height:56px;border-bottom:1px solid var(--c-line);text-align:left;font:var(--t-ui);color:var(--c-white)}
+.menu-mode[hidden]{display:none}
+.menu-mode .t-mono{color:var(--text-2)}
+.menu-mode-k{margin-left:auto;font:var(--t-mono);letter-spacing:.02em;color:var(--text-2);transition:color .2s}
+.menu-mode:hover .menu-mode-k{color:var(--c-white)}
+html[data-clean] .menu-mode{display:none}
 .menu-mascot:empty{display:none}
 .menu-mascot{width:clamp(96px,12vw,150px);margin-top:12px}
 .menu-foot{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 24px;padding-top:16px;border-top:1px solid var(--c-line)}
@@ -525,12 +541,16 @@ html[data-cards="d"] .card:hover .szt--quick[data-sel]:not([data-sel=""]) .szt-c
 #page-404 .ov-panel{padding-left:max(var(--gutter),env(safe-area-inset-left),calc((100% - var(--maxw)) / 2));
   padding-right:max(var(--gutter),env(safe-area-inset-right),calc((100% - var(--maxw)) / 2))}
 
-/* ---------- тост: бумажный, в карточке — над кнопкой покупки ---------- */
+/* ---------- тост: бумажный, в карточке — прямо на кнопке покупки (не над описанием) ---------- */
 .toast{position:fixed;z-index:120;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));max-width:calc(100% - 2 * var(--gutter));
   padding:13px 18px;background:var(--c-paper);color:var(--c-black);border:1px solid var(--c-black);font:var(--t-mono);letter-spacing:.02em;
   transform:translate(-50%,12px);opacity:0;pointer-events:none;transition:opacity .2s ease,transform .3s var(--e-out)}
 .toast.is-on{opacity:1;transform:translate(-50%,0)}
-.toast.is-anchored{bottom:auto;top:var(--ty);left:var(--tx)}
+.toast.is-anchored{bottom:auto;top:var(--ty);left:var(--tx);width:var(--tw);height:var(--th);max-width:none;display:grid;place-items:center;
+  padding:0 12px;text-align:center;transform:translateY(6px)}
+.toast.is-anchored.is-on{transform:none}
+/* только для скринридера (кнопка в карточке уже показала «В корзине ✓») */
+.toast.is-sr{width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
 html[data-overlay="product"] .toast:not(.is-anchored){bottom:calc(96px + env(safe-area-inset-bottom))}
 @media (min-width:768px){html[data-overlay="product"] .toast:not(.is-anchored){bottom:24px}}
 
@@ -563,9 +583,11 @@ html[data-overlay="product"] .toast:not(.is-anchored){bottom:calc(96px + env(saf
 @media (prefers-reduced-motion:reduce) and (min-width:768px){
   .sz-panel,.ov--modal.is-open .sz-panel{transform:translate(-50%,-50%)!important}
   .toast,.toast.is-on{transform:translateX(-50%)!important}
+  .toast.is-anchored,.toast.is-anchored.is-on{transform:none!important}
 }
 @media (prefers-reduced-motion:reduce) and (max-width:767px){
   .toast,.toast.is-on{transform:translateX(-50%)!important}
+  .toast.is-anchored,.toast.is-anchored.is-on{transform:none!important}
 }
 
 /* разделы получают фокус после навигации (для скринридера) — без кольца на весь блок */

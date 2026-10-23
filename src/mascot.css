@@ -50,3 +50,4 @@
 .mz-glow *{fill:none!important;stroke:var(--mz-l)!important;stroke-width:calc(11px * var(--mz-s,.3))!important;vector-effect:non-scaling-stroke}
 .mz-glow :not(g):not(.l):not(.s-l):not(clipPath):not(clipPath *){display:none}
 @media (prefers-reduced-motion:reduce){.mz *{transition:none!important;animation:none!important}}
+/* правила бегущей ленты при маскоте в hero перенесены в motion.css (блок «БЕГУЩАЯ ЛЕНТА»), T3 v3.1 */

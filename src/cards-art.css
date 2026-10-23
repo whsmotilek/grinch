@@ -13,7 +13,8 @@
      .tape--2         рваный конец слева, срез ножом справа                         600×289
      .tape--3         срез ножом слева, рваный конец справа                         600×270
      переменные: --w длина (высота — из пропорции), --rot угол, --origin точка поворота, --tx/--ty сдвиг до поворота,
-                 --flip -1 — зеркально по X, --lift 0….3 мягкая тень под приподнятыми местами (по умолч. .14)
+                 --flip -1 — зеркально по X. Тень «подъёма» (.14 лайм / .2 чёрная) и кромочная тень ЗАПЕЧЕНЫ в *-lift.webp
+                 (T3 v3.1: CSS-фильтры blur/drop-shadow на кусках давали кадры 60–160 мс на телефоне); --lift больше не читается
      data-stick       прилепится сам один раз при входе в экран (после grinchin:ready). GV.art.watchTapes() подхватывает
                       новые куски (вызовите после вставки разметки); вручную: GV.art.stick(el) → Promise.
      Растр грузится только рядом с экраном (.is-near), ?shot=1 и reduced-motion — сразу на месте.
@@ -33,30 +34,35 @@
   pointer-events:none; user-select:none; transform-origin:var(--origin);
   transform:translate(var(--tx),var(--ty)) rotate(var(--rot)) scaleX(var(--flip));
 }
-.tape::before,.tape::after{content:""; position:absolute; inset:0; background:none center/100% 100% no-repeat}
-.tape::before{filter:brightness(0) blur(7px); opacity:var(--lift); transform:translateY(5px) scale(1.01)}
-.tape::after{filter:drop-shadow(0 .5px .6px rgb(0 0 0 / .32))}
-.tape.is-near::before,.tape.is-near::after,html:not(.js) .tape::before,html:not(.js) .tape::after{background-image:var(--src)}
-.tape--lime.tape--1{--ar:760/227; --src:url("{{asset:img/tape/lime-1.webp}}")}
-.tape--lime.tape--2{--ar:600/289; --src:url("{{asset:img/tape/lime-2.webp}}")}
-.tape--lime.tape--3{--ar:600/270; --src:url("{{asset:img/tape/lime-3.webp}}")}
-.tape--black.tape--1{--ar:760/227; --src:url("{{asset:img/tape/black-1.webp}}")}
-.tape--black.tape--2{--ar:600/289; --src:url("{{asset:img/tape/black-2.webp}}")}
-.tape--black.tape--3{--ar:600/270; --src:url("{{asset:img/tape/black-3.webp}}")}
-.tape--black{--lift:.2}
+/* одна картинка без filter: кусок + тень «подъёма» (было ::before brightness(0) blur(7px), opacity .14/.2, translateY(5px)
+   scale(1.01)) + кромочная тень (было drop-shadow(0 .5px .6px .32)). Поля под размытие — отрицательный inset в % от куска
+   (генератор: v3/v31/T3/_tools/bake_tapes.py, размеры полей — из него) */
+.tape::after{content:""; position:absolute; inset:var(--pad); background:none center/100% 100% no-repeat}
+.tape.is-near::after,html:not(.js) .tape::after{background-image:var(--src)}
+.tape--1{--ar:760/227; --pad:-46.696% -18.289% -76.652%}
+.tape--2{--ar:600/289; --pad:-32.526% -20.5% -53.287%}
+.tape--3{--ar:600/270; --pad:-34.815% -20.5% -57.037%}
+.tape--lime.tape--1{--src:url("{{asset:img/tape/lime-1-lift.webp}}")}
+.tape--lime.tape--2{--src:url("{{asset:img/tape/lime-2-lift.webp}}")}
+.tape--lime.tape--3{--src:url("{{asset:img/tape/lime-3-lift.webp}}")}
+.tape--black.tape--1{--src:url("{{asset:img/tape/black-1-lift.webp}}")}
+.tape--black.tape--2{--src:url("{{asset:img/tape/black-2-lift.webp}}")}
+.tape--black.tape--3{--src:url("{{asset:img/tape/black-3-lift.webp}}")}
 
 .js .tape[data-stick]:not(.is-stuck){opacity:0}
+/* ≥768: кусок — свой слой заранее (.002 — невидимо, но растр готов): иначе старт «шлепка» выносил ленту из слоя отпечатка
+   и тот перерастрировался вместе с фото (1440: кадр 67 мс). На телефоне не нужно — там слой ленты внутри полупрозрачного
+   отпечатка заставлял композитор рисовать его через отдельную поверхность (хуже) */
+@media (min-width:768px){
+  #looks .tape{will-change:transform,opacity}
+  .js #looks .tape[data-stick]:not(.is-stuck){opacity:.002}
+}
 .tape.is-landing{animation:tape-land .36s cubic-bezier(.3,.7,.2,1) both}
-.tape.is-landing::before{animation:tape-land-shadow .36s cubic-bezier(.3,.7,.2,1) both}
 @keyframes tape-land{
   0%  {opacity:0; translate:var(--from-x,-6px) var(--from-y,-14px); scale:1.07 1.07}
   22% {opacity:1}
   68% {translate:0 0; scale:1.012 .975}
   100%{opacity:1; translate:0 0; scale:1 1}
-}
-@keyframes tape-land-shadow{
-  0%  {opacity:calc(var(--lift) * 2.2); transform:translateY(16px) scale(1.06)}
-  100%{opacity:var(--lift); transform:translateY(5px) scale(1.01)}
 }
 .tape-strip{display:block; background:var(--strip) 0 50% / auto 100% repeat-x}
 .tape-strip--lime{--strip:url("{{asset:img/tape/lime-strip.webp}}")}
@@ -68,6 +74,11 @@
 .art > .art-base{position:absolute; inset:0; display:block; width:100%; height:100%; object-fit:contain; margin:0}
 .art > .art-ov{position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none}
 .art > .art-note,.art > .art-tag{position:absolute; display:block; height:auto; max-width:none; object-fit:fill; pointer-events:none; margin:0}
+/* пометка: .art-note (место, масштаб) > .art-note-c (шторка: overflow + translate) > img (встречный translate) — только transform */
+.art-note-c{display:block; overflow:hidden}
+.art-note-c > img{display:block; width:100%; height:auto; max-width:none}
+.art-mark{will-change:opacity}
+.art-note-c,.art-note-c > img{will-change:transform}
 .art > .art-tag{transform:rotate(var(--tag-r,6deg)); transform-origin:50% 8%}
 
 /* код вещи и выноски техкарты — моно бренда (Martian Mono), в единицах рисунка 400×500 */
@@ -101,8 +112,12 @@
 .art--d .art-mark{opacity:0; transition:opacity .18s ease}
 .art--d .art-line{stroke-dashoffset:1; transition:stroke-dashoffset 0s linear .2s}
 .art--d .art-tip{opacity:0; transition:opacity 0s linear .2s}
-.art--d .art-note{clip-path:inset(-4% 100% -4% 0); transition:clip-path 0s linear .2s}
+.art--d .art-note-c{translate:-100% 0; transition:translate 0s linear .2s}
+.art--d .art-note-c > img{translate:100% 0; transition:translate 0s linear .2s}
 .art--d .art-code{opacity:0; transition:opacity .2s ease}
+/* тач: буквы пометки уже «видимы», их прячет шторка — растр делается заранее, а не в кадре, когда карточка прошла центр
+   (иначе первый растр SVG-букв ~50 мс прямо в прокрутке). Пометка на таче не снимается — гаснуть ей не нужно */
+@media (hover:none){ .art--d .art-note{opacity:1} }
 .art--d .art-base{transition:transform .3s var(--ease-out)}
 @container art (max-width: 259px){
   .art--d .art-meta{display:none}
@@ -111,13 +126,14 @@
 
 /* «включено»: наведение (только мышь) или .is-marked (тач — карточка прошла центр экрана; галерея) */
 .art--d.is-marked .art-mark{opacity:1; transition:none}
-.art--d.is-marked .art-note{clip-path:inset(-4% 0 -4% 0); transition:clip-path .26s linear}
+.art--d.is-marked .art-note-c,.art--d.is-marked .art-note-c > img{translate:0 0; transition:translate .26s linear}
 .art--d.is-marked .art-line{stroke-dashoffset:0; transition:stroke-dashoffset .36s cubic-bezier(.2,.7,.2,1) .2s}
 .art--d.is-marked .art-tip{opacity:1; transition:opacity .08s linear .54s}
 .art--d.is-marked .art-code{opacity:1}
 @media (hover:hover) and (pointer:fine){
   .card:hover .art--d .art-mark,.card:focus-within .art--d .art-mark{opacity:1; transition:none}
-  .card:hover .art--d .art-note,.card:focus-within .art--d .art-note{clip-path:inset(-4% 0 -4% 0); transition:clip-path .26s linear}
+  .card:hover .art--d .art-note-c,.card:focus-within .art--d .art-note-c,
+  .card:hover .art--d .art-note-c > img,.card:focus-within .art--d .art-note-c > img{translate:0 0; transition:translate .26s linear}
   .card:hover .art--d .art-line,.card:focus-within .art--d .art-line{stroke-dashoffset:0; transition:stroke-dashoffset .36s cubic-bezier(.2,.7,.2,1) .2s}
   .card:hover .art--d .art-tip,.card:focus-within .art--d .art-tip{opacity:1; transition:opacity .08s linear .54s}
   .card:hover .art--d .art-code,.card:focus-within .art--d .art-code{opacity:1}
@@ -129,16 +145,18 @@
   html[data-cards="d"] .card:hover .szt--quick .szt-c:not(.is-n):not([aria-disabled="true"]) .szt-l{color:#000}
 }
 /* галерея: пометка дописывается один раз, когда кадр показан (CSS-анимация при вставке) */
-.art--gallery.art--d.is-marked .art-note{animation:art-wipe .26s linear .5s both}
+.art--gallery.art--d.is-marked .art-note-c{animation:art-wipe .26s linear .5s both}
+.art--gallery.art--d.is-marked .art-note-c > img{animation:art-wipe-in .26s linear .5s both}
 .art--gallery.art--d.is-marked .art-line{animation:art-draw .36s cubic-bezier(.2,.7,.2,1) .7s both}
 .art--gallery.art--d.is-marked .art-tip{animation:art-tip .08s linear 1.04s both}
-@keyframes art-wipe{from{clip-path:inset(-4% 100% -4% 0)} to{clip-path:inset(-4% 0 -4% 0)}}
+@keyframes art-wipe{from{translate:-100% 0} to{translate:0 0}}
+@keyframes art-wipe-in{from{translate:100% 0} to{translate:0 0}}
 @keyframes art-draw{from{stroke-dashoffset:1} to{stroke-dashoffset:0}}
 @keyframes art-tip{from{opacity:0} to{opacity:1}}
 @container art (max-width: 299px){ .art--gallery .art-legend{display:none} }
 
 @media (prefers-reduced-motion:reduce){
-  .tape.is-landing,.tape.is-landing::before{animation:none}
+  .tape.is-landing{animation:none}
   .art *,.art{transition:none!important; animation:none!important}
 }
 html[data-shot="1"] .art *{transition:none!important; animation:none!important}
@@ -150,7 +168,9 @@ html[data-shot="1"] .art *{transition:none!important; animation:none!important}
   padding:clamp(64px, 8vw, 120px) 0 clamp(72px, 9vw, 128px)}
 #looks .lk-wall{position:absolute; inset:0; z-index:-1; pointer-events:none; opacity:.09;
   background:url("{{asset:img/street/paper.webp}}") 50% 0 / 720px auto repeat}
-#looks .lk-in{max-width:1440px; margin:0 auto; padding:0 clamp(16px, 3.4vw, 48px)}
+/* поля — как у .wrap (base.css): слева --gutter, справа --gutter-r (дорожка рулона) */
+#looks .lk-in{max-width:calc(var(--maxw) + var(--gutter) + var(--gutter-r)); margin:0 auto;
+  padding:0 max(var(--gutter-r), env(safe-area-inset-right)) 0 max(var(--gutter), env(safe-area-inset-left))}
 #looks .lk-head{display:flex; align-items:baseline; justify-content:space-between; gap:24px; margin-bottom:clamp(36px, 5vw, 72px)}
 #looks .lk-title{margin:0; font:900 clamp(2.75rem, 8vw, 7.5rem)/.86 var(--font-display); letter-spacing:-.05em; text-transform:uppercase}
 #looks .lk-count{display:none; margin:0; font:500 .875rem/1 var(--font-mono); color:var(--text-2)}
@@ -161,8 +181,13 @@ html[data-shot="1"] .art *{transition:none!important; animation:none!important}
 #looks .lk-look[data-look="02"]{padding-top:0}
 #looks .lk-look[data-look="03"]{padding-top:clamp(56px, 7vw, 112px)}
 #looks .lk-look[data-look="04"]{padding-top:clamp(24px, 3.4vw, 56px)}
-#looks .lk-print{position:relative; background:#fff; padding:12px 12px 40px; transform:rotate(var(--r, 0deg));
-  box-shadow:0 1px 1px rgb(0 0 0 / .4), 0 22px 34px -22px rgb(0 0 0 / .9)}
+/* will-change: отпечаток — свой слой. Иначе после «падения» (transition transform) слой снимается и повёрнутый отпечаток
+   с фото перерастрируется в общий слой (на телефоне 60–270 мс); в своём слое он растрится один раз без поворота */
+#looks .lk-print{position:relative; background:#fff; padding:12px 12px 40px; transform:rotate(var(--r, 0deg)); will-change:transform}
+/* тень под отпечатком — градиентом, не box-shadow: размытая тень на повёрнутом блоке на телефоне стоила 50–130 мс растра
+   (T3 v3.1). Профиль как у прежней 0 22px 34px -22px rgb(0 0 0/.9): у кромки .45, через 17 px .14, к 34 px — ноль */
+#looks .lk-print::before{content:""; position:absolute; left:14px; right:14px; top:100%; height:34px; pointer-events:none;
+  background:linear-gradient(rgb(0 0 0 / .45), rgb(0 0 0 / .14) 50%, rgb(0 0 0 / 0))}
 #looks .lk-look[data-look="01"] .lk-print{--r:-1.4deg}
 #looks .lk-look[data-look="02"] .lk-print{--r:1.1deg}
 #looks .lk-look[data-look="03"] .lk-print{--r:-.8deg}
@@ -185,15 +210,17 @@ html[data-shot="1"] .art *{transition:none!important; animation:none!important}
 
 /* падение отпечатка (v1: «шлепок» скотча) — один раз при входе, только transform/opacity */
 .js #looks .lk-print{transition:transform .5s cubic-bezier(.2,.9,.25,1.12), opacity .3s ease}
-.js #looks .lk-look:not(.is-in) .lk-print{opacity:0; transform:translateY(-28px) rotate(calc(var(--r, 0deg) * 3))}
+/* до входа — .002, а не 0: невидимо (полутона нет), но слой уже растрится заранее, а не в кадре старта падения */
+.js #looks .lk-look:not(.is-in) .lk-print{opacity:.002; transform:translateY(-28px) rotate(calc(var(--r, 0deg) * 3))}
 html[data-shot="1"] #looks .lk-print{transition:none}
 @media (prefers-reduced-motion:reduce){ .js #looks .lk-print{transition:none} }
 
 @media (max-width:767px){
   #looks .lk-count{display:block}
   #looks .lk-rail{display:flex; gap:22px; overflow-x:auto; overscroll-behavior-x:contain; scroll-snap-type:x mandatory;
-    scroll-padding-left:clamp(16px, 3.4vw, 48px); margin:0 calc(-1 * clamp(16px, 3.4vw, 48px));
-    padding:34px clamp(16px, 3.4vw, 48px) 8px; scrollbar-width:none}
+    scroll-padding-left:max(var(--gutter), env(safe-area-inset-left));
+    margin:0 calc(-1 * max(var(--gutter-r), env(safe-area-inset-right))) 0 calc(-1 * max(var(--gutter), env(safe-area-inset-left)));
+    padding:34px max(var(--gutter-r), env(safe-area-inset-right)) 8px max(var(--gutter), env(safe-area-inset-left)); scrollbar-width:none}
   #looks .lk-rail::-webkit-scrollbar{display:none}
   #looks .lk-look{flex:0 0 min(72vw, 320px); scroll-snap-align:start; scroll-snap-stop:always; justify-content:flex-start}
   #looks .lk-look[data-look]{padding-top:0}

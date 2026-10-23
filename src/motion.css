@@ -15,7 +15,7 @@
   --hx-top: calc(var(--status-h, 0px) + var(--header-h, 56px));
   --hx-h: clamp(600px, calc(100svh - var(--hx-top)), 1180px);   /* потолок — для очень высоких окон и полностраничных скриншотов */
   position: relative; isolation: isolate; overflow: clip; background: #050505; min-height: 0; height: var(--hx-h);
-  --hx-pad: max(16px, env(safe-area-inset-left));
+  --hx-pad: max(var(--gutter, 16px), env(safe-area-inset-left));   /* левое поле сайта (base.css --gutter: 16 / 32 / 40–72) */
 }
 @media (prefers-reduced-motion: no-preference) { html[data-hero="asphalt"]:not([data-shot="1"]) #hero.hx { height: calc(var(--hx-h) + min(55svh, 600px)); } }
 .hx-sticky { position: sticky; top: var(--hx-top); height: var(--hx-h); overflow: hidden; isolation: isolate; }
@@ -93,7 +93,7 @@ html:is([data-loader="full"], [data-loader="short"]):not([data-hero-in]) #hero .
 #hero .hx-mascot { height: 47%; left: 58%; }   /* голова — ниже заголовка, не под ним */
 
 @media (min-width: 768px) {
-  #hero.hx { --hx-fs: 13.4vw; --hx-pad: 32px; --hx-h: clamp(640px, calc(100svh - var(--hx-top)), 1180px); }
+  #hero.hx { --hx-fs: 13.4vw; --hx-h: clamp(640px, calc(100svh - var(--hx-top)), 1180px); }
   .hx-g { right: 1.5vw; top: 4%; width: 36vw; height: 46%; max-width: none; max-height: none; }
   #hero #hero-title.hx-title { top: calc(6% + 22vw); }
   .hx-pic--model img { height: 86%; left: 60%; }
@@ -102,9 +102,15 @@ html:is([data-loader="full"], [data-loader="short"]):not([data-hero-in]) #hero .
   .hx-foot { grid-template-columns: 1fr auto; align-items: end; }
   #hero .hx-cta { justify-self: end; }
 }
+/* планшет-портрет: G (top 4 %, 46 %) упиралась в E — читалось «IGNOREG». G выше и ниже ростом, заголовок — под ней
+   (места по высоте с запасом: подвал hero на 768×1024 — с 944 px, заголовок теперь кончается на ~720) */
+@media (min-width: 768px) and (max-width: 1099px) and (orientation: portrait) {
+  .hx-g { top: 2%; height: 38%; }
+  #hero #hero-title.hx-title { top: 41%; }
+}
 /* — desktop: заголовок слева 2/3, G справа ~32 %, кадр за заголовком в центре — */
 @media (min-width: 1100px) {
-  #hero.hx { --hx-fs: min(11.8vw, 15.5svh * 1.25, 214px); --hx-pad: clamp(40px, 4vw, 72px); }
+  #hero.hx { --hx-fs: min(11.8vw, 15.5svh * 1.25, 214px); }
   .hx-stage { perspective: 900px; perspective-origin: 30% 0%; }
   .hx-g { right: 1vw; top: 3%; bottom: 14%; width: 32vw; height: auto; }
   #hero #hero-title.hx-title { top: 9%; }
@@ -153,18 +159,60 @@ html[data-marquee="on"] .hx-marquee { display: block; position: relative; z-inde
   clip-path: polygon(0 4%, 2px 30%, 0 58%, 3px 100%, 100% 96%, calc(100% - 3px) 66%, 100% 38%, calc(100% - 2px) 0); }
 @keyframes hx-mq { to { transform: translate3d(var(--mq-shift, -50%), 0, 0); } }
 .hx-marquee.is-off .hx-mq-track { animation-play-state: paused; }
+/* ОДИН ЗЕЛЁНЫЙ НА ЭКРАН (T4, v3.1; перенесено из mascot.css). Режим 2: маскот стоит в hero (data-heroimg="mascot") —
+   лаймовый объект кадра он. Бегущая лента выезжает сразу под hero и на телефоне попадает в тот же экран, поэтому при
+   маскоте в hero она идёт без лайма: только чёрные куски скотча с белым IGNORE THE SIGNS. Ширину звена мерит fit(). */
+html[data-heroimg="mascot"][data-marquee="on"] .hx-marquee .hx-mq-logo{display:none}
+html[data-heroimg="mascot"][data-marquee="on"] .hx-marquee .hx-mq-txt{color:var(--c-white);margin-left:0}
 
 /* ================= О БРЕНДЕ ================= */
 section#about.ab { position: relative; isolation: isolate; padding: 0; background: #050505; overflow: visible; overflow-x: clip; }
+/* ДВЕРЬ (T2 v3.1). Фото 1448×1086, слово GRINCHIN в кадре: x 144–1324, y 386–603 (центр 734/494).
+   Desktop/планшет — кадр по ширине (cover), слово целиком; на 768–1099 высота ≤ 80vw, иначе cover резал края слова.
+   Телефон-портрет — cover резал слово до «NCH», поэтому:
+     · движение (door.js): .ab-door выше кадра на --door-run, .ab-door-frame липнет под шапкой (100svh − шапка),
+       «камера» .ab-door-cam (canvas 1448×1086 физ. px, origin 0 0) едет вдоль слова G→N и отъезжает до двери
+       целиком, заголовок поднимается под неё; только transform двух слоёв, высота задана CSS заранее (CLS 0);
+       картинка — door-cam.* (растушёвка краёв запечена: никаких градиент-слоёв поверх, они дорогие в растре);
+     · reduced-motion / ?shot=1 / без JS — статичный полный кадр 4:3 по ширине, заголовок под словом. */
 .ab-door { position: relative; isolation: isolate; background: #050505; }
-.ab-door picture, .ab-door-img { display: block; width: 100%; }
+.ab-door-frame { position: relative; overflow: hidden; }
+.ab-door-cam picture, .ab-door-img { display: block; width: 100%; }
+.ab-door:not(.is-cam) .ab-door-cv { display: none; }
 .ab-door-img { height: min(82svh, 720px); object-fit: cover; object-position: 50% 46%; }
-.ab-door::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+.ab-door-frame::after { content: ""; position: absolute; inset: 0; pointer-events: none;
   background: linear-gradient(0deg, #050505 2%, rgba(5,5,5,0) 46%), linear-gradient(180deg, #050505, rgba(5,5,5,0) 14%); }
-.ab-door-cap { position: absolute; z-index: 2; left: var(--hx-pad, 16px); right: 16px; bottom: 28px; }
+.ab-door-cap { position: absolute; z-index: 2; left: var(--gutter, 16px); right: 16px; bottom: 28px; }
 .ab-title { font: 900 clamp(2.3rem, 6.2vw, 5.75rem)/.92 var(--font-display); letter-spacing: -.045em; color: #fff; text-shadow: 0 2px 30px rgba(0, 0, 0, .6); }
 @media (min-width: 768px) { .ab-door-cap { left: 32px; bottom: 44px; } }
+@media (min-width: 768px) and (max-width: 1099px) { .ab-door-img { height: min(82svh, 720px, 80vw); } }
 @media (min-width: 1100px) { .ab-door-img { height: min(92svh, 900px); } .ab-door-cap { left: clamp(40px, 4vw, 72px); bottom: 64px; } }
+
+/* телефон-ландшафт (низкий кадр ~320 px): заголовок 6,2vw налезал на слово — мельче и ниже */
+@media (orientation: landscape) and (max-height: 560px) { .ab-title { font-size: min(6.2vw, 9svh); } .ab-door-cap { bottom: 18px; } }
+/* телефон-портрет, статично: полный кадр по ширине, заголовок на чёрном под нижним граффити */
+@media (max-width: 767px) and (orientation: portrait) {
+  .ab-door-img { height: auto; aspect-ratio: 1448 / 1086; }
+  .ab-door-frame::after { content: none; }   /* края уже растушёваны в door-cam.* */
+  .ab-door-cap { position: relative; left: auto; right: auto; bottom: auto; margin-top: -1.1em; padding: 0 16px 28px; }
+}
+/* телефон-портрет, камера по прокрутке */
+@media (max-width: 767px) and (orientation: portrait) and (prefers-reduced-motion: no-preference) {
+  html.js:not([data-shot="1"]) .ab-door { --door-fh: calc(100svh - var(--header-h)); --door-run: 80svh; height: calc(var(--door-fh) + var(--door-run)); }
+  html.js:not([data-shot="1"]) .ab-door-frame { position: sticky; top: var(--header-h); height: var(--door-fh); contain: layout paint; }
+  html.js:not([data-shot="1"]) .ab-door-cam { position: absolute; left: 0; top: 0; height: 100%; width: calc(var(--door-fh) * 1448 / 1086);
+    transform-origin: 0 0; will-change: transform; }
+  html.js:not([data-shot="1"]) .ab-door-cam picture, html.js:not([data-shot="1"]) .ab-door-img { width: 100%; height: 100%; aspect-ratio: auto; object-fit: fill; }
+  /* картинку рисует canvas (door.js) — <img> только грузится и остаётся для фолбэка .cv-fail */
+  .ab-door.is-cam .ab-door-cam picture { visibility: hidden; }
+  .ab-door.is-cam.cv-fail .ab-door-cam picture { visibility: visible; }
+  .ab-door-cv { position: absolute; inset: 0; display: block; width: 100%; height: 100%; opacity: 0; transition: opacity .45s ease; }
+  .ab-door.cv-on .ab-door-cv { opacity: 1; }
+  /* полноэкранного градиент-слоя поверх нет: на DPR 3 это 5,6 Мп растра (замер: GPU-задача ~150 мс при входе блока);
+     растушёвка — в самом файле door-cam.*, читаемость заголовка — тень текста */
+  html.js:not([data-shot="1"]) .ab-door-frame::after { content: none; }
+  html.js:not([data-shot="1"]) .ab-door-cap { position: absolute; left: var(--gutter, 16px); right: 16px; bottom: max(28px, calc(16px + env(safe-area-inset-bottom))); margin: 0; padding: 0; will-change: transform; }
+}
 
 #brand-stage { position: relative; --vcap: min(100svh, 1200px); }
 .bs-sign, .bs-story { display: none; }
@@ -177,14 +225,25 @@ html[data-brand="sign"] .bs-sign { display: block; position: sticky; top: 0; hei
 html[data-brand="story"] .bs-story { display: block; position: relative; height: calc(var(--vcap) * 2.5); }
 @media (max-width: 767px) { html[data-brand="story"] .bs-story { height: calc(var(--vcap) * 2.1); } }
 .bs-frame { position: sticky; top: 0; height: 100vh; height: var(--vcap); overflow: hidden; isolation: isolate; contain: layout paint; }
-.bs-street { position: absolute; inset: 0; z-index: -1;
-  background: linear-gradient(180deg, #050505, rgba(5,5,5,.15) 26%, rgba(5,5,5,.2) 64%, #050505),
-    url("{{asset:img/street/street.jpg}}") 50% 60% / cover no-repeat;
-  background: linear-gradient(180deg, #050505, rgba(5,5,5,.15) 26%, rgba(5,5,5,.2) 64%, #050505),
-    image-set(url("{{asset:img/street/street.avif}}") type("image/avif"), url("{{asset:img/street/street.jpg}}") type("image/jpeg")) 50% 60% / cover no-repeat;
-  filter: grayscale(.6) brightness(.38) contrast(1.1); }
+/* фон сцены: фильтр grayscale(.6) brightness(.38) contrast(1.1) ЗАПЕЧЁН в street-story.* (T3 v3.1: filter на весь экран
+   стоил 79–130 мс растра при входе блока). Градиент — уже «после фильтра»: #050505 под ним давал чёрный; поправка
+   за градиент зашита в файл по строкам (v3/v31/T3/_tools/bake_street.py), расхождение с прежним — ≤1/255 в среднем.
+   Отдельный слой: SVG сцены перерисовывается каждый кадр прокрутки — фото под ним не перерастрируется. */
+.bs-street { position: absolute; inset: 0; z-index: -1; will-change: transform;
+  background: linear-gradient(180deg, #000, rgba(0,0,0,.15) 26%, rgba(0,0,0,.2) 64%, #000),
+    url("{{asset:img/street/street-story.jpg}}") 50% 60% / cover no-repeat;
+  background: linear-gradient(180deg, #000, rgba(0,0,0,.15) 26%, rgba(0,0,0,.2) 64%, #000),
+    image-set(url("{{asset:img/street/street-story.avif}}") type("image/avif"), url("{{asset:img/street/street-story.jpg}}") type("image/jpeg")) 50% 60% / cover no-repeat; }
 .bs-svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; }
-.bs-caps { position: absolute; left: var(--hx-pad, 16px); right: 16px; bottom: max(28px, calc(18px + env(safe-area-inset-bottom))); margin: 0; padding: 0; list-style: none; height: 2.6em;
+/* знак / табличка / буквы — три SVG (motion.js), каждый в своём слое: перерисовка одного не растрит соседей */
+html[data-brand="story"] .bs-story:not(.is-static) .bs-svg { will-change: transform; }
+/* полосы букв: div-ы сплошного цвета под маской буквы (motion.js). Без will-change на полосах: 30 отдельных слоёв в
+   8 маскированных поверхностях давали композитору кадр 45–50 мс в момент сборки; в слое буквы они дешевле */
+.bs-strips { position: absolute; inset: 0; pointer-events: none; }
+.bs-l { position: absolute; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }
+.bs-st { position: absolute; display: block; }
+html[data-brand="story"] .bs-story:not(.is-static) .bs-l { will-change: transform; }   /* буква с маской — свой слой */
+.bs-caps { position: absolute; left: var(--gutter, 16px); right: 16px; bottom: max(28px, calc(18px + env(safe-area-inset-bottom))); margin: 0; padding: 0; list-style: none; height: 2.6em;
   font: 800 clamp(1.15rem, 2.6vw, 2.1rem)/1.1 var(--font-display); letter-spacing: -.01em; color: #fff; }
 .bs-caps li { position: absolute; left: 0; bottom: 0; opacity: 0; transform: translateY(10px); transition: opacity .3s, transform .45s var(--hx-ease); }
 .bs-caps li.is-on { opacity: 1; transform: none; }

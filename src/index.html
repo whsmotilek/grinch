@@ -17,11 +17,12 @@ if(q.get("skip")==="1")h.dataset.skip="1";
 if(q.get("clean")==="1")h.dataset.clean="1";
 h.classList.add("js");
 var A={g:["lime","tape","black"],hero:["asphalt","static"],heroimg:["model","mascot","crop"],cards:["a","b","c","d"],size:["vector","hand"],
-brand:["sign","story"],roll:["on","off"],marquee:["off","on"],mascot:["kapushon","grinchin","uhmyl","none"],cart:["count","menu"]};
+brand:["sign","story"],roll:["page","quiet","off"],marquee:["off","on"],mascot:["kapushon","grinchin","uhmyl","none"],cart:["count","menu"],
+tape:["lime","black"]};
 var K=Object.keys(A);
 function pr(s){var r={},v=s.split(" ");K.forEach(function(k,i){r[k]=v[i]});return r}
-var P={1:pr("tape asphalt model d hand sign on off kapushon count"),2:pr("tape asphalt mascot c hand sign on on grinchin count"),
-3:pr("lime static crop a vector story off off uhmyl menu"),4:pr("black asphalt model b hand story on on grinchin count")};
+var P={1:pr("tape asphalt model d hand sign page off kapushon count lime"),2:pr("tape asphalt mascot c hand sign page on grinchin count lime"),
+3:pr("lime static crop a vector story quiet off uhmyl menu black"),4:pr("black asphalt model b hand story page on grinchin count black")};
 var st={},m=1,o={},LIVE={};
 try{st=JSON.parse(localStorage.getItem(KEY))||{}}catch(e){}
 var um=q.get("m");
@@ -82,6 +83,7 @@ reset:function(){return GV.mode.preset(m)}};
 <!--@css:motion.css-->
 <!--@css:cards-art.css-->
 <!--@css:scenes.css-->
+<!--@css:roll.css-->
 <!--@css:mascot.css-->
 <!--@css:end.css-->
 <!--@css:modes.css-->
@@ -128,15 +130,15 @@ reset:function(){return GV.mode.preset(m)}};
 <!-- ============ О БРЕНДЕ (K4 + K2: #brand-stage) ============ -->
 <!--@html:about.html-->
 
-<!-- рулон ленты 3D (ось data-roll, K2) -->
-<div id="roll-stage"></div>
-
 <!-- ============ РАЗОБРАЛИ — ВЕРНЁМ (K5) ============ -->
 <!--@html:next.html-->
 </main>
 
 <!-- ============ ПОДВАЛ (K5) ============ -->
 <!--@html:footer.html-->
+
+<!-- рулон-маршрут (оси data-roll, data-tape; T1): слой во всю высоту страницы, roll.js -->
+<div id="roll-stage" aria-hidden="true"></div>
 
 <!-- ============ ОВЕРЛЕИ ============ -->
 <!-- меню: чёрный лист съезжает из-под шапки (desktop — по содержимому, mobile — на весь экран) -->
@@ -162,9 +164,11 @@ reset:function(){return GV.mode.preset(m)}};
           <div class="acc-body"><p>14&nbsp;дней, если вещь не&nbsp;носили и&nbsp;бирка на&nbsp;месте. Обмен размера&nbsp;— бесплатно.</p></div>
         </details>
         <dl class="kv menu-kv">
-          <div><dt>контакты:</dt><dd>Telegram · VK · почта&nbsp;— скоро</dd></div>
+          <div><dt>контакты:</dt><dd>Telegram · VK · почта&nbsp;—&nbsp;скоро</dd></div>
           <div><dt>город:</dt><dd>Москва</dd></div>
         </dl>
+        <!-- режим показа (modes.js показывает и подписывает; при ?clean=1 скрыт): на телефоне — основной вход в настройки, бирка в шве узкая -->
+        <button type="button" class="menu-mode" data-mode-open hidden aria-haspopup="dialog" aria-controls="mode-panel"><span class="t-mono">режим:</span> <span data-mode-name></span><span class="menu-mode-k" aria-hidden="true">настроить</span></button>
         <div class="menu-mascot" data-mascot-slot="menu" aria-hidden="true"></div>
       </div>
       <div class="menu-foot" style="--i:6">
@@ -243,8 +247,10 @@ reset:function(){return GV.mode.preset(m)}};
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.0/Draggable.min.js"></script>
 <!--@js:cards-art.js-->
 <!--@js:motion.js-->
+<!--@js:door.js--><!-- T2 v3.1: дверь на телефоне (камера вдоль GRINCHIN → отъезд), блок .ab-door в about.html -->
 <!--@js:three-g.js-->
 <!--@js:scenes.js-->
+<!--@js:roll.js-->
 <!--@js:mascot.js-->
 <!--@js:end.js-->
 <!--@js:modes.js-->

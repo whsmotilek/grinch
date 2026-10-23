@@ -117,13 +117,17 @@
 
   /* ---------- тост: в открытой карточке встаёт над кнопкой покупки ---------- */
   var toastEl = d.getElementById("toast"), toastT;
-  GV.toast = function (msg, ms) {
+  /* В карточке товара тост не висит над описанием (T4): он ложится ровно на кнопку покупки — это место, куда смотрит палец,
+     и под ним нет текста. opts.sheetQuiet — в карточке только объявить скринридеру (кнопка сама уже говорит «В корзине ✓»). */
+  GV.toast = function (msg, ms, opts) {
     if (!toastEl) return;
     toastEl.textContent = msg;
-    anchorToast();
+    var quiet = !!(opts && opts.sheetQuiet && stackTop() === "product");
+    toastEl.classList.toggle("is-sr", quiet);
+    if (!quiet) anchorToast(); else toastEl.classList.remove("is-anchored");
     toastEl.classList.add("is-on");
     clearTimeout(toastT);
-    toastT = setTimeout(function () { toastEl.classList.remove("is-on"); }, ms || 2400);
+    toastT = setTimeout(function () { toastEl.classList.remove("is-on"); }, ms || (quiet ? 1200 : 2400));
   };
   function anchorToast() {
     toastEl.classList.remove("is-anchored");
@@ -131,10 +135,11 @@
     var b = $("[data-ps-add]", sheetBody);
     if (!b) return;
     var r = b.getBoundingClientRect();
-    if (r.top < 120 || r.bottom > window.innerHeight) return; // кнопка вне экрана — обычное место внизу
-    var th = toastEl.offsetHeight || 44;
-    toastEl.style.setProperty("--tx", Math.round(r.left + r.width / 2) + "px");
-    toastEl.style.setProperty("--ty", Math.round(r.top - th - 12) + "px");
+    if (r.top < 60 || r.bottom > window.innerHeight || r.width < 120) return; // кнопка вне экрана — обычное место внизу
+    toastEl.style.setProperty("--tx", Math.round(r.left) + "px");
+    toastEl.style.setProperty("--ty", Math.round(r.top) + "px");
+    toastEl.style.setProperty("--tw", Math.round(r.width) + "px");
+    toastEl.style.setProperty("--th", Math.round(r.height) + "px");
     toastEl.classList.add("is-anchored");
   }
 
@@ -185,7 +190,7 @@
       if (it) it.qty += 1; else items.push({ id: id, size: size, qty: 1 });
       syncCart();
       emit("grinchin:add", { id: id, size: size });
-      GV.toast("В корзине.");
+      GV.toast("В корзине.", 0, { sheetQuiet: true });
       return true;
     },
     setQty: function (key, q) {

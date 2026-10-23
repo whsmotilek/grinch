@@ -4,10 +4,9 @@
       оборачивает знак на столбе: лицевая «ONE WAY ←» → ребро → оборот (оцинковка, стикер GRiNCHiN, скотч) →
       лицевая, где стрелка уже смотрит в другую сторону, и баллоном проявляется OR ANOTHER.
       Mobile (≤767): без sticky, оборот проигрывается один раз при входе в кадр (2,4 с), тап — ещё раз.
-   2) Рулон фирменной ленты — ось data-roll="on", контейнер #roll-stage (ставит K1 перед #next).
-      Desktop: рулон катится по асфальту в такт прокрутке, кладёт полосу GRiNCHiN и худеет до втулки.
-      Mobile: та же сцена проигрывается один раз при входе (2,6 с).
-   Обе сцены рисует ОДИН контекст WebGL из three-g.js (GV.gl): строятся лениво, когда блок подходит к экрану,
+   2) Рулон ленты (v3.1) переехал в roll.js: катится по всей странице (ось data-roll = page|quiet|off),
+      блок-асфальт #roll-stage убран. Сцену 'roll' рисует тот же движок three-g.js.
+   Сцену рисует ОДИН контекст WebGL из three-g.js (GV.gl): строятся лениво, когда блок подходит к экрану,
    рендерят только когда видимы и движутся. Ось выключена — сцена не строится и ничего не грузит.
    Без WebGL (программный растр, reduced-motion, ошибка): статичные кадры той же сцены (img/3d/*.webp). */
 (() => {
@@ -15,7 +14,7 @@
   const GV = (window.GV = window.GV || {});
   if (GV.scenes) return;
   const D = document, R = D.documentElement, W = window;
-  const STILL = { a: '{{asset:img/3d/sign-a.webp}}', b: '{{asset:img/3d/sign-b.webp}}', roll: '{{asset:img/3d/roll.webp}}' };
+  const STILL = { a: '{{asset:img/3d/sign-a.webp}}', b: '{{asset:img/3d/sign-b.webp}}' };
   const mq = (s) => (W.matchMedia ? W.matchMedia(s) : { matches: false });
   const RMQ = mq('(prefers-reduced-motion: reduce)'), NARROWQ = mq('(max-width: 767px)');
   const Q = new URLSearchParams(location.search);
@@ -138,59 +137,13 @@
     return S;
   }
 
-  /* ═════════════════════ РУЛОН ЛЕНТЫ ═════════════════════ */
-  function mountRoll(stage) {
-    if (stage.querySelector('.k2-roll')) return null;
-    const root = D.createElement('div');
-    root.className = 'k2-roll'; root.dataset.state = 'idle';
-    root.setAttribute('role', 'img');
-    root.setAttribute('aria-label', 'Рулон фирменной ленты GRiNCHiN катится по асфальту и оставляет за собой полосу');
-    root.innerHTML = `<img class="k2-roll__still" data-ph data-src="${STILL.roll}" alt="" width="1600" height="560" decoding="async"><canvas class="k2-roll__cv" aria-hidden="true"></canvas>`;
-    stage.appendChild(root);
-    const cv = root.querySelector('canvas');
-    const S = Scene('roll', root, cv, { box: stage, maxPx: 2.4e6 });
-    const M = { u: 0, play: -1, played: false, mob: NARROWQ.matches };
-    function target() {
-      if (M.mob) {
-        if (M.play < 0) return M.played ? 0.97 : 0.02;
-        return 0.02 + 0.95 * (1 - Math.pow(1 - clamp((now() - M.play) / 2600, 0, 1), 2.2));
-      }
-      // от «верх блока на 92 % экрана» до «низ блока на 40 %»
-      const y0 = S.top - S.vh * 0.92, y1 = S.top + S.hgt - S.vh * 0.4;
-      return 0.02 + 0.95 * clamp(((W.scrollY || 0) - y0) / Math.max(1, y1 - y0), 0, 1);
-    }
-    function tick(dt) {
-      if (S.state === 'off') return false;
-      const t = target();
-      M.u = M.mob || SHOT ? t : damp(M.u, t, 9, dt);
-      if (Math.abs(M.u - t) < 0.0004) M.u = t;
-      S.draw({ u: +M.u.toFixed(4), fl: +(M.u * 34).toFixed(3) });
-      const playing = M.mob && M.play >= 0 && now() - M.play < 2650;
-      if (M.mob && M.play >= 0 && !playing) { M.play = -1; M.played = true; }
-      return playing || Math.abs(M.u - t) > 0.0004;
-    }
-    if (W.IntersectionObserver) new IntersectionObserver((es) => {
-      for (const e of es) if (e.isIntersecting && M.mob && !M.played && M.play < 0 && !RMQ.matches) { M.play = now(); gl().wake(); }
-    }, { threshold: 0.6 }).observe(root);
-    watch(S, root);
-    const re = () => { M.mob = NARROWQ.matches; S.measure(); gl().wake(); };
-    W.addEventListener('resize', re, { passive: true });
-    if (W.ResizeObserver) new ResizeObserver(re).observe(stage);
-    W.addEventListener('scroll', () => { if (S.vis) gl().wake(); }, { passive: true });
-    S.measure();
-    gl().loop(tick);
-    gl().onOff(() => S.off());
-    return S;
-  }
-
-  const OUT = { sign: null, roll: null };
+  const OUT = { sign: null };
   function boot() {
     if (!gl()) return;
-    const brand = R.dataset.brand || 'sign', roll = R.dataset.roll || 'on';
-    const bs = D.getElementById('brand-stage'), rs = D.getElementById('roll-stage');
+    const brand = R.dataset.brand || 'sign';
+    const bs = D.getElementById('brand-stage');
     if (brand === 'sign' && bs) OUT.sign = mountSign(bs);
-    if (roll === 'on' && rs) OUT.roll = mountRoll(rs);
-    if ((OUT.sign || OUT.roll) && (SHOT || RMQ.matches)) gl().start();   // WebGL не запускается — сразу статичные кадры
+    if (OUT.sign && (SHOT || RMQ.matches)) gl().start();   // WebGL не запускается — сразу статичные кадры
   }
   GV.scenes = {
     v: 3, state: OUT,

@@ -1,4 +1,4 @@
-/* GRINCHIN v3 · K2 · 3D: знак G в hero (#g3d), знак ONE WAY or ANOTHER (#brand-stage), рулон ленты (#roll-stage).
+/* GRINCHIN v3 · K2 · 3D: знак G в hero (#g3d), знак ONE WAY or ANOTHER (#brand-stage). Рулон ленты — roll.css (T1, v3.1).
    Стили 3D-G перенесены из game.css (игра удалена, файл удалён); позицию #g3d задаёт K4. Цвета — только токены. */
 
 /* ───────── 3D-G (#g3d) ─────────
@@ -46,13 +46,17 @@
 .k2-sign{position:relative;height:100%}
 .k2-sign__pin{position:relative;height:100%;box-sizing:border-box;
   display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);align-items:center;gap:clamp(16px,3vw,48px);
-  padding:var(--header-h) clamp(16px,4vw,64px) 0}
+  padding:var(--header-h) var(--gutter,clamp(16px,4vw,64px)) 0}   /* поле = общее поле страницы (base.css), T4 */
 .k2-sign__cap{position:relative;display:grid;align-content:center;min-height:12em}
 .k2-sign__kicker{margin:0 0 1.2em;font:500 var(--fs-xs)/1 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--text-2)}
 .k2-sign__kicker i{font-style:normal;color:var(--c-green)}
-.k2-sign__l{grid-area:2/1;margin:0;color:var(--text);font:800 clamp(1.75rem,3.6vw,3.25rem)/1.05 var(--font-display);letter-spacing:-.01em;text-wrap:balance;
-  transition:opacity .45s var(--ease-out),transform .45s var(--ease-out)}
-.k2-sign[data-step="1"] .k2-sign__l2,.k2-sign[data-step="2"] .k2-sign__l1{opacity:0;transform:translateY(.4em)}
+.k2-sign__l{grid-area:2/1;align-self:start;margin:0;color:var(--text);font:800 clamp(1.75rem,3.6vw,3.25rem)/1.05 var(--font-display);letter-spacing:-.01em;text-wrap:balance;
+  transition:opacity .34s var(--ease-out) .2s,transform .42s var(--ease-out) .2s}
+/* смена шага — по очереди, а не наплывом: старая строка уходит за 0,18 с вверх, новая входит снизу после паузы.
+   Обе строки лежат в одной ячейке — при одновременном переходе буквы двух фраз накладывались (T4) */
+.k2-sign[data-step="1"] .k2-sign__l2,.k2-sign[data-step="2"] .k2-sign__l1{opacity:0;transition:opacity .18s ease-in,transform .2s ease-in}
+.k2-sign[data-step="1"] .k2-sign__l2{transform:translateY(.35em)}
+.k2-sign[data-step="2"] .k2-sign__l1{transform:translateY(-.35em)}
 .k2-sign__view{position:relative;height:min(84svh,900px);min-height:320px}
 .k2-sign__cv,.k2-sign__still{position:absolute;inset:0;width:100%;height:100%;display:block}
 .k2-sign__still{object-fit:contain;opacity:0;transition:opacity .35s var(--ease-out);pointer-events:none}
@@ -63,10 +67,10 @@
 @media (max-width:767px){
   html[data-brand="sign"] #brand-stage{height:auto}
   html[data-brand="sign"] #brand-stage .bs-sign{position:relative;height:auto;overflow:visible}
-  .k2-sign__pin{display:block;padding:40px 16px 24px}
+  .k2-sign__pin{display:block;padding:40px var(--gutter,16px) 24px}
   .k2-sign__cap{min-height:0;margin-bottom:8px}
   .k2-sign__l{font-size:clamp(1.5rem,7vw,2rem)}
-  .k2-sign__view{height:auto;min-height:0;aspect-ratio:1/1.08;margin:0 -16px;cursor:pointer}
+  .k2-sign__view{height:auto;min-height:0;aspect-ratio:1/1.08;margin:0 calc(-1 * var(--gutter,16px));cursor:pointer}
 }
 @media (prefers-reduced-motion:reduce){
   html[data-brand="sign"] #brand-stage{height:auto}
@@ -78,13 +82,4 @@
   .k2-sign__view .k2-sign__still{position:relative;inset:auto;height:auto;aspect-ratio:9/10;opacity:1;transition:none}
 }
 
-/* ───────── Рулон ленты (data-roll="on") ───────── */
-html[data-roll="off"] #roll-stage{display:none}
-#roll-stage{position:relative;height:clamp(300px,36vw,560px);background:var(--c-black);overflow:hidden;contain:layout paint}
-.k2-roll{position:absolute;inset:0}
-.k2-roll__cv,.k2-roll__still{position:absolute;inset:0;width:100%;height:100%;display:block}
-.k2-roll__still{object-fit:cover;opacity:0;transition:opacity .35s var(--ease-out)}
-.k2-roll[data-state="wait"] .k2-roll__still,.k2-roll[data-state="gl"]:not(.is-live) .k2-roll__still,.k2-roll[data-state="off"] .k2-roll__still{opacity:1}
-@media (max-width:767px){#roll-stage{height:86vw}}
-@media (prefers-reduced-motion:reduce){.k2-roll__still{transition:none}}
-html[data-shot="1"] .k2-sign__still,html[data-shot="1"] .k2-roll__still{transition:none}
+html[data-shot="1"] .k2-sign__still{transition:none}

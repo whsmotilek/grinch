@@ -50,8 +50,11 @@ var TAG = {src:"{{asset:img/art/tag.svg}}", x:334, y:286, r:6, w:40, h:112};
       '<path class="art-line art-halo" d="' + n.arrow + '" pathLength="1"/>' +
       '<path class="art-line art-ink" d="' + n.arrow + '" pathLength="1"/>' +
       '<path class="art-tip art-halo" d="' + n.tip + '"/><path class="art-tip art-ink" d="' + n.tip + '"/></svg>' +
-      '<img class="art-note art-mark" src="' + d.src.note + '" alt="" aria-hidden="true" decoding="async" ' +
-      'style="left:' + pct(n.x, 400) + ";top:" + pct(n.y, 500) + ";width:" + pct(n.w, 400) + '">';
+      // буквы пометки: «дописываются» шторкой на transform (обёртка с overflow едет вправо, картинка — навстречу):
+      // clip-path по картинке-SVG перерастрировал её каждый кадр (T3 v3.1: 50–100 мс растра на телефоне)
+      '<span class="art-note art-mark" aria-hidden="true" ' +
+      'style="left:' + pct(n.x, 400) + ";top:" + pct(n.y, 500) + ";width:" + pct(n.w, 400) + '">' +
+      '<span class="art-note-c"><img src="' + d.src.note + '" alt="" decoding="async"></span></span>';
   }
   function codeLayer(p, style) {
     var c = esc(codeOf(p));

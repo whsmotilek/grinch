@@ -73,6 +73,9 @@
   html[data-brand="sign"] #brand-stage .bs-sign{position:relative;height:auto;overflow:visible}
   .k2-sign__pin{display:block;padding:40px var(--gutter,16px) 24px}
   .k2-sign__cap{min-height:0;margin-bottom:8px}
+  /* v4.2 (M3): строкой выше — заголовок двери «One way or another.»; повтор кикером через 80 px на телефоне лишний */
+  .ab-door ~ #brand-stage .k2-sign__kicker{display:none}
+  .k2-sign__pin{padding-top:28px}
   .k2-sign__l{font-size:clamp(1.5rem,7vw,2rem)}
   .k2-sign__view{height:auto;min-height:0;aspect-ratio:1/1.08;margin:0 calc(-1 * var(--gutter,16px));cursor:pointer}
 }

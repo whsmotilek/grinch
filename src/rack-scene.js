@@ -308,8 +308,9 @@
       grp.add(new T.Mesh(g, new T.MeshStandardMaterial({ map: ft, alphaTest: 0.5, roughness: 0.82, metalness: 0, envMapIntensity: 0.6 })));
       const back = new T.Mesh(g, new T.MeshStandardMaterial({ map: bb ? texOf(bb) : ft, color: bb ? 0xffffff : 0x4a4a4a, alphaTest: 0.5, roughness: 0.85, metalness: 0, envMapIntensity: 0.6 }));
       back.rotation.y = Math.PI; grp.add(back);
-      clearGar(it, 'stub');
       tmTree(grp);
+      await upload(grp);
+      clearGar(it, 'stub');
       it.stub = grp; it.gar.add(grp);
       return { w: +w.toFixed(3), h: m.h, drop: setDrop(it, m.top) };
     }
@@ -360,9 +361,18 @@
         if (auto) { w2.scale.divideScalar(wrap.scale.x); w2.position.sub(wrap.position).divideScalar(wrap.scale.x); }
       }
       tmTree(wrap);
+      await upload(wrap);
       const old = it[slot]; it[slot] = wrap; wrap.userData.tris = Math.round(tris);
       if (old) disposeTree(old);
       return show(it, auto);
+    }
+    // Текстуры — в видеопамять заранее и по одной за кадр: иначе 3 карты 2048 грузятся разом на первом кадре показа
+    // и стопорят GPU-процесс (а с ним и кадры страницы) на 100–200 мс.
+    const nextFrame = () => new Promise((r) => (typeof requestAnimationFrame === 'function' ? requestAnimationFrame(() => r()) : setTimeout(r, 16)));
+    async function upload(root) {
+      const texs = new Set();
+      root.traverse((o) => { if (o.isMesh) (Array.isArray(o.material) ? o.material : [o.material]).forEach((mt) => { for (const k in mt) if (mt[k] && mt[k].isTexture) texs.add(mt[k]); }); });
+      for (const t of texs) { if (renderer.initTexture) renderer.initTexture(t); await nextFrame(); }
     }
     function disposeTree(o) {
       if (o.parent) o.parent.remove(o);

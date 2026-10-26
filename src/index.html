@@ -106,6 +106,8 @@ pl("{{asset:img/v4/hero/scene-1440.avif}} 1440w, {{asset:img/v4/hero/scene-2560.
 <!--@css:end.css-->
 <!--@css:rack.css-->
 <!--@css:modes.css-->
+<!--@css:account.css--><!-- A2 v4.2: личный кабинет (шит, кнопка в шапке, сердечко) -->
+<!--@css:m-top.css--><!-- M2 v4.2: телефон, верх страницы (≤767 px) -->
 </head>
 <body>
 <!--@html:loader.html-->
@@ -118,6 +120,8 @@ pl("{{asset:img/v4/hero/scene-1440.avif}} 1440w, {{asset:img/v4/hero/scene-2560.
   <div class="wrap hd-in">
     <a id="logo" href="#hero" aria-label="GRINCHIN — наверх"><!--@svg:logo--></a>
     <div class="hd-right">
+      <!-- A2 v4.2: вход / кабинет (account.js красит: гость — голова с рожками, вошёл — буква) -->
+      <button class="hd-acc" type="button" data-open="account" aria-label="Войти в кабинет" data-authed="0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8.2 6.4 7.3 3.2l2.6 2M15.8 6.4l.9-3.2-2.6 2"/><circle cx="12" cy="10" r="4.6"/><path d="M4.5 21c.9-3.6 3.9-5.6 7.5-5.6s6.6 2 7.5 5.6"/></svg><span class="hd-acc-i" aria-hidden="true"></span></button>
       <button class="hd-cart" type="button" data-open="cart" aria-label="Корзина, товаров: 0">
         <span class="hd-cart-n" aria-hidden="true">(<span data-cart-count>0</span>)</span>
       </button>
@@ -180,6 +184,7 @@ pl("{{asset:img/v4/hero/scene-1440.avif}} 1440w, {{asset:img/v4/hero/scene-2560.
         <div class="menu-mascot" data-mascot-slot="menu" data-mascot-pose="menu" aria-hidden="true"><img class="menu-mascot-fb" src="{{asset:img/v4/hero/menu-600.webp}}" alt="" width="333" height="600" loading="lazy" decoding="async"></div>
       </nav>
       <div class="menu-side" style="--i:5">
+        <button type="button" data-open="account" class="link menu-sub" data-ac-menu>Вход в&nbsp;кабинет</button><!-- A2 v4.2 -->
         <a href="#next" data-nav="next" class="link menu-sub">Разобрали&nbsp;— вернём: подписка</a>
         <details class="acc acc--dark" name="menu-acc">
           <summary>Доставка и предзаказ</summary>
@@ -260,6 +265,7 @@ pl("{{asset:img/v4/hero/scene-1440.avif}} 1440w, {{asset:img/v4/hero/scene-2560.
 </div>
 
 <!--@html:404.html-->
+<!--@html:account.html--><!-- A2 v4.2: шит кабинета + настройка адаптера (demo|api) -->
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 

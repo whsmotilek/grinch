@@ -2,21 +2,28 @@
      sign  — 3D-знак ONE WAY or ANOTHER (рисует K2 в .bs-sign — sticky 100svh внутри высокого #brand-stage);
      story — починенная история STOP → ST’ART v1, собирается в НОВЫЙ логотип (рисует motion.js в .bs-story). -->
 <section id="about" class="ab" aria-labelledby="about-title">
-  <!-- Дверь (v4, V3): диорама door-A3 (Higgsfield) вместо фото гаража. Desktop/планшет — кадр 16:9 по ширине,
-       заголовок справа внизу на растаявшем асфальте (слева внизу в кадре — рулон). Телефон (портрет) — .ab-door выше
-       экрана на --door-run, .ab-door-frame липнет под шапкой, door.js ведёт «камеру» .ab-door-cam по прокрутке:
-       вдоль слова G→N, потом отъезд до двери целиком. reduced-motion / ?shot=1 / без JS — статичный полный кадр.
-       На телефоне-портрете грузится door-cam.* (1920×1080, растушёвка верха/низа запечена в #050505). -->
+  <!-- Дверь (v4 · V3; телефон — v4.2 · M3). Desktop/планшет/ландшафт — диорама door-A3 16:9 по ширине, заголовок
+       на растаявшем асфальте под кадром, лёгкий «наезд» по прокрутке (как было — не трогаем).
+       Телефон-портрет (≤767) — БЕЗ камеры и залипания (v4.2: «анимация по граффити на телефоне не нравится»):
+       дверь — фон блока. Два варианта, выбор — ?mdoor= (по умолчанию poster):
+         poster  — door-A2 4:5 (та же дверь, что на desktop, вертикальная): кадр по ширине, низ тает в чёрный,
+                   заголовок «One way or another.» на растаявшем асфальте; лёгкий параллакс кадра (scroll-driven CSS,
+                   только transform; нет поддержки / reduced-motion — статично);
+         diorama — door-A1 9:16 (диорама целиком: знак ONE WAY, дверь, рулон), статично, заголовок на чёрном низу.
+       Высота блока задана пропорцией кадра → CLS 0; JS для показа не нужен (door.js — только геометрия для ленты). -->
   <div class="ab-door" data-door>
     <div class="ab-door-frame">
       <div class="ab-door-cam">
-        <picture><source media="(max-width: 767px) and (orientation: portrait)" type="image/avif" srcset="{{asset:img/v4/scenes/door-cam.avif}}"><source media="(max-width: 767px) and (orientation: portrait)" type="image/webp" srcset="{{asset:img/v4/scenes/door-cam.webp}}"><source type="image/avif" srcset="{{asset:img/v4/scenes/door-1440.avif}} 1440w, {{asset:img/v4/scenes/door-2560.avif}} 2560w" sizes="100vw"><img class="ab-door-img" src="{{asset:img/v4/scenes/door-1440.webp}}" srcset="{{asset:img/v4/scenes/door-1440.webp}} 1440w, {{asset:img/v4/scenes/door-2560.webp}} 2560w" sizes="100vw" alt="Диорама: железная дверь в граффити, на ней лаймовым скотчем выклеено GRINCHIN; рядом рулон скотча и знак ONE WAY" width="2560" height="1440" loading="lazy" decoding="async"></picture>
+        <picture><source class="ab-src-m" media="(max-width: 767px) and (orientation: portrait)" type="image/avif" srcset="{{asset:img/v4/scenes/door-m-828.avif}} 828w, {{asset:img/v4/scenes/door-m-1242.avif}} 1242w, {{asset:img/v4/scenes/door-m-1792.avif}} 1792w" sizes="100vw" data-alt="{{asset:img/v4/scenes/door-t-828.avif}} 828w, {{asset:img/v4/scenes/door-t-1242.avif}} 1242w, {{asset:img/v4/scenes/door-t-1520.avif}} 1520w"><source class="ab-src-m" media="(max-width: 767px) and (orientation: portrait)" type="image/webp" srcset="{{asset:img/v4/scenes/door-m-828.webp}} 828w, {{asset:img/v4/scenes/door-m-1242.webp}} 1242w, {{asset:img/v4/scenes/door-m-1792.webp}} 1792w" sizes="100vw" data-alt="{{asset:img/v4/scenes/door-t-828.webp}} 828w, {{asset:img/v4/scenes/door-t-1242.webp}} 1242w, {{asset:img/v4/scenes/door-t-1520.webp}} 1520w"><source type="image/avif" srcset="{{asset:img/v4/scenes/door-1440.avif}} 1440w, {{asset:img/v4/scenes/door-2560.avif}} 2560w" sizes="100vw"><img class="ab-door-img" src="{{asset:img/v4/scenes/door-1440.webp}}" srcset="{{asset:img/v4/scenes/door-1440.webp}} 1440w, {{asset:img/v4/scenes/door-2560.webp}} 2560w" sizes="100vw" alt="Диорама: железная дверь в граффити, на ней лаймовым скотчем выклеено GRINCHIN; рядом рулон скотча и знак ONE WAY" width="2560" height="1440" loading="lazy" decoding="async"></picture>
       </div>
       <div class="ab-door-cap">
         <h2 id="about-title" class="ab-title" lang="en">One way<br>or another.</h2>
       </div>
     </div>
   </div>
+  <script>/* M3 v4.2: вариант двери на телефоне (?mdoor=diorama) — до загрузки картинки (img lazy), без мигания и сдвига */
+  (function(){var d=document.currentScript.previousElementSibling,v="poster";try{v=new URLSearchParams(location.search).get("mdoor")||v}catch(e){}
+  if(v!=="diorama")v="poster";d.setAttribute("data-mdoor",v);if(v==="diorama")d.querySelectorAll(".ab-src-m").forEach(function(s){s.srcset=s.getAttribute("data-alt")})})();</script>
   <div id="brand-stage" class="bs">
     <div class="bs-sign" data-g-dock="sign"></div>
     <div class="bs-story" data-story>

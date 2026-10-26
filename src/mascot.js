@@ -77,6 +77,8 @@
   var ua = navigator.userAgent || "";
   // VP9-альфа — Chromium/Firefox; WebKit (Safari и любой браузер на iOS) играет только HEVC-альфа
   var WEBKIT = /AppleWebKit/.test(ua) && !/(Chrome|Chromium|Edg|OPR|Android)\//.test(ua);
+  // iOS/iPadOS (любой браузер там — WebKit): альфа-видео не играем — система ставит его на паузу и композитит с «коробкой»; поза + покачивание CSS
+  var IOS = /iP(hone|ad|od)/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
   var RMQ = W.matchMedia ? W.matchMedia("(prefers-reduced-motion: reduce)") : { matches: false };
   var FINE = W.matchMedia ? W.matchMedia("(hover: hover) and (pointer: fine)") : { matches: false };
   function still() { return RMQ.matches || root.dataset.shot === "1"; }
@@ -110,7 +112,8 @@
     this.el = el; this.slot = slot;
     this.pose = poseOf(o.pose || el.getAttribute("data-mascot-pose") || def.pose || slot) || def.pose || "idle";
     var an = o.anim !== undefined ? o.anim : (el.getAttribute("data-mascot-anim") || def.anim || null);
-    this.anim = ANIM[an] ? an : null;
+    this.anim = ANIM[an] && !IOS ? an : null;
+    if (IOS && ANIM[an]) el.classList.add("mz-bob");
     this.once = o.once != null ? !!o.once : this.anim ? !ANIM[this.anim].loop : false;
     this.idle = o.idle || def.idle || (this.once ? "bob" : "none");
     this.live = !still() && a !== "quiet";
@@ -179,7 +182,7 @@
     if (on && this.img && this.img.srcset) { var w = Math.round(this.el.getBoundingClientRect().width); if (w > 20) this.img.sizes = Math.min(1000, w) + "px"; }
     if (!this.anim || !this.live || this.done) return;
     if (on) { this.loadVid(); if (this.vid && this.vid.paused) this._play(); }
-    else if (this.vid && !this.vid.paused) this.vid.pause();
+    else if (this.vid) { if (!this.vid.paused) this.vid.pause(); this._live(false); }
   };
   Mascot.prototype.loadVid = function () {
     if (this.vid || !this.anim) return;
@@ -187,22 +190,43 @@
     v.className = "mz-vid"; v.muted = true; v.defaultMuted = true; v.playsInline = true;
     v.setAttribute("muted", ""); v.setAttribute("playsinline", ""); v.setAttribute("aria-hidden", "true");
     v.preload = "auto"; v.loop = !!A.loop && !this.once; v.disablePictureInPicture = true;
-    v.addEventListener("playing", function () {
-      clearTimeout(self._fb);
-      // кадр готов — прячем постер (у прозрачного видео сквозь него иначе видны ноги постера)
-      if (!self.box.classList.contains("is-play")) W.requestAnimationFrame(function () { self.box.classList.add("is-play"); });
-    });
     v.addEventListener("ended", function () { self.done = true; self.afterOnce(); });
+    v.addEventListener("pause", function () { if (!v.ended) self._live(false); });   // пауза системой — постер в тот же кадр, не ждём сторожа
     v.addEventListener("error", function () { self.fail(); });
     v.src = WEBKIT ? A.mov : A.webm;
     this.vid = v;
     this.box.appendChild(v);
     // не стартовало за 5 с — остаёмся на позе-концовке (не висим на первом кадре)
-    this._fb = setTimeout(function () { if (!self.box.classList.contains("is-play")) self.fail(); }, 5000);
+    this._fb = setTimeout(function () { if (!self._got) self.fail(); }, 5000);
   };
   Mascot.prototype._play = function () {
-    var v = this.vid, self = this; if (!v) return;
+    var v = this.vid, self = this; if (!v || d.hidden) return;
     var p = v.play(); if (p && p.catch) p.catch(function (e) { if (!e || e.name !== "AbortError") self.fail(); });
+    this._arm();
+  };
+  /* v4.2 (M1): видео видно (.is-play — постер прячется) ТОЛЬКО пока у него реально идут кадры: первый показанный кадр —
+     requestVideoFrameCallback (без него — сдвиг currentTime + 2 кадра), дальше сторож раз в 300 мс: пауза / фон / кадры
+     стоят 0,9 с → снова постер. Раньше .is-play ставился по «playing» навсегда: после паузы системой (фон, переход в Telegram)
+     iOS мог оставить слой пустым — у альфа-видео это «маскот пропал». */
+  Mascot.prototype._arm = function () {
+    var v = this.vid, self = this; if (!v) return;
+    var hit = function () { if (self.vid !== v) return; if (v.paused) { self._arm(); return; } clearTimeout(self._fb); self._got = true; self._live(true); };
+    if (v.requestVideoFrameCallback) { if (!v.__rvfc) { v.__rvfc = 1; v.requestVideoFrameCallback(function () { v.__rvfc = 0; hit(); }); } return; }
+    var t0 = v.currentTime, k = function () { if (v.currentTime !== t0) { v.removeEventListener("timeupdate", k); W.requestAnimationFrame(function () { W.requestAnimationFrame(hit); }); } };
+    v.addEventListener("timeupdate", k);
+  };
+  Mascot.prototype._live = function (on) {
+    var self = this, v = this.vid; if (!this.box) return;
+    clearInterval(this._wd);
+    if (!on || !v) { this.box.classList.remove("is-play"); if (v && !v.paused && !d.hidden) this._arm(); return; }   // кадры встали, но не пауза — ждём следующий
+    this.box.classList.add("is-play");
+    var ct = v.currentTime, t = Date.now();
+    this._wd = setInterval(function () {
+      if (self.vid !== v) { clearInterval(self._wd); return; }
+      if (v.ended) return;   // «один раз» — последний кадр стоит
+      var n = Date.now(); if (v.currentTime !== ct) { ct = v.currentTime; t = n; if (!v.paused && !d.hidden) return; }
+      if (v.paused || d.hidden || n - t > 900) self._live(false);
+    }, 300);
   };
   Mascot.prototype.fail = function () {
     clearTimeout(this._fb);
@@ -212,7 +236,7 @@
     this.done = true; this.afterOnce();
   };
   Mascot.prototype.stopVid = function () {
-    clearTimeout(this._fb);
+    clearTimeout(this._fb); clearInterval(this._wd);
     if (this.vid) { try { this.vid.pause(); this.vid.removeAttribute("src"); this.vid.load(); } catch (e) {} this.vid.remove(); this.vid = null; }
     if (this.box) this.box.classList.remove("is-play");
   };
@@ -341,6 +365,12 @@
         if (!el.hasAttribute("data-mascot-manual")) mount(el);
       }
     });
+    // фон вкладки / переход в другое приложение / «назад» (bfcache): видео на паузу и сразу постер; вернулся — играем заново
+    var away = function () { each(function (m) { if (m.vid) { m.vid.pause(); m._live(false); } }); };
+    var back = function () { each(function (m) { if (m.vis && m.vid && m.live && !m.done && m.vid.paused) m._play(); }); };
+    d.addEventListener("visibilitychange", function () { if (d.hidden) away(); else back(); });
+    W.addEventListener("pagehide", away);
+    W.addEventListener("pageshow", function (e) { if (e.persisted) back(); });
     // наведение — подпрыгивает
     if (FINE.matches) d.addEventListener("pointerover", function (e) {
       var t = e.target.closest && e.target.closest(".mz-slot"); if (!t || !t.__mz || t.__mzH) return;

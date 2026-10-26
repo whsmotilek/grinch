@@ -1,164 +1,41 @@
 /* ================================================================
-   GRINCHIN v4 · ДВЕРЬ НА ТЕЛЕФОНЕ (V3; движок T2 v3.1) → window.GV.door
-   Кадр door-cam.* 2688×1520 (диорама door-A3 из исходника 2k, растушёвка верха/низа запечена): слово GRINCHIN —
-   x 302–2304, y 466–963 (замер по лаймовым пикселям, без рулона и отражения).
-   На телефоне-портрете кадр cover режет слово до «NCH». Решение — «камера» по прокрутке:
-     1) с последней трети въезда и до ~45 % залипания — камера в масштабе cover идёт вдоль слова G → N
-        (буквы проходят по одной-две, как будто читаешь дверь глазами);
-     2) затем отъезд: масштаб падает до «слово во всю ширину с полями 14 px», дверь видна целиком,
-        заголовок поднимается под неё — дверь + «One way or another.» собираются в постер по центру кадра;
-     3) хвост ~8 % — покой, кадр отпускается и уезжает вверх как обычный блок.
-   Залипание — 80svh сверх кадра (CSS --door-run), высота задана заранее → CLS 0.
-   Два слоя (.ab-door-cam и заголовок .ab-door-cap), только transform; один rAF, только когда блок рядом с экраном (IntersectionObserver).
-   Картинка в камере — <canvas> 2688×1520 c door-cam.* (растушёвка верха/низа запечена в файл), а не <img>: у <img> в слое
-   с will-change Chrome перерастрирует тайлы при смене масштаба (GPU-задача 160–180 мс в начале прохода, замер T2),
-   у canvas (bitmaprenderer) — готовая текстура, масштаб и сдвиг ничего не перерисовывают. Декод — fetch →
-   createImageBitmap (вне главного потока), за полтора экрана до блока. Не вышло — обычный <img> (.cv-fail).
-   reduced-motion / ?shot=1 / ландшафт / ≥768 px — ничего не делаем, CSS рисует статичный кадр.
+   GRINCHIN v4.2 · ДВЕРЬ «О бренде» → window.GV.door (геометрия для соседей: лента roll.js, проверки)
+   v4.2 (M3): на телефоне больше НЕТ «камеры» по слову и залипания — дверь стала фоном блока (about.html, motion.css).
+   Показ двери не требует JS ни на одном экране; здесь только замеры: где на экране зелёное слово GRINCHIN
+   (второй зелёный рядом не ставить) и заголовок (перекрывать нельзя).
+   Кадры и рамка слова в пикселях исходника (замер по лаймовым пикселям + контур, без рулона и отражения):
+     desktop / ландшафт — door-A3 (door-1440/2560), object-fit cover, object-position 50% 42%;
+     телефон poster     — door-A2 4:5 (door-m-*), кадр по ширине, без обрезки;
+     телефон diorama    — door-A1 9:16 (door-t-*, ?mdoor=diorama), кадр по ширине, без обрезки.
    ================================================================ */
 (function () {
   'use strict';
-  var D = document, H = D.documentElement, W = window;
+  var D = document, W = window;
   var door = D.querySelector('[data-door]'); if (!door) return;
-  var frame = door.querySelector('.ab-door-frame'), cam = door.querySelector('.ab-door-cam'), cap = door.querySelector('.ab-door-cap');
-  if (!frame || !cam || !cap) return;
+  var cap = door.querySelector('.ab-door-cap'), img = door.querySelector('.ab-door-img');
+  if (!cap || !img) return;
   var GV = W.GV = W.GV || {};
-  var SHOT = H.dataset.shot === '1';
-  var MQ = W.matchMedia('(max-width: 767px) and (orientation: portrait) and (prefers-reduced-motion: no-preference)');
+  var MQ = W.matchMedia('(max-width: 767px) and (orientation: portrait)');
+  var F = {
+    desk: { iw: 2688, ih: 1520, x0: 302, x1: 2304, y0: 466, y1: 963, py: 0.42 },
+    poster: { iw: 1792, ih: 2240, x0: 245, x1: 1580, y0: 805, y1: 1190, py: 0 },
+    diorama: { iw: 1520, ih: 2688, x0: 185, x1: 1365, y0: 1025, y1: 1430, py: 0 }
+  };
+  function frame() { return MQ.matches ? (F[door.getAttribute('data-mdoor')] || F.poster) : F.desk; }
 
-  var IW = 2688, IH = 1520, WX0 = 302, WX1 = 2304, WY0 = 466, WY1 = 963, WCX = 1303, WCY = 715;
-  // v4.1: кадр из исходника 2k (hf/scenes/raw, 2688×1520) и потолок зума — не больше ZMAX физ. px экрана на пиксель кадра:
-  // в cover на DPR 3 кадр растягивался в 2,2 раза («мыло»); при потолке кадр чуть ниже экрана, края тают в фон
-  var ZMAX = 1.3;
-  var PAD_PAN = 14, PAD_FIT = 14;                    // поля у краёв кадра: при проходе и в финале
-  var CAP_IN = .12;                                  // в финале заголовок заходит на растаявший низ кадра на 12 % его высоты
-  var clamp = function (v) { return v < 0 ? 0 : v > 1 ? 1 : v; };
-  var sine = function (t) { return .5 - .5 * Math.cos(Math.PI * t); };
-  var io3 = function (t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; };
-
-  var on = false, near = false, raf = 0, last = '', G = null, cv = '';
-  var img = cam.querySelector('img');
-
-  function measure() {
-    var fw = frame.clientWidth, fh = frame.clientHeight;
-    if (!fw || !fh) return null;
-    var dpr0 = Math.max(1, Math.min(3, W.devicePixelRatio || 1));
-    var kc = Math.min(fh / IH, ZMAX / dpr0);            // масштаб прохода: cover, но не крупнее ZMAX физ. px на пиксель кадра
-    // Слой камеры — ровно 2688×1520 физ. пикселей (ширина 2688/DPR CSS px): растр = исходник 1:1, без лишних
-    // мегапикселей. В cover при DPR 3 был бы 3168×2376 (×5 по площади) — это давало кадр 116–133 мс на входе.
-    // Резкость та же: исходник всё равно 2688 px, больше деталей в нём нет.
-    var dpr = Math.max(1, Math.min(3, W.devicePixelRatio || 1));
-    cam.style.width = (IW / dpr) + 'px'; cam.style.height = (IH / dpr) + 'px';
-    var base = 1 / dpr;
-    var hh = parseFloat(W.getComputedStyle(frame).top) || 0;
-    var run = Math.max(1, door.offsetHeight - fh);
-    // проход: центр кадра по x в координатах картинки — от «G у левого края» до «N у правого»
-    var half = fw / 2 / kc;
-    var pA = WX0 - PAD_PAN / kc + half, pB = WX1 + PAD_PAN / kc - half;
-    if (pB < pA) pA = pB = WCX;                        // слово влезает и в cover — проход не нужен
-    var kf = Math.min(kc, (fw - 2 * PAD_FIT) / (WX1 - WX0));
-    // финал — «постер»: дверь целиком + заголовок сразу под ней, группа по центру кадра (чуть выше — оптический центр)
-    var capTop = cap.offsetTop, capH = cap.offsetHeight, ih = IH * kf;
-    // группа ниже центра: после отпускания кадра до следующего блока не остаётся пустой полосы (аудит v4.1: ~250 px)
-    var group = ih * (1 - CAP_IN) + capH, top = Math.max(0, (fh - group) * .74);
-    var ayF = top + WCY * kf, capF = top + ih * (1 - CAP_IN);
-    var ay0 = WCY * kc + Math.max(0, fh - IH * kc) / 2;   // при потолке зума кадр по центру по вертикали
-    return { fw: fw, fh: fh, kc: kc, base: base, hh: hh, run: run, pA: pA, pB: pB, kf: kf, ayF: ayF, ay0: ay0, capDy: Math.min(0, capF - capTop) };
-  }
-
-  // y = сколько пройдено от начала залипания (0 — кадр лёг под шапку; run — отпускается)
-  function pose(y) {
-    var g = G, y0 = -g.fh * .3, y1 = g.run * .45, y2 = g.run * .92;
-    var tp = sine(clamp((y - y0) / (y1 - y0)));
-    var y1b = y1 - (y1 - y0) * .12;                    // отъезд начинается чуть раньше конца прохода — без «мёртвой» точки
-    var tf = io3(clamp((y - y1b) / (y2 - y1b)));
-    var px = g.pA + (g.pB - g.pA) * tp;                 // точка картинки в центре кадра (проход)
-    var Px = px + (WCX - px) * tf, Py = WCY;            // точка картинки, которую держим в «якоре»
-    var Ax = g.fw / 2, Ay = g.ay0 + (g.ayF - g.ay0) * tf;
-    var k = Math.exp(Math.log(g.kc) + (Math.log(g.kf) - Math.log(g.kc)) * tf);
-    var tx = Ax - Px * k, ty = Ay - Py * k;
-    return { tx: tx, ty: ty, s: k / g.base, k: k, cy: g.capDy * tf, tp: tp, tf: tf };
-  }
-
-  function tick() {
-    raf = 0; if (!on || !G) return;
-    var y = G.hh - door.getBoundingClientRect().top;
-    var p = pose(y);
-    var v = 'translate3d(' + p.tx.toFixed(2) + 'px,' + p.ty.toFixed(2) + 'px,0) scale(' + p.s.toFixed(5) + ')';
-    if (v !== last) { cam.style.transform = v; cap.style.transform = p.cy ? 'translate3d(0,' + p.cy.toFixed(2) + 'px,0)' : ''; last = v; }
-  }
-  function kick() { if (on && near && !raf) raf = W.requestAnimationFrame(tick); }
-
-  // ---- картинка камеры в canvas ----
-  function fail() { cv = 'fail'; door.classList.add('cv-fail'); }
-  function paint(src) {
-    var c = D.createElement('canvas'); c.width = IW; c.height = IH; c.className = 'ab-door-cv';
-    c.setAttribute('role', 'img'); c.setAttribute('aria-label', img.alt || '');
-    // bitmaprenderer: ImageBitmap становится текстурой как есть — ни одной отрисовки (2d-фолбэк — один drawImage)
-    var r = src.close ? c.getContext('bitmaprenderer') : null;
-    if (r) r.transferFromImageBitmap(src);
-    else { var x = c.getContext('2d', { alpha: false }); if (!x) return fail(); x.drawImage(src, 0, 0, IW, IH); if (src.close) src.close(); }
-    cam.appendChild(c); cv = 'on';
-    W.requestAnimationFrame(function () { door.classList.add('cv-on'); });
-  }
-  function load() {
-    if (cv || !img) return; cv = 'loading';
-    function go() {
-      var url = img.currentSrc || img.src;
-      var p = (W.fetch && W.createImageBitmap)
-        ? W.fetch(url).then(function (r) { if (!r.ok) throw 0; return r.blob(); }).then(function (bl) { return W.createImageBitmap(bl); })
-        : (img.decode ? img.decode() : Promise.resolve()).then(function () { return img; });
-      p.then(paint, function () { (img.decode ? img.decode() : Promise.resolve()).then(function () { paint(img); }, fail); });
-    }
-    if (img.complete && img.naturalWidth) go();
-    else { img.addEventListener('load', go, { once: true }); img.addEventListener('error', fail, { once: true }); img.loading = 'eager'; }
-  }
-
-  function setup() {
-    var want = !SHOT && H.classList.contains('js') && MQ.matches;
-    door.classList.toggle('is-cam', want);
-    if (!want) { on = false; G = null; if (last || cam.style.width) { cam.style.transform = cap.style.transform = cam.style.width = cam.style.height = ''; last = ''; } return; }
-    cap.style.transform = ''; G = measure(); on = !!G; last = '';
-    if (on) { near = true; tick(); near = isNear(); if (!cv && isNear(1.5)) load(); }   // поворот в портрет рядом с блоком
-  }
-  function isNear(f) { var r = door.getBoundingClientRect(), m = f ? W.innerHeight * f : 200; return r.bottom > -m && r.top < W.innerHeight + m; }
-
-  if ('IntersectionObserver' in W) {
-    new IntersectionObserver(function (es) { near = es[es.length - 1].isIntersecting; kick(); }, { rootMargin: '200px 0px' }).observe(door);
-    // загрузка картинки — за полтора экрана до блока
-    var lio = new IntersectionObserver(function (es) { if (es[es.length - 1].isIntersecting && on) { load(); lio.disconnect(); } }, { rootMargin: '150% 0px' });
-    lio.observe(door);
-  } else { near = true; if (on) load(); }
-  W.addEventListener('scroll', kick, { passive: true });
-  var rz = 0;
-  W.addEventListener('resize', function () { if (!rz) rz = W.requestAnimationFrame(function () { rz = 0; setup(); }); }, { passive: true });
-  if (MQ.addEventListener) MQ.addEventListener('change', setup); else if (MQ.addListener) MQ.addListener(setup);
-  setup();
-
-  // Геометрия для соседей (рулон ленты T1): прямоугольники в координатах окна [x0, y0, x1, y1] на текущую прокрутку.
-  // block — весь блок; view — видимый кадр двери; photo — фото; word — зелёное слово (второй зелёный рядом не ставить);
-  // title — заголовок (перекрывать нельзя); free — чёрные полосы кадра без фото и текста (тут ленте можно всё).
+  // прямоугольники в координатах окна [x0, y0, x1, y1] на текущую прокрутку.
+  // block — весь блок; view/photo — кадр; word — зелёное слово; title — заголовок; free — нет (кадр целиком «картинка»).
   function zones() {
     var R = function (r) { return [Math.round(r[0]), Math.round(r[1]), Math.round(r[2]), Math.round(r[3])]; };
-    var b = door.getBoundingClientRect(), t = cap.getBoundingClientRect(), out = { mode: on ? 'cam' : 'static', block: R([b.left, b.top, b.right, b.bottom]), title: R([t.left, t.top, t.right, t.bottom]) };
-    if (on && G) {
-      var ft = Math.min(Math.max(b.top, G.hh), b.bottom - G.fh), p = pose(G.hh - b.top), k = p.k;
-      var ph = [p.tx, ft + p.ty, p.tx + IW * k, ft + p.ty + IH * k];
-      out.view = R([0, ft, G.fw, ft + G.fh]); out.photo = R(ph); out.progress = { pan: +p.tp.toFixed(3), pull: +p.tf.toFixed(3) };
-      out.word = R([p.tx + WX0 * k, ft + p.ty + WY0 * k, p.tx + WX1 * k, ft + p.ty + WY1 * k]);
-      // кадр тает в чёрный в верхних 8 % и нижних 14 % — это тоже «свободно»
-      var top = ph[1] + IH * k * .08, bot = Math.min(ph[3] - IH * k * .14, t.top);
-      out.free = [R([0, ft, G.fw, Math.max(ft, top)]), R([0, Math.max(t.bottom, bot), G.fw, ft + G.fh])].filter(function (r) { return r[3] - r[1] > 8; });
-    } else {
-      // статичный кадр: object-fit cover, object-position 50% 42% (desktop) / по ширине (телефон) — те же пропорции 16:9
-      var i = img.getBoundingClientRect(), iw = i.width, ih = i.height, k2 = Math.max(iw / IW, ih / IH);
-      var ox = i.left + (iw - IW * k2) * .5, oy = i.top + (ih - IH * k2) * .42;
-      out.view = out.photo = R([i.left, i.top, i.right, i.bottom]);
-      out.word = R([ox + WX0 * k2, oy + WY0 * k2, ox + WX1 * k2, oy + WY1 * k2]);
-      out.free = [];
-    }
-    return out;
+    var f = frame(), b = door.getBoundingClientRect(), t = cap.getBoundingClientRect(), i = img.getBoundingClientRect();
+    var k = Math.max(i.width / f.iw, i.height / f.ih), ox = i.left + (i.width - f.iw * k) * 0.5, oy = i.top + (i.height - f.ih * k) * f.py;
+    return { mode: 'static', block: R([b.left, b.top, b.right, b.bottom]), title: R([t.left, t.top, t.right, t.bottom]),
+      view: R([i.left, i.top, i.right, i.bottom]), photo: R([i.left, i.top, i.right, i.bottom]),
+      word: R([ox + f.x0 * k, oy + f.y0 * k, ox + f.x1 * k, oy + f.y1 * k]), free: [] };
   }
-
-  GV.door = { word: { iw: IW, ih: IH, x0: WX0, x1: WX1, y0: WY0, y1: WY1 }, state: function () { return { on: on, near: near, g: G, tf: last, cv: cv }; }, pose: function (y) { return G ? pose(y) : null; }, zones: zones, refresh: setup };
+  var f0 = F.desk;
+  GV.door = { word: { iw: f0.iw, ih: f0.ih, x0: f0.x0, x1: f0.x1, y0: f0.y0, y1: f0.y1 },
+    variant: function () { return MQ.matches ? (door.getAttribute('data-mdoor') || 'poster') : 'desktop'; },
+    state: function () { return { on: false, near: false, g: null, tf: '', cv: '' }; },
+    pose: function () { return null; }, zones: zones, refresh: function () {} };
 })();

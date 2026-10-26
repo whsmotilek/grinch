@@ -33,6 +33,7 @@ jobs:
           cp -R dist/. _site/4/          # текущая сборка = версия 4
           mv _site/4/grinchin.html _site/4/index.html
           cp root-index.html _site/index.html
+          cp root-404.html _site/404.html   # битые адреса → «Тупик.» на сайте
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

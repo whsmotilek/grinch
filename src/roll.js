@@ -55,7 +55,7 @@
 
   /* ═════════════ 1. ПРЕПЯТСТВИЯ (координаты документа) ═════════════ */
   // блоки, под которые можно «нырнуть» (туннель), — от мелкого к крупному
-  const UNITS = ['.ab-door', '#brand-stage', '#looks', '#drop', '#about', '#next', '#footer', '.hx-marquee'];
+  const UNITS = ['.ab-door', '#brand-stage', '#rack', '#looks', '#drop', '#about', '#next', '#footer', '.hx-marquee'];
   // 3D-сцена рейла (S1) ловит перетаскивание, но это «картинка», не кнопка: ленте поверх неё можно (pointer-events:none)
   const SOFT = '.rk-stage';
   const HARD = 'a[href],button,input,select,textarea,label,summary,[role=button],[tabindex]:not([tabindex="-1"]),article.card,[data-product],.nx-bag,#looks .lk-print';   // полароиды «Образов» — не под ленту (в т.ч. reduced-motion)
@@ -148,6 +148,15 @@
         if (el.matches('.ab-door,.tape--lime,.tape--toon-lime')) continue;           // дверь (фото) и куски ленты K3 — не препятствие (можно рядом)
         add(obs, el, r, 'G', el.matches(VIEW3D) ? 0.12 : 0);
       }
+    }
+    // v4.2 (M3): на телефоне дверь — фон-постер во всю ширину; лента его не обрамляет (поперёк кадра и вдоль края
+    // получалась рамка вокруг слова — второй зелёный и суета), а проходит ПОД блоком туннелем, как под каруселью
+    // v4.2 (M3, по замечанию S1): рейл/цепь на вешалках — вещи ездят и крутятся по всей ширине сцены (в «Цепи» одна вещь
+    // по центру) → ни поперёк, ни вдоль края по вещам лента не идёт: весь блок — туннель (оба режима, телефон и desktop)
+    { const rk = D.getElementById('rack'); if (rk && shown(rk)) { const b = rk.getBoundingClientRect(); if (b.height > 40) obs.push({ x0: 0, x1: Wd, y0: b.top + sy, y1: b.bottom + sy, k: 'M', el: rk }); } }
+    if (Wd < 768) {
+      const fr = D.querySelector('.ab-door-frame');
+      if (fr && shown(fr)) { const b = fr.getBoundingClientRect(); obs.push({ x0: 0, x1: Wd, y0: b.top + sy, y1: b.bottom + sy, k: 'M', el: fr }); }
     }
     // дверь (T2, GV.door.zones): зелёное слово и заголовок — препятствия; в режиме камеры кадр липкий → туннель (см. PINNED)
     if (GV.door && GV.door.zones) {
@@ -251,7 +260,10 @@
     // v4.1: лента входит из-за левого края экрана (а не начинается «в воздухе» над заголовком): начало — под кромкой
     const xS = -Math.round(w * 2), xC = Math.round(Math.max(xMin, R0 + c));
     const okTop = drop.padT > w + 2 * c && !hit(0, yS - bandH, xL + band, yS + bandH) && !hit(xC - cr, yS - cr, xC + cr, yS + cr);   // старт — без запаса на разворот
-    const yEnd = Math.round(Math.min(foot.y1, H) - Math.max(cr, 40));
+    // v4.2 (M3): телефон — лента кончается на верхней кромке подвала: поворот поперёк стыка «подписка | подвал» и крест —
+    // лист мятой бумаги «приклеен» к странице. Ниже, у «Москва», крест висел в воздухе рядом с текстом и маскотом
+    const FOOT_TOP = Wd < 768 && !QUIET;
+    const yEnd = FOOT_TOP ? Math.round(foot.y0 + Math.max(10, w)) : Math.round(Math.min(foot.y1, H) - Math.max(cr, 40));
     let x = xL, y = yS, lastC = okTop ? yS : yS - vh;
     if (okTop) seg(xS, yS, xL, yS, 'tape');
     function bestCross(x, y, wa, wb, forced, tx) {
@@ -315,7 +327,7 @@
       const u = blk ? units.filter((q) => q.y0 <= oy + 1 && q.y1 > oy).sort((p, q) => (p.y1 - p.y0) - (q.y1 - q.y0))[0]
         : { sel: 'pin', y0: pin.bTop, y1: pin.bBot };
       if (!u || u.sel === '#footer' || u.y1 >= yEnd) { const ye = Math.max(y + R0, oy - cr); seg(x, y, x, ye, 'tape'); y = ye; ended = true; break; }
-      const yIn = Math.max(y, Math.round(u.y0)), yOut = Math.round(u.y1);
+      const yIn = Math.max(y, Math.floor(u.y0)), yOut = Math.ceil(u.y1);   // туннель — с запасом в долю пикселя (стык со сценой рейла)
       // выход: полоса, свободная ниже (лучше прежняя), поперёк под блоком — не видно
       const pin3 = pinAfter(yOut + 1), stop3 = pin3 ? pin3.bTop : yEnd;
       let x2 = x, bestRun = -1;
@@ -343,8 +355,8 @@
     if (last.t === 'tape' && last.pin == null && last.a.x === last.b.x) {
       const lx = last.b.x, dir = lx > Wd / 2 ? -1 : 1;
       const tailX = Math.max(tail, QUIET ? 0 : CROSS_W(w, Wd) * 0.62 + c);   // крест шире хвоста рулона
-      for (let yy = yF0; yy > Math.max(foot.y0 + R0 * 2, yF0 - vh * 0.45, last.a.y + R0 * 2); yy -= 6) {
-        const need = Math.max(140, w * 6), x1 = lx + dir * (need + tailX);
+      for (let yy = yF0; yy > (FOOT_TOP ? Math.max(yF0 - vh * 0.2, last.a.y + R0 * 2) : Math.max(foot.y0 + R0 * 2, yF0 - vh * 0.45, last.a.y + R0 * 2)); yy -= 6) {
+        const need = FOOT_TOP ? Math.round(Math.max(140, Wd * 0.42)) : Math.max(140, w * 6), x1 = lx + dir * (need + tailX);   // телефон: полоса вдоль кромки листа — почти до середины
         if (x1 < xMin || x1 > xMax) break;
         if (!hit(Math.min(lx, x1) - cr, yy - bh2, Math.max(lx, x1) + cr, yy + bh2) && !firstBlock(lx, yy - R0, yy + R0)) {
           let len = need;
@@ -435,7 +447,8 @@
       K.push({ Y: yb - a1 * vh, s: g.s1, a: a1, y: yb, h: horiz });
     }
     // финальный блок считается от конца прокрутки назад: поворот → докат → крест и рулон на торец
-    const lim = maxY - 1, lastSeg = segs[segs.length - 1], turn = lastSeg.a.y === lastSeg.b.y && lastSeg.pin == null && segs.length > 1;
+    // телефон (FOOT_TOP): финал — когда стык подписки и подвала на трети экрана, а не в самом низу страницы (там его не видно)
+    const lim = E.Wd < 768 && !QUIET ? Math.min(maxY - 1, Math.round(segs[segs.length - 1].b.y - vh * 0.34)) : maxY - 1, lastSeg = segs[segs.length - 1], turn = lastSeg.a.y === lastSeg.b.y && lastSeg.pin == null && segs.length > 1;
     const Yf1 = lim, Yf0 = lim - vh * 0.12, Yt = Yf0 - vh * 0.06;
     K.push({ Y: Yt, s: L }); K.push({ Y: Yf0, s: L, ev: 'fin', e: 0 }); K.push({ Y: Yf1, s: L, ev: 'fin', e: 1 });
     const iEnd = K.length - 4;                       // конец ленты
@@ -856,7 +869,7 @@
       const ro = new ResizeObserver(() => { const hgt = D.body.scrollHeight; if (ST.built && Math.abs(hgt - lh) > 1) replan(); lh = hgt; });
       ro.observe(D.body);
       // блоки, высота которых может меняться независимо (дверь T2, подписка, каталог)
-      ['.ab-door', '#about', '#next', '#drop', '#looks', '#footer'].forEach((sel) => { const e = D.querySelector(sel); if (e) new ResizeObserver(() => { if (ST.built) replan(); }).observe(e); });
+      ['.ab-door', '#about', '#next', '#drop', '#rack', '#looks', '#footer'].forEach((sel) => { const e = D.querySelector(sel); if (e) new ResizeObserver(() => { if (ST.built) replan(); }).observe(e); });
     }
     W.addEventListener('load', () => { if (ST.built) replan(true); });
     if (D.fonts && D.fonts.ready) D.fonts.ready.then(() => { if (ST.built) replan(true); });

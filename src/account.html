@@ -1,0 +1,35 @@
+<!-- A2 · ЛИЧНЫЙ КАБИНЕТ (v4.2). Оверлей-шит как у корзины: телефон — снизу на весь экран, desktop — справа (≥1100 — две колонки).
+     Содержимое рисует account.js (GV.account). Открытие: GV.open('account'[, экран]) · кнопка .hd-acc в шапке · пункт меню · ?lk=<экран>.
+     Слой данных переключается ОДНОЙ настройкой ниже: "adapter": "demo" (по умолчанию, ничего никуда не шлёт, sessionStorage)
+     или "api" (контракт A1 ~/Проекты/GV/v4/lk/api.yaml, httpOnly-cookie + X-CSRF-Token). baseUrl — без хвостового «/». -->
+<script type="application/json" id="gv-account-config">
+{"adapter": "demo", "baseUrl": "https://api.example-grinchin.ru/v1", "returnPath": "", "policyUrl": ""}
+</script>
+<script>
+/* A2: account.js (~145 КБ) не встраивается в HTML — отдельный файл assets/account.js. Грузим после grinchin:ready и простоя;
+   сразу — при ?lk= / ?login= (возврат с VK ID / Яндекс ID) и ?shot=1; по первому нажатию кнопки кабинета — тут же, кабинет откроется по загрузке. */
+(function(){
+var d=document,W=window,st=0,want=false;
+function load(){if(st)return;st=1;var s=d.createElement("script");s.src="{{asset:account.js}}";s.async=true;
+s.onload=function(){st=2;if(want&&W.GV&&W.GV.open){want=false;W.GV.open("account")}};s.onerror=function(){st=0};d.body.appendChild(s)}
+d.addEventListener("click",function(e){if(st===2||(W.GV&&W.GV.account))return;var b=e.target.closest&&e.target.closest('[data-open="account"]');
+if(!b)return;e.preventDefault();e.stopPropagation();want=true;load()},true);
+var q=location.search,now=/[?&](lk|login)=/.test(q)||d.documentElement.dataset.shot==="1";
+function idle(){(W.requestIdleCallback||function(f){setTimeout(f,400)})(load,{timeout:3000})}
+if(now){if(d.readyState==="loading")d.addEventListener("DOMContentLoaded",load,{once:true});else load()}
+else{d.addEventListener("grinchin:ready",idle,{once:true});setTimeout(idle,6000)}
+})();
+</script>
+<div id="account-sheet" class="ov ov--drawer ov--ac" role="dialog" aria-modal="true" aria-labelledby="ac-title" hidden>
+  <div class="ov-scrim" data-ac-close></div>
+  <div class="ov-panel ac-panel" tabindex="-1">
+    <div class="sheet-bar ac-bar" data-ac-grab>
+      <span class="sheet-grab" aria-hidden="true"></span>
+      <button class="ac-back" type="button" data-ac-back hidden aria-label="Назад"><svg viewBox="0 0 16 12" aria-hidden="true" focusable="false"><path d="M16 6H1.5M6.5 1l-5 5 5 5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
+      <h2 id="ac-title" class="t-h3 ac-title" tabindex="-1">Кабинет</h2>
+      <button class="ov-x" type="button" data-ac-close aria-label="Закрыть кабинет"></button>
+    </div>
+    <p class="ac-demo" data-ac-demo hidden><span class="ac-demo-t">демо-режим:</span> данные не&nbsp;сохраняются на&nbsp;сервере</p>
+    <div class="ac-body" data-ac-body aria-live="off"></div>
+  </div>
+</div>

@@ -86,10 +86,14 @@
     const font = (px) => '800 ' + px + 'px Unbounded, "Arial Black", system-ui, sans-serif';
     const num = (n) => (g, ink) => { g.fillStyle = ink; g.font = font(62); g.textBaseline = 'middle'; g.fillText(String(n).padStart(2, '0'), 30, 104 / 2 + 3); };
     const bmp = (c) => createImageBitmap(c, { imageOrientation: 'flipY', premultiplyAlpha: 'none' });
-    const tags = await Promise.all(items.map(async (it, i) => ({
-      on: await bmp(tape(256, 104, LIME, '#000', 11 + i * 7, num(it.n))),
-      off: await bmp(tape(256, 104, '#262626', '#d8d8d4', 11 + i * 7, num(it.n))),
-    })));
+    // по одной бирке в простое: 16 холстов с текстом разом — это ~200 мс главного потока при CPU ×4
+    const idleP = () => new Promise((r) => (W.requestIdleCallback ? W.requestIdleCallback(() => r(), { timeout: 400 }) : setTimeout(r, 30)));
+    const tags = [];
+    for (let i = 0; i < items.length; i++) {
+      await idleP();
+      tags.push({ on: await bmp(tape(256, 104, LIME, '#000', 11 + i * 7, num(items[i].n))), off: await bmp(tape(256, 104, '#262626', '#d8d8d4', 11 + i * 7, num(items[i].n))) });
+    }
+    await idleP();
     const bc = canvas(128, 32), bg = bc.getContext('2d');
     bg.fillStyle = LIME; bg.fillRect(0, 0, 128, 32);
     bg.fillStyle = 'rgba(255,255,255,.45)'; bg.fillRect(70, 0, 10, 32);
@@ -100,7 +104,8 @@
       g.save(); g.translate(62, (176 - hh) / 2 + 4); g.scale(s, s); g.translate(-B[0], -B[1]); g.fillStyle = ink;
       logo.paths.forEach((d) => g.fill(new Path2D(d))); g.restore();
     }, true);
-    return { band: await bmp(bc), car: await bmp(car), tags };
+    const bandB = await bmp(bc); await idleP();
+    return { band: bandB, car: await bmp(car), tags };
   }
 
   /* ═════════ движок: один на страницу ═════════
@@ -307,7 +312,8 @@ self.onmessage = async (ev) => {
     el.classList.add('rk');
     el.dataset.concept = opts.concept === 'chain' ? 'chain' : 'rail';
     el.dataset.drive = opts.drive === 'scroll' ? 'scroll' : 'drag';
-    el.dataset.gl = 'wait';
+    // пока 3D-сцена не готова — CSS-рейл (труба, вешалки, фото); 3D проявляется поверх, когда есть первый кадр
+    el.dataset.gl = 'off'; el.dataset.glwait = '1';
     el.dataset.ui = BARE ? 'bare' : 'full';
     el.style.setProperty('--rk-n', N);
     el.innerHTML = `
@@ -346,6 +352,7 @@ self.onmessage = async (ev) => {
       r: startIdx, rv: 0, rt: startIdx, accPrev: 0,
       sw: items.map(() => ({ a: 0, v: 0, spin: 0 })),
       drag: null, lastInput: -1e9, t: 0,
+      want: startIdx,
       rig: [{ idx: startIdx, dy: 0, dyv: 0, yaw: 0, yv: 0, sx: 0, sxv: 0, sz: 0, szv: 0, st: 'hang' }, { idx: -1, dy: 3, dyv: 0, yaw: 0, yv: 0, sx: 0, sxv: 0, sz: 0, szv: 0, st: 'off' }],
       act: 0,
       cam: null, w: 2, h: 2, dpr: Math.min(W.devicePixelRatio || 1, 2), dprK: 1,
@@ -386,10 +393,10 @@ self.onmessage = async (ev) => {
     function camFit(dt) {
       const asp = S.w / S.h, narrow = NARROW.matches || asp < 0.95, fov = 28, th = Math.tan((fov * Math.PI) / 360);
       const chain = S.concept === 'chain';
-      const fi = chain ? Math.max(0, S.rig[S.act].idx) : clamp(Math.round(S.r), 0, N - 1);
+      const fi = chain ? Math.max(0, S.want >= 0 ? S.want : S.rig[0].idx) : clamp(Math.round(S.r), 0, N - 1);
       let top = chain ? (BARE ? 0.16 : 0.3) : 0.1, bot = chain ? bottomOf(fi) - 0.06 : Math.min(bottomOf(fi), -1.31) - 0.05;
       // доля кадра под вещь: на desktop снизу полоса индекса и подпись, сверху шапка
-      const pt = BARE ? 0.03 : narrow ? (chain ? 0.1 : 0.15) : chain ? 0.06 : 0.13, pb = BARE ? 0.09 : narrow ? 0.05 : chain ? 0.13 : 0.17, fv = 1 - pt - pb;
+      const pt = BARE ? 0.03 : narrow ? (chain ? 0.1 : 0.15) : chain ? 0.06 : 0.13, pb = BARE ? 0.09 : narrow ? (chain ? 0.11 : 0.05) : chain ? 0.13 : 0.17, fv = 1 - pt - pb;
       const Hs = top - bot, Dv = Hs / (2 * th * fv);
       const Wv = chain ? (narrow ? 1.05 : 1.4) : narrow ? 1.18 : 2.4, Dw = Wv / (2 * th * asp);
       const Dt = Math.max(Dv, Dw);
@@ -449,33 +456,54 @@ self.onmessage = async (ev) => {
       }
       return busy || (auto && el.dataset.gl !== 'off');
     }
+    /* «Цепь»: смена вещи строго по очереди — текущая уезжает вверх за кадр, и только потом спускается следующая.
+       Повторные нажатия не накладываются: запоминается последняя цель (S.want), спускающаяся вещь разворачивается вверх.
+       Следующая спускается, когда её лёгкая модель уже загружена (или через 1,5 с — с фото-заглушкой): разбор GLB и
+       загрузка текстур не попадают в анимацию. Полное качество — только после остановки (settle по 'hang'). */
+    // высота, на которой вещь целиком над кадром (верх кадра в «Цепи» ≈ +0,3 м): уходит до неё и спускается с неё — без пустых пауз
+    const exitDy = (i) => 0.5 - bottomOf(Math.max(0, i));
+    function modelReady(i) {
+      const id = items[i].id, md = opts.models[id];
+      return el.dataset.gl === 'off' || !md || !md.url || HUB.load.done[id + ':glb'] || HUB.load.fail[id + ':glb'];
+    }
+    function rigSpawn() {
+      const g = S.rig[0];
+      Object.assign(g, { idx: S.want, dy: exitDy(S.want), dyv: -2.2, yaw: -0.45, yv: 0, sx: 0, sxv: 0, sz: 0, szv: 0, st: 'down', hit: false });
+    }
     function rigSwitch(n) {
-      const cur = S.rig[S.act];
-      if (cur.idx === n && cur.st !== 'up') return;
-      const nx = S.rig[1 - S.act];
-      cur.st = cur.idx >= 0 ? 'up' : 'off';
-      Object.assign(nx, { idx: n, dy: RM() ? 0 : 2.4, dyv: 0, yaw: RM() ? 0 : -0.6, yv: 0, sx: 0, sxv: 0, sz: 0, szv: 0, st: RM() ? 'hang' : 'down', hit: false });
-      if (RM()) Object.assign(cur, { idx: -1, st: 'off' });
-      S.act = 1 - S.act;
-      S.focus = n; renderInfo(n); pump();
+      const g = S.rig[0];
+      if (n === S.want && S.want >= 0 && !(g.idx === n && g.st === 'up')) return;
+      S.want = n; S.waitAt = now();
+      S.focus = n; S.focusAt = now(); renderInfo(n); pump();
+      clearTimeout(S.fullT); S.fullT = 0;
+      if (RM()) { Object.assign(g, { idx: n, dy: 0, dyv: 0, yaw: 0, yv: 0, sx: 0, sxv: 0, sz: 0, szv: 0, st: 'hang' }); return; }
+      if (g.idx === n) { if (g.st === 'up') { g.st = 'down'; g.hit = true; } return; }   // вернули ту же — спускается обратно
+      if (g.idx >= 0 && g.st !== 'off') { if (g.st !== 'up') { g.st = 'up'; g.dyv = Math.max(g.dyv, 0) + 1.8; } }
+      else if (modelReady(n)) rigSpawn();
     }
     function stepChain(dt) {
       let busy = false;
       const auto = autoOn();
+      // ожидание: прежняя вещь ушла, следующая ещё грузится (до 1,5 с)
+      const g0 = S.rig[0];
+      if ((g0.idx < 0 || g0.st === 'off') && S.want >= 0 && g0.idx !== S.want) {
+        if (modelReady(S.want) || now() - (S.waitAt || 0) > 1500) rigSpawn(); else busy = true;
+      }
       S.rig.forEach((g, k) => {
         if (g.idx < 0) return;
         if (k === S.act && g.st === 'hang' && S.fullWant !== S.focus && !S.fullT) settle();
-        if (g.st === 'up') {
-          g.dyv += 7 * dt; g.dy += g.dyv * dt; g.yaw += g.yv * dt;
-          if (g.dy > 3.4) { g.idx = -1; g.st = 'off'; } else busy = true;
+        if (g.st === 'up') {   // цепь выбирается вверх: разгон, вещь уходит за верх кадра
+          g.dyv += 9 * dt; g.dy += g.dyv * dt; g.yaw += g.yv * dt;
+          g.sx *= 0.96; g.sz *= 0.96;
+          if (g.dy > exitDy(g.idx)) { g.idx = -1; g.st = 'off'; if (S.want >= 0) { S.waitAt = Math.max(S.waitAt || 0, now() - 900); } }
+          busy = true;
           return;
         }
-        if (g.st === 'down') {   // спуск на пружине цепи: перелёт и пара отскоков
-          const w = 6.2, a = w * w * (0 - g.dy) - 2 * 0.3 * w * g.dyv;
+        if (g.st === 'down') {   // спуск на пружине цепи: мягкий перелёт и раскачка
+          const w = 5.6, a = w * w * (0 - g.dy) - 2 * 0.42 * w * g.dyv;
           g.dyv += a * dt; g.dy += g.dyv * dt;
-          if (!g.hit && g.dy < 0.02) { g.hit = true; g.szv += 0.12; g.sxv -= 0.07; }
+          if (!g.hit && g.dy < 0.03) { g.hit = true; g.szv += 0.1; g.sxv -= 0.05; }
           if (Math.abs(g.dy) < 4e-4 && Math.abs(g.dyv) < 4e-3) { g.dy = 0; g.dyv = 0; g.st = 'hang'; }
-          if (k === S.act && g.dy < 0.05 && S.fullWant !== S.focus && !S.fullT) settle();
           busy = true;
         }
         const drag = S.drag && k === S.act;
@@ -555,7 +583,7 @@ self.onmessage = async (ev) => {
       else { S.rt = i; if (S.focus !== i && Math.abs(S.r - i) > 0.5) { /* подпись сменится по дороге */ } }
       poke();
     }
-    const next = () => go(S.focus + 1), prev = () => go(S.focus - 1);
+    const next = () => go(S.concept === 'chain' ? (S.focus + 1) % N : S.focus + 1), prev = () => go(S.concept === 'chain' ? (S.focus + N - 1) % N : S.focus - 1);
     function setConcept(c) {
       c = c === 'chain' ? 'chain' : 'rail';
       if (S.concept === c) return;
@@ -563,7 +591,7 @@ self.onmessage = async (ev) => {
       el.querySelectorAll('.rk-switch button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.c === c)));
       if (c === 'chain') {
         S.rig[0] = Object.assign(S.rig[0], { idx: -1, st: 'off' }); S.rig[1] = Object.assign(S.rig[1], { idx: -1, st: 'off' });
-        S.act = 0; const f = S.focus; S.rig[0].idx = -2; rigSwitch(f);
+        S.act = 0; S.want = -1; rigSwitch(S.focus);
       } else { S.r = S.rt = S.focus; S.rv = 0; S.sw.forEach((q) => { q.a = 0; q.v = 0; q.spin = 0; }); }
       camFit(); poke();
       el.dispatchEvent(new CustomEvent('grinchin:rack-concept', { bubbles: true, detail: { concept: c } }));
@@ -684,7 +712,7 @@ self.onmessage = async (ev) => {
       fbLoad();
     }
     function fbLoad() {
-      if (el.dataset.gl !== 'off' || S.fbBusy) return;
+      if (el.dataset.gl !== 'off' || S.fbBusy || !(S.warm || S.visible)) return;   // фото ряда — только когда блок близко
       const next = [...fbRow.querySelectorAll('img:not([src])')].sort((a, b) => Math.abs(a.dataset.i - S.focus) - Math.abs(b.dataset.i - S.focus))[0];
       if (!next) return;
       S.fbBusy = true;
@@ -713,10 +741,18 @@ self.onmessage = async (ev) => {
       if (S.visible) { start(); wake(); }
     }, { rootMargin: '200px 0px' }) : null;
     if (io) io.observe(stage); else { S.visible = true; }
+    // прогрев: за ~2 экрана до блока поднимаем движок и грузим первые модели (в простое), рисовать начнём при входе
+    const idleRun = (f) => (W.requestIdleCallback ? W.requestIdleCallback(f, { timeout: 1200 }) : setTimeout(f, 60));
+    const ioWarm = W.IntersectionObserver ? new IntersectionObserver((es) => {
+      if (!es[es.length - 1].isIntersecting || S.warm) return;
+      S.warm = true; idleRun(() => { start(); hubPump(); fbFocus(S.focus); });
+    }, { rootMargin: '200% 0px' }) : null;
+    if (ioWarm) ioWarm.observe(el);
+    requestAnimationFrame(() => fbFocus(S.focus));
     // «на экране» — сцена реально в кадре хотя бы на треть (для авто-вращения: до входа вещь стоит лицом)
     const io2 = W.IntersectionObserver ? new IntersectionObserver((es) => { const e = es[es.length - 1]; if (e.isIntersecting && !S.onScreen) S.onScreenAt = now(); S.onScreen = e.isIntersecting; wake(); }, { threshold: 0.35 }) : null;
     if (io2) io2.observe(stage); else S.onScreen = true;
-    if (GV.gl && typeof GV.gl.onOff === 'function') GV.gl.onOff(() => { if (HUB.kind === 'shared' || HUB.st === 'idle') { el.dataset.gl = 'off'; S.why = 'gl: ' + (GV.gl.why || 'off'); fbFocus(S.focus); } });
+    if (GV.gl && typeof GV.gl.onOff === 'function') GV.gl.onOff(() => { if (HUB.kind === 'shared' || HUB.st === 'idle') { el.dataset.gl = 'off'; delete el.dataset.glwait; S.why = 'gl: ' + (GV.gl.why || 'off'); fbFocus(S.focus); } });
     else if (Q.has('nogl')) { el.dataset.gl = 'off'; requestAnimationFrame(() => fbFocus(S.focus)); }
     D.addEventListener('visibilitychange', () => { if (!D.hidden) wake(); });
     // карточка/корзина/меню поверх страницы — блок на странице замирает (вкладка «3D» в карточке при этом живёт)
@@ -726,9 +762,25 @@ self.onmessage = async (ev) => {
     el.dataset.rm = RM() ? '1' : '0';
 
     /* ── движок и ленивая загрузка ── */
+    // Проявление 3D: ждём, пока у вещи в фокусе есть модель (или 1,5 с), рисуем 2 кадра под CSS-рейлом и
+    // перекрёстно гасим его (opacity, 0,45 с). Классы CSS не меняем до конца перехода — стили остаются как есть.
+    function reveal() {
+      if (S.revealed || S.dead) return;
+      const f = items[S.focus].id, L = HUB.load;
+      if (!(L.done[f + ':glb'] || L.fail[f + ':glb'] || (L.done[f + ':stub'] && now() - S.readyAt > 600)) && now() - S.readyAt < 1500) { setTimeout(reveal, 80); return; }
+      S.revealed = true;
+      camFit(); pose(); wake();
+      const fb = $('.rk-fb');
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (RM()) { el.dataset.gl = 'on'; delete el.dataset.glwait; return; }
+        cv.style.transition = 'opacity .45s ease'; cv.style.opacity = '1';
+        fb.style.transition = 'opacity .45s ease'; fb.style.opacity = '0';
+        setTimeout(() => { el.dataset.gl = 'on'; delete el.dataset.glwait; fb.style.transition = fb.style.opacity = ''; cv.style.transition = cv.style.opacity = ''; wake(); }, 480);
+      }));
+    }
     function onHub(st) {
-      if (st === 'ok') { S.ready = true; el.dataset.gl = 'on'; camFit(); pose(); wake(); hubPump(); }
-      else if (st === 'off') { S.ready = false; el.dataset.gl = 'off'; S.why = HUB.why; fbFocus(S.focus); }
+      if (st === 'ok') { S.ready = true; S.readyAt = now(); camFit(); pose(); hubPump(); reveal(); }
+      else if (st === 'off') { S.ready = false; el.dataset.gl = 'off'; delete el.dataset.glwait; S.why = HUB.why; fbFocus(S.focus); }
     }
     function start() {
       if (S.started) return; S.started = true;
@@ -771,7 +823,7 @@ self.onmessage = async (ev) => {
       if (kind === 'glb' || kind === 'full') el.dispatchEvent(new CustomEvent('grinchin:rack-model', { bubbles: true, detail: Object.assign({ id }, r) }));
       if (S.ready) { camFit(); pose(); } wake();
     }
-    const api = { _hub: onHub, _tasks: tasks, _loaded: onLoaded, _keep: fullKeep, _live: () => S.visible && !S.dead && !S.paused, _active: () => S.active || 0 };
+    const api = { _hub: onHub, _tasks: tasks, _loaded: onLoaded, _keep: fullKeep, _live: () => (S.visible || S.warm) && !S.dead && !S.paused, _active: () => S.active || 0 };
 
     function debug() {
       hubStats().then((v) => {
@@ -806,7 +858,7 @@ self.onmessage = async (ev) => {
       // движок общий и остаётся жить (его держит сайт / другие экземпляры); экземпляр только отписывается
       destroy: () => {
         S.dead = true; LOOP.fns.delete(frame); HUB.insts.delete(api); clearTimeout(S.fullT); hubFullGC();
-        if (ro) ro.disconnect(); if (io) io.disconnect(); if (io2) io2.disconnect(); W.removeEventListener('scroll', onScroll); D.removeEventListener('grinchin:overlay', onOverlay);
+        if (ro) ro.disconnect(); if (io) io.disconnect(); if (io2) io2.disconnect(); if (ioWarm) ioWarm.disconnect(); W.removeEventListener('scroll', onScroll); D.removeEventListener('grinchin:overlay', onOverlay);
         el.innerHTML = ''; el.classList.remove('rk'); if (GV.rack.inst === inst) GV.rack.inst = null;
       },
     };

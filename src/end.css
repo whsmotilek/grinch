@@ -8,6 +8,7 @@
 .nx-copy{container-type:inline-size;min-width:0}
 .nx-title{font:var(--t-h1,900 clamp(2.1rem,1.2rem + 2.3vw,3.5rem)/1.02 var(--font-display));letter-spacing:-.035em;
   font-size:min(var(--t-h1-size,clamp(2.1rem,1.2rem + 2.3vw,3.5rem)),11.5cqi);text-wrap:balance}
+@media (max-width:767px){#next{padding-top:28px}}   /* v4.2: после знака ONE WAY низ его сцены уже тает в фон — лишние 20 px пустоты */
 @media (max-width:767px){.nx-title{font-size:min(var(--t-h1-size,clamp(1.6rem,7.6vw,2.25rem)),11.5cqi);line-height:1.04}}
 .nx-sub{margin-top:14px;max-width:34ch;font:var(--t-body,400 1rem/1.5 var(--font-text));color:var(--text-2)}
 .nx-side{min-width:0}
@@ -129,6 +130,16 @@ html:not(.js) .fo-logo,#footer.is-near .fo-logo{
    (--mz-seat ≈ .694 высоты рамки, ставит mascot.js вместе с --mz-ar) — на верх буквы; ноги свисают поверх лого */
 .fo-mz{position:absolute;z-index:2;top:0;width:var(--fo-mz-w);left:calc(var(--fo-seat-x,69.3%) - var(--fo-mz-w) / 2);
   margin-top:calc(var(--fo-seat-y,6%) - var(--fo-mz-w) / var(--mz-ar,.565) * var(--mz-seat,.66))} /* % у margin — от ширины: верх буквы = доля ширины лого */
+/* ТЕЛЕФОН (v4.2 · M3): маскот не на логотипе (при ширине лого ~340 px фигура 84 px закрывала буквы «CH»), а сидит
+   на нижней линейке «контактов», у правого поля, — как на краю полки; ноги свисают в пустое поле над логотипом.
+   Лого читается целиком. «скоро» — сразу за текстом строки, чтобы правая треть двух строк была свободна под фигуру.
+   Линия сиденья — та же --mz-seat видео (mascot.js); зазор над логотипом = свес ног + 20 px. */
+@media (max-width:767px){
+  .fo-logo-box{--fo-mz-w:84px;--fo-legs:calc(var(--fo-mz-w) / var(--mz-ar,.565) * (1 - var(--mz-seat,.694)));margin-top:calc(var(--fo-mz-w) / .565 * .306 + 28px)}
+  html[data-mascot="none"] .fo-logo-box{margin-top:40px}
+  .fo-mz{left:auto;right:6px;margin-top:calc(-1 * (var(--fo-mz-w) / .565 * .306 + 28px) - var(--fo-mz-w) / var(--mz-ar,.565) * var(--mz-seat,.694));pointer-events:none}
+  .fo-plain .fo-line{justify-content:flex-start;gap:12px}
+}
 /* стикеры подвала (режим «максимум»): в полях у логотипа, не на тексте */
 .fo-st{position:absolute;z-index:1;display:none}
 html[data-stickers="max"] .fo-st{display:block}
@@ -153,7 +164,7 @@ html[data-stickers="max"] .fo-st{display:block}
 .e404-bg,.e404-bg img{position:absolute;inset:0;width:100%;height:100%;display:block}
 .e404-mz{position:absolute;left:72.5%;bottom:24.5%;width:15.5%}
 @media (max-aspect-ratio:4/5){
-  .e404-art{width:max(100vw,100dvh * 9 / 16 * 1.28);aspect-ratio:9/16;top:auto;bottom:0;transform:translateX(-50%)}   /* ×1,28: диорама поднимается к тексту, пустоты нет */
+  .e404-art{width:max(100vw,100dvh * 9 / 16 * 1.28);aspect-ratio:9/16;top:auto;bottom:0;transform:translate(calc(-50% + 14px),2.5%)}   /* ×1,28: диорама поднимается к тексту, пустоты нет; v4.2: сдвиг вправо-вниз — фонарь не касается «игнорировать.» */
   .e404-mz{left:max(13%,calc(50% - 50vw + 12px));bottom:21%;width:28%}
 }
 .e404-logo{justify-self:start;display:grid;place-items:center;min-height:var(--header-h,60px);min-width:44px;padding:0;border:0;background:none;color:var(--c-white);cursor:pointer}

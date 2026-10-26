@@ -261,6 +261,8 @@ html[data-shot="1"] #looks .lk-print{transition:none}
 
 @media (max-width:767px){
   #looks .lk-count{display:block}
+  /* v4.2 (M3): фактура стены тает к низу — следом дверь-постер на чистом чёрном, без жёсткого шва по фактуре */
+  #looks .lk-wall{-webkit-mask-image:linear-gradient(180deg,#000 calc(100% - 140px),transparent);mask-image:linear-gradient(180deg,#000 calc(100% - 140px),transparent)}
   /* overflow-y:hidden — иначе 3 px вертикального «переполнения» (наклон отпечатков, стикеры) делали ленту вертикальным
      скроллером: свайп вниз, начатый на фото, прилипал к ней и страница не ехала (аудит v4.1) */
   #looks .lk-rail{display:flex; gap:22px; overflow-x:auto; overflow-y:hidden; touch-action:pan-x pan-y; overscroll-behavior-x:contain; scroll-snap-type:x mandatory;

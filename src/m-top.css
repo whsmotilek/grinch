@@ -1,0 +1,121 @@
+/* ================================================================
+   GRINCHIN v4.2 · M2 «мобильная версия: верх страницы». Только телефоны (≤767 px), desktop этот файл не трогает:
+   всё внутри @media (max-width:767px). Подключён последним — перекрывает мобильные правила соседей той же специфичностью.
+   Зона: шапка и меню, заставка (вёрстка), hero (композиция), каталог «Дроп 01», рейл (вёрстка блока), карточка товара, корзина.
+   Логику (видео маскота — M1, 3D рейла — S1, three-g.js) не трогаем: только раскладка, типографика, тап-цели, безопасные зоны.
+   ================================================================ */
+@media (max-width:767px){
+
+/* ---------------- HERO ----------------
+   Было (iPhone): G серая «бетонная» и висит в углу впритык к краю, над ней — пустой кружок-иконка наклона,
+   верхняя полоса hero пустая, а при прокрутке заголовок «ложится» прямо под голову маскота.
+   Стало: верх hero — постерная «шапка»: слева моно-бирка дропа + подпись-кнопка наклона, справа G (белый винил,
+   на поле сайта, не в край). Заголовок, подпись, маскот, кнопка — на одной сетке полей 16/16. */
+#hero.hx{--hx-band:calc(var(--gsz) + 18px)}
+/* низкий экран (SE, Safari с панелями ~660 px): заголовок чуть меньше по высоте экрана, а не только по ширине —
+   иначе маскот сжимался до 150 px в углу. Высота заголовка = 3 строки × 0,84 = 2,52 кегля. Маскот встаёт сразу от подписи:
+   верхняя пятая кадра видео пустая (голова ниже), подпись слева, голова справа — не пересекаются. */
+html[data-heroimg="mascot"] #hero.hx{--hx-fs:min(17.6vw,9.6svh);--gsz:min(31vw,15svh,132px);
+  --hx-sub-top:calc(var(--hx-band) + var(--hx-fs) * 2.52 + 14px);--hm-top:calc(var(--hx-sub-top) + clamp(-6px, 100svh - 760px, 10px))}
+#hero .hx-g,html[data-heroimg="mascot"] #hero .hx-g{top:10px;right:calc(var(--gutter-r,24px) - 12px);width:var(--gsz);height:var(--gsz)}
+#hero #hero-title.hx-title{top:var(--hx-band)}
+
+/* G при маскоте — белый винил дорожной разметки; на телефоне matcap выходит серым бетоном → поднимаем света
+   (статичный фильтр холста, не анимируется) */
+html[data-heroimg="mascot"] #hero .g3d__cv{filter:brightness(1.32) contrast(1.06)}
+
+/* бирка дропа в пустом верхнем поле: моно, как [ЦВЕТ] и 01/08 в каталоге. Декор (alt-текст пустой — скринридер молчит,
+   то же самое сказано в шапке каталога); браузер без alt-синтаксиса content просто её не покажет */
+#hero .hx-stage::before{content:"дроп 01 — 08 вещей\A предзаказ · с 01.12" / "";
+  position:absolute;left:var(--hx-pad);top:18px;white-space:pre;font:400 12px/1.65 var(--font-mono);letter-spacing:.04em;
+  text-transform:uppercase;color:#8f8f89}
+
+/* наклон: вместо пустого кружка — подпись-кнопка под биркой, слева от G (тап-зона 44 px). Ведёт three-g.js
+   (.g-gyro появляется только на сенсорных с WebGL). Видимый текст — ::after, сам span «наклон» — для скринридера */
+#hero .g-gyro{left:auto;right:auto;top:auto;bottom:auto;transform:none;
+  position:absolute;left:calc(var(--hx-pad) - 100vw + var(--gutter-r,24px) - 12px + var(--gsz));top:50px;width:auto;height:44px;min-width:0;padding:0 2px 0 0;
+  display:inline-flex;align-items:center;gap:9px;border:0;border-radius:0;background:none;color:#e9e9e4;white-space:nowrap}
+#hero .g-gyro::before{content:none}
+#hero .g-gyro::after{content:"наклони телефон";font:400 12px/1 var(--font-mono);letter-spacing:.04em;text-transform:uppercase;
+  text-decoration:underline;text-decoration-color:rgba(255,255,255,.35);text-underline-offset:5px;text-decoration-thickness:1px}
+#hero .g-gyro[aria-pressed="true"]::after{content:"наклон включён";text-decoration-color:transparent;color:#8f8f89}
+#hero .g-gyro[aria-pressed="true"]{color:#e9e9e4}
+#hero .g-gyro[data-state="denied"]{display:none}
+#hero .g-gyro .g-gyro-i{width:9px;height:14px;margin:0 8px 0 7px;flex:none}
+
+/* заставка → hero: лого летит из центра в шапку ровно через зону заголовка — на телефоне «GRINCHIN» ложился поверх
+   поднимающегося «IGNORE» (аудит: «в заставке не читается»). Строки заголовка стартуют, когда лого уже в верхней трети
+   (+0,34 с); бирка дропа — после посадки лого (data-loader="done") */
+.hx-ln > span{transition-delay:.34s}
+.hx-ln:nth-child(2) > span{transition-delay:.41s}
+.hx-ln:nth-child(3) > span{transition-delay:.48s}
+html:is([data-loader="full"],[data-loader="short"]) #hero .hx-stage::before{visibility:hidden}
+
+/* телефон боком (высота ≤ 500): кадр = экран (было 600 px при экране 375 — кнопка за краем, заголовок обрезан);
+   маскот справа во весь рост, подпись под заголовком, кнопка слева по содержимому */
+@media (orientation:landscape) and (max-height:500px){
+  #hero.hx{--hx-h:max(300px,calc(100svh - var(--hx-top)))}
+  html[data-heroimg="mascot"] #hero .hx-mascot{top:auto;bottom:-2%;right:3vw;height:calc(var(--hx-h) * .8);width:calc(var(--hx-h) * .8)}
+  #hero .hx-sub{top:var(--hx-sub-top,auto);max-width:38ch}
+  #hero .hx-foot{right:auto}
+  #hero .hx-cta{justify-self:start;padding:0 32px}
+}
+
+/* режим «Улица» (лукбук): подпись лежала на красной печати джинсов модели — низ кадра темнее под подпись и кнопку */
+html[data-heroimg="look"] #hero .hx-media-wrap::after{background:linear-gradient(0deg,#050505 0,rgba(5,5,5,.86) 14%,rgba(5,5,5,.45) 27%,rgba(5,5,5,0) 40%),
+  linear-gradient(180deg,rgba(5,5,5,.5),rgba(5,5,5,0) 18%)}
+
+/* прокрутка (asphalt): заголовок ложится на дорогу — на телефоне он проходил прямо под головой маскота (каша из букв и лица).
+   Маскот своё отыграл (зачеркнул знак) — пока заголовок ложится, он мягко уходит в ночь; G и бирка не уезжают вверх
+   (иначе подпись «наклони телефон» наезжала на бирку). Только там, где прокрутка ведёт CSS (Safari/iOS 26+, Chrome);
+   без scroll-driven animations hero на телефоне — статичный постер (ниже). */
+@supports (animation-timeline: scroll()){
+  @media (prefers-reduced-motion:no-preference){
+    html[data-hero="asphalt"]:not([data-shot="1"]) #hero .hm-box{animation:m2-hm-out linear both;animation-timeline:scroll(root block);animation-range:5vh 30vh}
+    html[data-hero="asphalt"]:not([data-shot="1"]) #hero .hx-stage::before{animation:hx-out linear both;animation-timeline:scroll(root block);animation-range:0px 12vh}
+    html[data-hero="asphalt"]:not([data-shot="1"]) #hero .hx-g .g-gyro.is-shown{animation:hx-out linear both;animation-timeline:scroll(root block);animation-range:0px 12vh}
+    html[data-hero="asphalt"]:not([data-shot="1"]) #hero .hx-g{animation:m2-g-back linear both;animation-timeline:scroll(root block);animation-range:0px 55vh}
+  }
+}
+@keyframes m2-hm-out{to{opacity:0;transform:translateY(5%)}}
+@keyframes m2-g-back{to{opacity:.5}}
+#hero .hx-g .g-gyro{transition:opacity .2s}
+@supports not (animation-timeline: scroll()){
+  /* старые Safari: фолбэк motion.js двигает заголовок инлайн-стилем — на телефоне держим постер */
+  html[data-hero="asphalt"] #hero.hx{height:var(--hx-h)!important}
+  html[data-hero="asphalt"] #hero #hero-title.hx-title{transform:scale(.5)!important}
+  html[data-hero="asphalt"] #hero .hx-g{transform:none!important}
+  html[data-hero="asphalt"] #hero :is(.hx-sub,.hx-cta){opacity:1!important}
+  html[data-hero="asphalt"] #hero .hx-lane{display:none}
+}
+
+/* ---------------- ДРОП 01 ----------------
+   подпись под заголовком: подсказка жеста не рвётся посреди («свайп / по фото») — целиком второй строкой */
+.drop-head{gap:10px 24px;margin-bottom:28px}
+.drop-note .dn-touch{white-space:nowrap}
+/* низ каталога рвётся в чёрное рейла — тем же краем, каким каталог вошёл из hero (было: стык по линейке бумага/чёрный) */
+#drop::after{content:"";position:absolute;left:0;right:0;bottom:-15px;height:16px;z-index:2;background:var(--c-paper);pointer-events:none;transform:scaleY(-1);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20600%2018%22%20preserveAspectRatio%3D%22none%22%3E%3Cpath%20d%3D%22M0%2018V7L14%2011%2027%204%2041%209%2058%203%2070%2012%2088%206%20103%2010%20118%203%20137%208%20151%205%20166%2012%20184%204%20199%209%20217%206%20231%2013%20249%205%20262%209%20281%203%20297%2011%20313%206%20329%2010%20346%204%20360%2012%20378%207%20392%2010%20409%203%20426%209%20441%205%20459%2012%20474%206%20490%2010%20507%204%20523%2011%20540%206%20556%209%20571%203%20587%2010%20600%207V18Z%22/%3E%3C/svg%3E") 0 0/600px 100% repeat-x;
+  mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20600%2018%22%20preserveAspectRatio%3D%22none%22%3E%3Cpath%20d%3D%22M0%2018V7L14%2011%2027%204%2041%209%2058%203%2070%2012%2088%206%20103%2010%20118%203%20137%208%20151%205%20166%2012%20184%204%20199%209%20217%206%20231%2013%20249%205%20262%209%20281%203%20297%2011%20313%206%20329%2010%20346%204%20360%2012%20378%207%20392%2010%20409%203%20426%209%20441%205%20459%2012%20474%206%20490%2010%20507%204%20523%2011%20540%206%20556%209%20571%203%20587%2010%20600%207V18Z%22/%3E%3C/svg%3E") 0 0/600px 100% repeat-x}
+
+/* ---------------- РЕЙЛ (вёрстка блока S1; 3D и логику не трогаем) ----------------
+   стрелки — по середине сцены у краёв (были внизу сцены поверх подола/штанин вещи в фокусе); бирка над рейлом — не мельче 12 px */
+.rk:not([data-ui="bare"]) .rk-arr{top:50%;bottom:auto;margin-top:-22px;background:rgba(5,5,5,.82)}
+.rk-kicker{font-size:12px;letter-spacing:.1em}
+.rk-hint{font-size:12px;letter-spacing:.1em}
+
+/* ---------------- КАРТОЧКА ТОВАРА ----------------
+   вкладки «Кадры | 3D» — в строку шапки шита рядом с ручкой и крестиком (была отдельная строка 56 px над кадром:
+   на SE имя вещи уезжало за второй экран); «1/5» убран — точки и ярлык кадра уже говорят то же самое */
+#product-sheet .ps-tabs-w{position:absolute;left:0;top:-60px;height:60px;z-index:6;padding:6px var(--gutter) 0;background:none}
+#product-sheet .ps-count{display:none}
+#product-sheet .ps-dots{bottom:16px}
+#product-sheet .ps-tag{left:var(--gutter)}
+
+/* тап-цели и кегль: вкладки 32 → 40 px, моно-подписи не мельче 12 px (правило типошкалы) */
+#product-sheet .ps-tabs button{min-height:40px;padding:12px 13px 10px;font-size:12px}
+#product-sheet .ps-tabs-n,#product-sheet .ps-tabs-k{font-size:12px}
+#product-sheet .ps-tag{font-size:12px}
+.card-3d{font-size:12px}
+.rk-switch button{min-height:40px;padding:0 14px}
+}

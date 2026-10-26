@@ -26,10 +26,13 @@
        Покой у знака (v4.1): цельный ролик 1080 «у знака» — маркер не отрывается от знака, поворот к зрителю, подмигнул, помахал свободной
        рукой и вернулся в позу (пинг-понг: первый кадр = последний = поза hero). Склейки «знак из одного видео + фигура из другого» больше нет. -->
   <template id="hx-mascot-t"><div class="hx-mascot" data-mascot-slot="hero" data-mascot-manual data-pose="hero">
-    <div class="hm-box" data-state="still">
+    <!-- v4.2 (M1): видимость слоёв — только data-pic (картинка-основа: first | hold) и data-live (видео, у которого РЕАЛЬНО идут кадры).
+         Основа видна всегда, пока ни одно видео не «живое»; data-state — для API и проверок, на отрисовку не влияет.
+         sizes на телефоне 100vw: в вёрстке v4.2 квадрат кадра ≈ 98vw (на DPR 3 нужен 1080-кадр) -->
+    <div class="hm-box" data-state="still" data-pic="first">
       <span class="hm-shadow" aria-hidden="true"></span>
-      <img class="hm-still" alt="" width="720" height="720" decoding="async" draggable="false" sizes="(max-width: 767px) 92vw, (max-width: 1099px) 50vw, 40vw">
-      <img class="hm-hold" alt="" width="720" height="720" decoding="async" draggable="false" sizes="(max-width: 767px) 92vw, (max-width: 1099px) 50vw, 40vw">
+      <img class="hm-still" alt="" width="720" height="720" decoding="async" fetchpriority="high" draggable="false" sizes="(max-width: 767px) 100vw, (max-width: 1099px) 50vw, 40vw">
+      <img class="hm-hold" alt="" width="720" height="720" decoding="async" draggable="false" sizes="(max-width: 767px) 100vw, (max-width: 1099px) 50vw, 40vw">
       <video class="hm-v hm-v--cross" muted playsinline preload="none" disablepictureinpicture disableremoteplayback aria-hidden="true" tabindex="-1"></video>
       <video class="hm-v hm-v--idle" muted playsinline preload="none" disablepictureinpicture disableremoteplayback aria-hidden="true" tabindex="-1"></video>
     </div>
@@ -45,7 +48,7 @@
   var f=D.getElementById('hx-mascot-t').content.cloneNode(true),img=f.querySelector(still?'.hm-hold':'.hm-still');
   if(still){img.srcset='{{asset:img/v4/hero/m-hold-1080.webp}} 1080w, {{asset:img/v4/hero/m-hold-1440.webp}} 1440w';img.src='{{asset:img/v4/hero/m-hold-1080.webp}}';}
   else{img.srcset='{{asset:img/v4/hero/m-first-720.webp}} 720w, {{asset:img/v4/hero/m-first-1080.webp}} 1080w';img.src='{{asset:img/v4/hero/m-first-720.webp}}';}
-  if(still)f.querySelector('.hm-box').setAttribute('data-still','1');
+  if(still){var b=f.querySelector('.hm-box');b.setAttribute('data-still','1');b.setAttribute('data-pic','hold');}
   D.querySelector('#hero .hx-sticky').insertBefore(f,D.querySelector('#hero .hx-lane'));})();
   </script>
   <div class="hx-g"><div id="g3d" data-g-dock="hero" aria-hidden="true"></div></div>
@@ -59,94 +62,136 @@
  </div>
 </section>
 <script>
-/* V1 · маскот hero (v4.1). Состояния (data-state на .hm-box):
-     still   — картинка (чистый знак до старта; итоговая поза — reduced-motion, ?shot=1, экономия трафика, слабое устройство, ошибка);
-     cross   — один раз играет hero_crossout (720);
-     hold    — итоговая поза 1080/1440 (= последний кадр ролика), видео зачёркивания отпущено;
-     idle    — играет ролик «у знака» (1080, начало = конец = поза hold), потом снова hold.
-   Запуск «у знака»: сам через 3,2 с после зачёркивания, по наведению мыши и по тапу; при mzfx=max — ещё раз в 9–12 с простоя.
-   Ничего не «зависает»: у каждого ожидания есть предел (кадр не пришёл / видео встало / ошибка → hold картинкой), вне экрана — пауза.
-   Видео: Safari и любой браузер на iOS — HEVC с альфой (.mov, hvc1); остальные — VP9 с альфой (.webm) — выбор по движку (Chrome на macOS
-   играет HEVC без альфы). Программная графика / ≤2 ГБ / ≤2 ядра — видео не играем (альфа-видео там композится на CPU).
+/* V1 · маскот hero (v4.1 → v4.2 M1: «поза видна всегда»).
+   Отрисовка: картинка-основа (data-pic: first — чистый знак до ролика · hold — итоговая поза) видна ВСЕГДА, пока ни одно видео
+   не «живое». Видео становится видимым (data-live) только когда у него реально пошли кадры (requestVideoFrameCallback,
+   без него — сдвиг currentTime), и снова прячется, как только кадры встали: пауза системой, фон вкладки, «назад» (bfcache),
+   сеть, ушёл с экрана. Прерванный ролик не досматриваем — сразу итоговая поза картинкой. Смена основы first → hold — только
+   после декода hold (пустого кадра между картинками не бывает).
+   Почему: на iOS у видео, поставленного на паузу системой (фон, переход в Telegram и обратно, энергосбережение), слой
+   бывает пустым — у альфа-видео «пустой» = прозрачный: маскот пропадал и оставался пропавшим (data-state залипал в idle).
+   Состояния (data-state, для API/проверок): still → cross-wait → cross → hold ⇄ idle-wait → idle.
+     still — до старта и после отказа (reduced-motion, ?shot=1, экономия трафика, слабое устройство, ошибка);
+     cross — один раз hero_crossout (720); hold — поза 1080/1440 (= последний кадр ролика); idle — ролик «у знака» (1080, начало = конец = hold).
+   «У знака»: сам через 3,2 с после зачёркивания, по наведению мыши и по тапу; при mzfx=max — ещё раз в 9–12 с простоя.
+   Автовоспроизведение запрещено (энергосбережение iOS: play() → NotAllowedError) — поза картинкой, ролик «у знака» — по тапу
+   (жест пользователя автоплей разрешает).
+   Видео: Safari и любой браузер на iOS — HEVC с альфой (.mov, hvc1; цвет предумножен — под нулевой альфой чёрный, иначе iOS
+   рисует «дымку» прямоугольником); остальные — VP9 с альфой (.webm). Программная графика / ≤2 ГБ / ≤2 ядра — без видео.
    API: GV.heroMascot = {state, play(), still()}; событие grinchin:hero-mascot {state}. */
 (function(){
   'use strict';
   var D=document,h=D.documentElement,W=window,box=D.querySelector('#hero .hm-box');
   if(!box)return;
-  /* поза держится в своём <img class="hm-hold"> (вставлен прозрачным с середины ролика), а не подменой src у первого кадра:
-     так смена кадра не создаёт нового «самого крупного элемента» (LCP не уезжает на 7-ю секунду) и не бывает вспышки пустоты */
-  var GV=W.GV=W.GV||{},first=box.querySelector('.hm-still'),img=box.querySelector('.hm-hold'),vc=box.querySelector('.hm-v--cross'),vi=box.querySelector('.hm-v--idle');
+  var GV=W.GV=W.GV||{},img=box.querySelector('.hm-hold'),vc=box.querySelector('.hm-v--cross'),vi=box.querySelector('.hm-v--idle');
   var HOLD=['{{asset:img/v4/hero/m-hold-1080.webp}}','{{asset:img/v4/hero/m-hold-1080.webp}} 1080w, {{asset:img/v4/hero/m-hold-1440.webp}} 1440w'];
   var ua=navigator.userAgent,IOS=/iP(hone|ad|od)/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);
   var APPLE=IOS||/^((?!chrome|chromium|crios|fxios|edg|opr|android).)*safari/i.test(ua);
   var SRC={cross:APPLE?'{{asset:img/v4/hero/cross.mov}}':'{{asset:img/v4/hero/cross.webm}}',
            idle:APPLE?'{{asset:img/v4/hero/sign-idle.mov}}':'{{asset:img/v4/hero/sign-idle.webm}}'};
-  var ANIM=h.getAttribute('data-mzfx')==='max',st='still',vis=true,ready=false,loaded=false,T=0,guard=0,autoN=0,idleBad=false;
+  var ANIM=h.getAttribute('data-mzfx')==='max',st='still',vis=true,ready=false,loaded=false,T=0,guard=0,autoN=0,idleBad=false,blocked=false;
   var api=GV.heroMascot={state:'still',src:SRC,play:function(){idle();},still:toStill};
   function set(s){st=api.state=s;box.setAttribute('data-state',s);D.dispatchEvent(new CustomEvent('grinchin:hero-mascot',{detail:{state:s}}));}
-  function pic(P){if(img.getAttribute('src')!==P[0]){img.srcset=P[1];img.src=P[0];}return img.decode?img.decode().catch(function(){}):Promise.resolve();}
   function stop(v){try{v.pause();}catch(e){}}
-  function toStill(){clearTimeout(T);clearTimeout(guard);stop(vc);stop(vi);pic(HOLD);box.setAttribute('data-fail','1');set('still');}
-  function toHold(){clearTimeout(guard);stop(vi);set('hold');}
+  /* основа: hold — только когда картинка точно декодирована (decode() в WebKit иногда отклоняется у уже готовой — проверяем сами) */
+  var holdP=null;
+  function holdReady(){
+    if(!holdP){if(img.getAttribute('src')!==HOLD[0]){img.srcset=HOLD[1];img.src=HOLD[0];}
+      var ok=function(){return !!(img.complete&&img.naturalWidth);};
+      holdP=(img.decode?img.decode():Promise.reject()).then(function(){return true;},function(){
+        if(ok())return true;
+        return new Promise(function(r){img.addEventListener('load',function(){r(true);},{once:true});img.addEventListener('error',function(){holdP=null;r(false);},{once:true});});});}
+    return holdP;}
+  function toHoldPic(){holdReady().then(function(ok){if(ok)box.setAttribute('data-pic','hold');});}
+  /* «живое» видео: видно, пока у него идут кадры. Сторож раз в 300 мс: пауза / кадры стоят 0,9 с / вкладка скрыта → прервать */
+  var live=null,wd=0,lastCT=-1,lastT=0;
+  function show(v){if(live===v)return;live=v;box.setAttribute('data-live',v===vc?'cross':'idle');lastCT=v.currentTime;lastT=Date.now();
+    clearInterval(wd);wd=setInterval(check,300);}
+  function hide(){live=null;box.removeAttribute('data-live');clearInterval(wd);}
+  function check(){var v=live;if(!v){clearInterval(wd);return;}if(v.ended)return;var n=Date.now();
+    if(v.currentTime!==lastCT){lastCT=v.currentTime;lastT=n;if(!v.paused&&!D.hidden)return;}
+    if(v.paused||D.hidden||n-lastT>900)abort();}
+  // первый реально показанный кадр ролика → fn. rVFC — по факту отрисовки; без него (iOS < 15.4) — сдвиг currentTime + 2 кадра
+  function onFrame(v,fn){var t0=v.currentTime,done=false,hit=function(){if(!done){done=true;fn();}};
+    if(v.requestVideoFrameCallback){v.requestVideoFrameCallback(function(){if(!v.paused)hit();else onFrame(v,fn);});return;}
+    var k=function(){if(v.currentTime>t0+.04){v.removeEventListener('timeupdate',k);requestAnimationFrame(function(){requestAnimationFrame(hit);});}};
+    v.addEventListener('timeupdate',k);}
+  function play(v){var p;try{p=v.play();}catch(e){return Promise.reject(e);}return p&&p.then?p:Promise.resolve();}
+  function release(v){if(live===v)return;stop(v);try{v.removeAttribute('src');v.load();}catch(e){}}
+  /* ролик прерван — сразу поза картинкой; прерванное не досматриваем (на iOS слой после паузы бывает пустым) */
+  function abort(){
+    clearTimeout(guard);
+    if(st==='cross'||st==='cross-wait'){stop(vc);toHoldPic();hide();set('hold');setTimeout(function(){if(st!=='cross')release(vc);},400);}
+    else if(st==='idle'||st==='idle-wait'){stop(vi);hide();set('hold');}
+    else hide();
+  }
+  function toStill(){clearTimeout(T);clearTimeout(guard);stop(vc);stop(vi);toHoldPic();hide();box.setAttribute('data-fail','1');set('still');}
+  // отказ автоплея (энергосбережение / политика) — поза, без автоповторов; тап — ролик «у знака» (жест разрешает play)
+  function toBlocked(e){if(e&&e.name==='NotAllowedError'){clearTimeout(guard);stop(vc);blocked=true;toHoldPic();hide();set('hold');}else toStill();}
   if(box.hasAttribute('data-still'))return;
   [vc,vi].forEach(function(v){v.muted=true;v.defaultMuted=true;v.playsInline=true;v.setAttribute('webkit-playsinline','');});
-  function play(v){var p;try{p=v.play();}catch(e){return Promise.reject(e);}return p&&p.then?p:Promise.resolve();}
-  // первый кадр видео реально на экране → картинку убираем (две копии альфы друг на друге дают жёсткую кромку)
-  function onFrame(v,fn){if(v.requestVideoFrameCallback)v.requestVideoFrameCallback(function(){fn();});else{var k=function(){v.removeEventListener('timeupdate',k);fn();};v.addEventListener('timeupdate',k);}}
   var nav=navigator,WEAK=!!((nav.deviceMemory&&nav.deviceMemory<=2)||(nav.hardwareConcurrency&&nav.hardwareConcurrency<=2)),gt0=0;
   function softGL(){var g=GV.g,l=GV.gl;return /software|weak/i.test(((g&&g.why)||'')+' '+((l&&l.why)||''));}
   function glKnown(){var g=GV.g,l=GV.gl;return !l||!g||g.mode!=='none'||(l.state&&l.state()==='off');}
   function load(){
     if(loaded)return;loaded=true;
-    vc.addEventListener('error',toStill,{once:true});
+    if(IOS){toHoldPic();go();return;}   // iOS: видео не качаем вовсе — сразу итоговая поза
+    vc.addEventListener('error',function(){if(st==='still'||st==='cross-wait'||st==='cross')toStill();},{once:true});
     vc.preload='auto';vc.src=SRC.cross;try{vc.load();}catch(e){}
+    setTimeout(holdReady,1200);   // итоговая поза нужна при любом исходе — качаем заранее (после первого кадра страницы)
     go();
   }
-  /* play() сразу, без ожидания canplay: iOS не буферизует по preload="auto". Кадр не пришёл за 9 с — итоговая поза картинкой. */
+  /* play() сразу, без ожидания canplay: iOS не буферизует по preload="auto". Кадр не пришёл за 6 с — итоговая поза картинкой. */
   function go(){
-    if(st!=='still'||!ready||!vis||!loaded)return;
+    if(st!=='still'||box.hasAttribute('data-fail')||!ready||!vis||!loaded||D.hidden)return;
     if(WEAK||softGL()){toStill();return;}
     if(!glKnown()){if(!gt0)gt0=Date.now();if(Date.now()-gt0<2500){setTimeout(go,150);return;}}
+    if(IOS){clearTimeout(guard);stop(vc);blocked=true;box.setAttribute('data-ios','1');toHoldPic();hide();set('hold');return;}   // iOS: без альфа-видео — поза + CSS-покачивание
     set('cross-wait');
-    onFrame(vc,function(){if(st==='cross-wait')set('cross');});
-    play(vc).catch(toStill);
-    guard=setTimeout(function(){if(st==='cross-wait')toStill();},9000);
+    onFrame(vc,function(){if(st==='cross-wait'){set('cross');show(vc);}});
+    play(vc).catch(function(e){if(st==='cross-wait'||st==='cross')toBlocked(e);});
+    guard=setTimeout(function(){if(st==='cross-wait'){stop(vc);toStill();}},6000);
   }
-  // поза 1080/1440 качается заранее (середина ролика); на конце — подмена кадра на картинку (совпадают), видео 720 отпускаем
-  vc.addEventListener('timeupdate',function k(){if(vc.currentTime>2){vc.removeEventListener('timeupdate',k);pic(HOLD);}});
+  vc.addEventListener('timeupdate',function k(){if(vc.currentTime>2){vc.removeEventListener('timeupdate',k);holdReady();}});
+  // конец зачёркивания: последний кадр видео стоит, пока поза не декодирована, потом подмена (кадры совпадают) и видео отпускаем
   vc.addEventListener('ended',function(){clearTimeout(guard);
-    var done=false,fin=function(){if(done)return;done=true;if(st!=='cross'&&st!=='cross-wait')return;set('hold');schedule(3200);};
-    // видео 720 отпускаем только когда картинка точно декодирована (до того его последний кадр лежит под ней — пустоты не бывает)
-    pic(HOLD).then(function(){fin();setTimeout(function(){if(st!=='cross'&&img.complete&&img.naturalWidth){try{vc.removeAttribute('src');vc.load();}catch(e){}}},400);});
-    setTimeout(fin,1500);});   // декодер молчит 1,5 с — всё равно hold: под картинкой остаётся последний кадр видео
-  function schedule(ms){clearTimeout(T);T=setTimeout(function(){
+    if(st!=='cross'&&st!=='cross-wait')return;
+    var done=false,fin=function(ok){if(done||(st!=='cross'&&st!=='cross-wait'))return;done=true;
+      if(ok)box.setAttribute('data-pic','hold');else toHoldPic();
+      hide();set('hold');setTimeout(function(){release(vc);},400);schedule(3200);};
+    holdReady().then(fin);
+    setTimeout(function(){fin(false);},1500);});   // декодер молчит 1,5 с — всё равно hold (основа — чистый знак, пока поза не готова)
+  function schedule(ms){clearTimeout(T);if(blocked)return;T=setTimeout(function(){
     if(st!=='hold')return;
     if(vis&&!D.hidden&&(ANIM||autoN<1)){autoN++;idle();}else if(ANIM)schedule(4000);},ms);}
-  /* ролик «у знака»: hold → idle-wait (картинка видна, пока нет первого кадра) → idle → ended → hold. Сбой/застревание → hold. */
+  /* ролик «у знака»: hold → idle-wait (видна поза) → idle (пошли кадры) → ended → hold. Сбой/застревание/пауза → hold. */
   function idle(){
-    if(st!=='hold'||idleBad)return;
+    if(IOS){box.classList.remove('is-hop');void box.offsetWidth;box.classList.add('is-hop');return;}   // iOS: тап — прыжок позы вместо ролика
+    if(st!=='hold'||idleBad||D.hidden)return;
     clearTimeout(T);
-    if(!vi.getAttribute('src')){vi.addEventListener('error',function(){idleBad=true;toHold();},{once:true});vi.preload='auto';vi.src=SRC.idle;try{vi.load();}catch(e){}}
-    try{if(vi.currentTime)vi.currentTime=0;}catch(e){}
+    if(!vi.getAttribute('src')){vi.addEventListener('error',function(){idleBad=true;if(st==='idle'||st==='idle-wait'){stop(vi);hide();set('hold');}},{once:true});
+      vi.preload='auto';vi.src=SRC.idle;try{vi.load();}catch(e){}}
+    else try{vi.currentTime=0;}catch(e){}   // с начала: перемотка заодно будит декодер после фона
     set('idle-wait');
-    onFrame(vi,function(){if(st==='idle-wait')set('idle');});
-    play(vi).catch(function(){if(st==='idle-wait'||st==='idle')toHold();});
-    clearTimeout(guard);guard=setTimeout(function(){if(st==='idle-wait')toHold();},9000);
+    onFrame(vi,function(){if(st==='idle-wait'){set('idle');show(vi);}});
+    play(vi).then(function(){blocked=false;},function(){if(st==='idle-wait'||st==='idle'){stop(vi);hide();set('hold');}});
+    clearTimeout(guard);guard=setTimeout(function(){if(st==='idle-wait'){stop(vi);set('hold');}},6000);
   }
-  vi.addEventListener('ended',function(){if(st==='idle'||st==='idle-wait'){toHold();if(ANIM)schedule(9000+Math.random()*3000);}});
-  // видео встало посреди ролика (сеть) дольше 4 с — назад в позу
-  var stall=0;vi.addEventListener('waiting',function(){clearTimeout(stall);stall=setTimeout(function(){if(st==='idle')toHold();},4000);});
-  vi.addEventListener('playing',function(){clearTimeout(stall);});
+  vi.addEventListener('ended',function(){if(st==='idle'||st==='idle-wait'){clearTimeout(guard);hide();set('hold');if(ANIM)schedule(9000+Math.random()*3000);}});
+  // пауза системой посреди ролика — поза в тот же кадр (сторож ловит остальное: кадры встали без события)
+  [vc,vi].forEach(function(v){v.addEventListener('pause',function(){if(live===v&&!v.ended)abort();});});
   box.addEventListener('pointerenter',function(e){if(e.pointerType==='mouse')idle();});
   box.addEventListener('click',function(){idle();});
-  // вне экрана — пауза и без автоповторов; вернулся — продолжаем с того же места
+  // вне экрана — ролик прерываем (поза), вернулся — ничего не доигрываем; первый показ ждёт видимости
   if('IntersectionObserver' in W)new IntersectionObserver(function(es){es.forEach(function(e){vis=e.isIntersecting;
-    if(!vis){[vc,vi].forEach(function(v){if(!v.paused&&!v.ended)stop(v);});}
-    else if(st==='cross'||st==='cross-wait')play(vc).catch(toStill);
-    else if(st==='idle'||st==='idle-wait')play(vi).catch(toHold);
-    else go();
+    if(!vis){if(st!=='still'&&st!=='hold')abort();}
+    else if(st==='still')go();
   });},{threshold:.15}).observe(box);
-  D.addEventListener('visibilitychange',function(){if(!D.hidden&&st==='hold'&&ANIM)schedule(4000);});
+  // фон вкладки, переход в другое приложение, «назад» в bfcache: сразу поза, видео на паузу
+  function away(){clearTimeout(T);if(st==='cross'||st==='cross-wait'||st==='idle'||st==='idle-wait')abort();else hide();}
+  D.addEventListener('visibilitychange',function(){if(D.hidden)away();else if(st==='still')go();else if(st==='hold'&&ANIM)schedule(4000);});
+  W.addEventListener('pagehide',away);
+  W.addEventListener('pageshow',function(e){if(e.persisted){hide();if(st==='still')go();}});
   // старт: качаем после первого кадра страницы и сцены, играем после ready (прелоадер раскрыл сайт)
   function kick(){var s=D.querySelector('#hero-media img'),done=false;
     if(GV.gl&&GV.gl.onOff)GV.gl.onOff(function(){if(softGL()&&st!=='still')toStill();});   // three-g.js уже подключён (DOMContentLoaded)

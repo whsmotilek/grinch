@@ -1,4 +1,4 @@
-/* GRINCHIN v3 — переключатель режимов. Владелец: K1.
+/* GRINCHIN v4 — переключатель режимов. Владелец: V1 (интерфейс как в v3, оси — SPEC_V4).
    Состояние и API (GV.mode) ставит инлайн-скрипт в <head> index.html ещё до первой отрисовки; здесь — только интерфейс:
    бирка «режим 1 2 3 4 · ⚙» в левом нижнем углу (вертикальная, живёт в поле страницы и не лезет на контент)
    и панель всех осей (<dialog>: фокус-ловушка, Esc и возврат фокуса — у браузера).
@@ -10,18 +10,22 @@
   if (!M) return;
   var REOPEN = "grinchin:mode:panel";
 
-  // подписи — по SPEC_V3 «Режимы», порядок осей как в таблице
+  // подписи осей v4; порядок — от первого экрана вниз по странице
   var AX = [
-    ["g", "3D-знак G — материал", { lime: "гладкий лайм", tape: "скотч с заломами", black: "чёрный глянец, лаймовый торец" }],
-    ["hero", "Hero — движение", { asphalt: "постер ложится на асфальт", static: "постер стоит" }],
-    ["heroimg", "Hero — кто в кадре", { model: "модель", mascot: "маскот вместо человека", crop: "фото v1, кадр от подбородка" }],
+    ["heroimg", "Hero — кто в кадре", { mascot: "сцена + маскот", scene: "только сцена", look: "лукбук-кадр" }],
+    ["hero", "Hero — движение", { asphalt: "заголовок ложится на асфальт", static: "постер стоит" }],
+    ["g", "3D-знак G — материал (при маскоте в hero — чёрный винил)", { lime: "гладкий лайм", tape: "скотч с заломами", black: "чёрный глянец, лаймовый торец" }],
     ["cards", "Рисунки вещей", { a: "техкарта", b: "маркер", c: "деталь", d: "техкарта + пометка от руки" }],
+    ["ghost", "Фото вещи при наведении", { on: "рисунок → фото", off: "только рисунок" }],
     ["size", "Выбор размера", { vector: "кресты", hand: "маркером" }],
+    ["rack", "Дроп на вешалках (3D)", { on: "крутится от прокрутки", drag: "крутить руками", chain: "на цепи", off: "нет" }],
     ["brand", "Блок о бренде", { sign: "3D-знак ONE WAY or ANOTHER", story: "история STOP → ST’ART" }],
     ["roll", "Рулон ленты по странице", { page: "катится до подвала", quiet: "сдержанно: тоньше, без креста", off: "нет" }],
     ["tape", "Цвет ленты", { lime: "лайм (чёрная, где свой зелёный)", black: "чёрная с лаймовой печатью" }],
     ["marquee", "Бегущая лента", { off: "нет", on: "есть, IGNORE THE SIGNS" }],
-    ["mascot", "Маскот", { kapushon: "Капюшон + Ухмыл", grinchin: "Гринчин", uhmyl: "только Ухмыл", none: "без маскота" }],
+    ["stickers", "Стикеры", { on: "акцентами", max: "щедрее", off: "нет" }],
+    ["mascot", "Маскот", { grinchin: "Гринчин везде", quiet: "только в подвале", none: "без маскота" }],
+    ["mzfx", "Маскот — живость", { calm: "спокойно", max: "анимации везде" }],
     ["cart", "Корзина в шапке", { count: "счётчик после добавления", menu: "только в меню" }]
   ];
   var NAMES = M.names || { 1: "Финал", 2: "Максимум", 3: "Тихий", 4: "Улица" };
@@ -188,9 +192,30 @@
     // у подвала (контакты, юридическая строка) бирку прячем: как только подвал показался снизу
     var ft = d.getElementById("footer"), end = ft;
     if (!ft) { end = d.createElement("div"); end.className = "mt-end"; end.setAttribute("aria-hidden", "true"); d.body.appendChild(end); }
-    if ("IntersectionObserver" in window) new IntersectionObserver(function (es) {
-      es.forEach(function (x) { if (x.isIntersecting) h.dataset.mtagOff = "1"; else delete h.dataset.mtagOff; });
-    }, { rootMargin: "0px 0px 40px 0px" }).observe(end);
+    // v4: и пока низ экрана (полоса бирки, ~200 px) занят блоком с подписями у левого края — рейл S1 (#rack) и всё с [data-mtag-avoid]
+    var off = { foot: false, zone: false };
+    function apply() { if (off.foot || off.zone) h.dataset.mtagOff = "1"; else delete h.dataset.mtagOff; }
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(function (es) {
+        es.forEach(function (x) { off.foot = x.isIntersecting; }); apply();
+      }, { rootMargin: "0px 0px 40px 0px" }).observe(end);
+      var zones = [].slice.call(d.querySelectorAll("#rack, [data-mtag-avoid]")), live = new Set(), raf = 0;
+      var check = function () {
+        raf = 0; var vh = innerHeight, hit = false;
+        // широкая бирка (desktop ≥1100) живёт в поле 34 px и подписям не мешает — прячем только узкую
+        if (innerWidth < 1100) live.forEach(function (el) { var r = el.getBoundingClientRect(); if (r.top < vh - 16 && r.bottom > vh - 200) hit = true; });
+        if (hit !== off.zone) { off.zone = hit; apply(); }
+      };
+      var onScroll = function () { if (!raf) raf = requestAnimationFrame(check); };
+      if (zones.length) {
+        var zio = new IntersectionObserver(function (es) {
+          es.forEach(function (x) { if (x.isIntersecting) live.add(x.target); else live.delete(x.target); });
+          if (live.size) window.addEventListener("scroll", onScroll, { passive: true }); else window.removeEventListener("scroll", onScroll);
+          check();
+        });
+        zones.forEach(function (z) { zio.observe(z); });
+      }
+    }
     var again = null;
     try { again = sessionStorage.getItem(REOPEN); sessionStorage.removeItem(REOPEN); } catch (e) { /* — */ }
     if (again && !h.dataset.clean) setTimeout(function () { open(again === "*" ? null : again); }, 60);

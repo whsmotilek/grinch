@@ -1,6 +1,116 @@
-/* GRINCHIN v3 — content.css. Владелец: K1.
-   Слой разделов v1 (hero, образы, о бренде, подписка, подвал, 404 — стили из base.css v1) отсюда убран:
-   соседи пересобрали свои блоки на своих классах и в своих файлах, а старые правила по id (#hero, #about, #next, #footer…)
-   только мешали бы им. Файл оставлен под общую раскладку страницы. */
+/* GRINCHIN v4 — content.css. Владелец: V2 (v3 — K1).
+   Каталог: ghost-фото поверх рисунка, бейдж «3D», точки «рисунок · фото» на телефоне.
+   Карточка товара: вкладки «Кадры | 3D», подписи кадров, точки, зум, 3D-панель (монтирует S1 — GV.rack.mountProduct).
+   Только transform/opacity в переходах; фото — в кадре 4:5 той же коробки, что и рисунок (CLS нет). */
 
-/* #roll-stage (рулон, K2) — размеры и показ по оси data-roll задаёт scenes.css; здесь правил нет намеренно */
+/* #roll-stage (рулон) — размеры и показ по оси data-roll задаёт его владелец; здесь правил нет намеренно */
+
+/* ---------------- каталог: ghost-фото ---------------- */
+.card-ghost{position:absolute; inset:0; z-index:1; opacity:0; pointer-events:none; background:#d3d3d5;
+  transition:opacity .42s var(--ease-out)}
+/* свой слой — только когда к карточке потянулись (наведение/касание/подсказка): невидимые слои фото иначе растрятся
+   прямо в прокрутке (телефон CPU×4: +80 мс на ряд) */
+.card-ghost.is-armed{will-change:opacity}
+.card-ghost .cg-pic{position:absolute; inset:0; display:block}
+.card-ghost img{display:block; width:100%; height:100%; object-fit:cover; transform:scale(1.04); transition:transform .7s var(--ease-out)}
+/* бейдж «3D» — белый стикер с чёрным контуром (не лайм: зелёный на экране уже занят) */
+.card-3d{position:absolute; top:10px; right:10px; display:block; padding:6px 9px 5px; border:2px solid #000; border-radius:999px;
+  background:#fff; color:#000; font:800 .6875rem/1 var(--font-display); letter-spacing:.02em; pointer-events:none;
+  box-shadow:0 0 0 2.5px #fff; transform:rotate(-7deg) scale(.86); transition:transform .3s var(--ease-snap) .12s}
+.card-3d::before{content:"↻"; margin-right:4px; font-family:var(--font-text); font-weight:600}
+
+.card.is-ghost .card-ghost.is-ready,.card.is-hold .card-ghost.is-ready,.card.is-peek .card-ghost.is-ready{opacity:1}
+.card.is-ghost .card-ghost img,.card.is-hold .card-ghost img,.card.is-peek .card-ghost img{transform:none}
+.card.is-ghost .card-3d,.card.is-hold .card-3d{transform:rotate(-7deg); pointer-events:auto}
+@media (hover:hover) and (pointer:fine){
+  .card:hover .card-ghost.is-ready,.card:focus-within .card-ghost.is-ready{opacity:1}
+  .card:hover .card-ghost img,.card:focus-within .card-ghost img{transform:none}
+  .card:hover .card-3d{transform:rotate(-7deg); pointer-events:auto; cursor:pointer}
+  .card .card-3d:hover{transform:rotate(0deg) scale(1.08)}
+}
+/* телефон: обложка ловит горизонтальный жест сама, страница — вертикальный */
+@media (hover:none),(pointer:coarse){
+  .card-media{touch-action:pan-y; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none}
+}
+.card-pg{position:absolute; left:50%; bottom:9px; z-index:2; display:flex; gap:5px; translate:-50% 0; pointer-events:none}
+.card-pg i{display:block; width:6px; height:6px; border-radius:50%; background:#000; opacity:.22; transition:opacity .25s ease}
+.card-pg i:first-child,.card.is-ghost .card-pg i:last-child,.card.is-hold .card-pg i:last-child,.card.is-peek .card-pg i:last-child{opacity:1}
+.card.is-ghost .card-pg i:first-child,.card.is-hold .card-pg i:first-child,.card.is-peek .card-pg i:first-child{opacity:.22}
+.card[data-state="soldout"] .card-3d{display:none}
+html[data-ghost="off"] .card-ghost,html[data-ghost="off"] .card-pg{display:none}
+
+/* ---------------- превью-фото: «С этим», корзина ---------------- */
+.mini picture,.ci-thumb picture{display:block}
+.mini picture img,.ci-thumb picture img,.cu-card picture img{object-fit:cover; background:#d3d3d5}
+.cu-card picture{grid-row:1/span 2; display:block; width:56px}
+
+/* ---------------- карточка товара: галерея ---------------- */
+.ps-gallery{position:relative}
+.ps-slide--photo{background:#d3d3d5; touch-action:manipulation}
+.ps-slide--look{background:#0b0b0b}
+.ps-pic{position:absolute; inset:0; display:block; transition:transform .38s var(--ease-out)}
+.ps-pic img{display:block; width:100%; height:100%; object-fit:cover}
+.ps-slide.is-zoom{touch-action:none; z-index:2}
+.ps-track.is-zoomed{overflow-x:hidden; scroll-snap-type:none}
+@media (hover:hover) and (pointer:fine) and (min-width:768px){
+  .ps-slide--photo{cursor:zoom-in}
+  .ps-slide--photo.is-zoom{cursor:zoom-out}
+}
+/* подпись кадра: «рисунок / перед / спина / бок / образ ’01» */
+.ps-tag{position:absolute; left:12px; bottom:12px; z-index:1; padding:5px 8px 4px; background:#fff; color:#000;
+  font:500 .6875rem/1 var(--font-mono); letter-spacing:.04em; text-transform:lowercase; pointer-events:none}
+.ps-slide--look .ps-tag{background:#000; color:#fff}
+.ps-slide.is-zoom .ps-tag{opacity:0}
+.ps-count{z-index:1; padding:5px 8px 4px; background:#fff; color:#000; bottom:12px}
+/* точки — телефон */
+.ps-dots{position:absolute; left:50%; bottom:18px; z-index:1; display:flex; gap:6px; translate:-50% 0; pointer-events:none}
+.ps-dots i{display:block; width:7px; height:7px; border-radius:50%; background:#000; opacity:.25; transition:opacity .2s ease, transform .2s ease}
+.ps-dots i.is-on{opacity:1; transform:scale(1.15)}
+
+/* вкладки «Кадры | 3D» — пилюля поверх галереи (телефон — над первым кадром, desktop — липнет к верху колонки) */
+.ps-tabs-w{position:absolute; top:12px; left:12px; z-index:4}
+.ps-tabs{display:inline-flex; padding:3px; border:2px solid #000; border-radius:999px; background:#fff}
+.ps-tabs button{display:inline-flex; align-items:baseline; gap:6px; min-height:36px; padding:10px 14px 8px; border-radius:999px;
+  font:700 .75rem/1 var(--font-display); letter-spacing:.01em; color:#000; transition:background-color .2s ease, color .2s ease}
+.ps-tabs button[aria-selected="true"]{background:#000; color:#fff}
+.ps-tabs button:focus-visible{outline:2px solid #000; outline-offset:2px}
+.ps-tabs-n,.ps-tabs-k{font:500 .625rem/1 var(--font-mono); letter-spacing:.02em; opacity:.6}
+@media (max-width:767px){
+  .ps-tabs-w{top:10px; left:10px}
+  .ps-tabs{padding:2px; border-width:1.5px}
+  .ps-tabs button{min-height:32px; padding:9px 11px 7px; font-size:.6875rem}
+}
+@media (max-width:379px){ .ps-tabs-k{display:none} }
+
+/* 3D: чёрная студия; S1 монтирует сцену в .ps-3d-mount. Пока модуля нет — рисунок и подпись */
+.ps-3d{position:relative; aspect-ratio:4/5; background:#0c0c0c; color:#fff; overflow:hidden}
+.ps-3d[hidden]{display:none}
+.ps-3d-mount{position:absolute; inset:0; touch-action:none}
+.ps-3d-ph{position:absolute; inset:0; display:grid; place-items:center; pointer-events:none}
+.ps-3d-art{position:absolute; inset:6% 10%; opacity:.18}
+.ps-3d-art .art{width:100%; height:100%; aspect-ratio:auto}
+.ps-3d-art .art-ov,.ps-3d-art .art-mark{display:none}
+.ps-3d-msg{position:relative; padding:8px 12px 7px; background:#fff; color:#000; font:500 .75rem/1.3 var(--font-mono); letter-spacing:.02em}
+.ps-3d.is-live .ps-3d-ph{display:none}
+.ps-3d-hint{position:absolute; left:0; right:0; bottom:16px; margin:0; text-align:center; color:var(--c-ink-2); font-size:.6875rem; opacity:0; transition:opacity .4s ease .6s; pointer-events:none}
+.ps-3d.is-live .ps-3d-hint{opacity:1}
+.ps-gallery[data-view="3d"] .ps-cap{visibility:hidden}
+
+@media (max-width:767px){
+  .ps-count{right:var(--gutter)}
+}
+@media (min-width:768px){
+  .ps-dots{display:none}
+  /* desktop: кадры столбиком (base.css), пилюля липнет к верху колонки, пока листаешь кадры */
+  .ps-tabs-w{position:sticky; top:16px; left:auto; height:0; margin-left:16px; overflow:visible}
+  .ps-3d{position:sticky; top:0}
+}
+@media (prefers-reduced-motion:reduce){
+  .card-ghost,.card-ghost img,.card-3d,.ps-pic{transition:none!important}
+}
+html[data-shot="1"] .card-ghost,html[data-shot="1"] .card-ghost img{transition:none}
+
+/* техкарта (стиль a) в галерее: верхняя строка кода уходит под пилюлю вкладок — код дублирует номер в карточке, прячем;
+   легенда выносок внизу сама подписывает кадр — ярлык «рисунок» не нужен */
+.ps-gallery:has(.ps-tabs) .art--gallery .art-meta > .art-code,.ps-gallery:has(.ps-tabs) .art--gallery .art-meta > .art-hair{visibility:hidden}
+.ps-slide--art:has(.art--a) .ps-tag{display:none}

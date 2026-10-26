@@ -1,9 +1,13 @@
-<!-- K5 · 404. «Тупик.» + маскот выглядывает из-за ленты ограждения ([data-mascot-slot="404"], поза peek —
-     ленты — растр K3 (скан скотча) узором внутри SVG маскота, уходят за края экрана; панель их обрезает).
-     При data-mascot="none" — просто ограждение из полос .tape-strip.
-     Открывает K1: GV.open('404') / ?open=404 / битый #hash. -->
+<!-- V3 · 404 (v4). «Тупик.» на диораме-тупике (404-bg: стена, барьер с лаймовым крестом, забор) + маскот 404
+     ([data-mascot-slot="404"]: карта вверх ногами и знак ONE WAY) стоит на диораме. Фон грузится, только когда 404 открыт
+     (img loading=lazy внутри скрытого оверлея). При data-mascot="none"/"quiet" — просто сцена.
+     Открывает K1/V1: GV.open('404') / ?open=404 / битый #hash. -->
 <div id="page-404" class="ov ov--full" role="dialog" aria-modal="true" aria-labelledby="p404-title" hidden>
   <div class="ov-panel e404">
+    <div class="e404-art" aria-hidden="true">
+      <picture class="e404-bg"><source media="(max-aspect-ratio: 4/5)" type="image/avif" srcset="{{asset:img/v4/scenes/404-bg-m-720.avif}} 720w, {{asset:img/v4/scenes/404-bg-m-1080.avif}} 1080w" sizes="100vw"><source media="(max-aspect-ratio: 4/5)" type="image/webp" srcset="{{asset:img/v4/scenes/404-bg-m-720.webp}} 720w, {{asset:img/v4/scenes/404-bg-m-1080.webp}} 1080w" sizes="100vw"><source type="image/avif" srcset="{{asset:img/v4/scenes/404-bg-1440.avif}} 1440w, {{asset:img/v4/scenes/404-bg-2560.avif}} 2560w" sizes="100vw"><img src="{{asset:img/v4/scenes/404-bg-1440.webp}}" srcset="{{asset:img/v4/scenes/404-bg-1440.webp}} 1440w, {{asset:img/v4/scenes/404-bg-2560.webp}} 2560w" sizes="100vw" alt="" width="2560" height="1440" loading="lazy" decoding="async"></picture>
+      <div class="e404-mz" data-mascot-slot="404"></div>
+    </div>
     <button class="e404-logo" type="button" data-close data-home aria-label="GRINCHIN — на главную"><!--@svg:logo--></button>
     <div class="e404-in">
       <div class="e404-txt">
@@ -11,10 +15,7 @@
         <h2 id="p404-title" class="e404-title">Тупик.</h2>
         <p class="e404-sub">Знаки можно игнорировать. Тупики&nbsp;— нет.</p>
       </div>
-      <div class="e404-stage" aria-hidden="true">
-        <div class="e404-mz" data-mascot-slot="404"></div>
-        <div class="e404-fence"><span class="tape-strip tape-strip--black e404-t e404-t1"></span><span class="tape-strip tape-strip--lime e404-t e404-t2"></span></div>
-      </div>
+      <div class="e404-stage" aria-hidden="true"></div>
       <button class="btn btn--accent e404-home" type="button" data-close data-home>На&nbsp;главную <svg class="gl" viewBox="0 0 16 12" aria-hidden="true"><path d="M0 6h14.5M9.5 1l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
     </div>
   </div>

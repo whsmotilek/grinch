@@ -72,6 +72,7 @@
 .art{position:relative; width:100%; aspect-ratio:4/5; container:art / inline-size; color:var(--c-black)}
 .card-media > .art{position:absolute; inset:0; width:auto; height:auto; aspect-ratio:auto}
 .art > .art-base{position:absolute; inset:0; display:block; width:100%; height:100%; object-fit:contain; margin:0}
+.art > picture.art-base > img{display:block; width:100%; height:100%; object-fit:contain}
 .art > .art-ov{position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none}
 .art > .art-note,.art > .art-tag{position:absolute; display:block; height:auto; max-width:none; object-fit:fill; pointer-events:none; margin:0}
 /* пометка: .art-note (место, масштаб) > .art-note-c (шторка: overflow + translate) > img (встречный translate) — только transform */
@@ -118,6 +119,14 @@
 /* тач: буквы пометки уже «видимы», их прячет шторка — растр делается заранее, а не в кадре, когда карточка прошла центр
    (иначе первый растр SVG-букв ~50 мс прямо в прокрутке). Пометка на таче не снимается — гаснуть ей не нужно */
 @media (hover:none){ .art--d .art-note{opacity:1} }
+/* v4: на таче стрелка карточки не «рисуется» штрихом (stroke-dashoffset перерисовывал слой каждый кадр прямо в прокрутке —
+   50–80 мс на телефоне CPU×4), а проявляется прозрачностью слоя; буквы по-прежнему дописываются шторкой (transform) */
+@media (hover:none){
+  .art--card.art--d .art-line{stroke-dashoffset:0; transition:none}
+  .art--card.art--d .art-tip{opacity:1; transition:none}
+  .art--card.art--d svg.art-mark{transition:opacity .45s ease .15s}
+  .art--card.art--d.is-marked svg.art-mark{transition:opacity .45s ease .15s}
+}
 .art--d .art-base{transition:transform .3s var(--ease-out)}
 @container art (max-width: 259px){
   .art--d .art-meta{display:none}
@@ -183,7 +192,7 @@ html[data-shot="1"] .art *{transition:none!important; animation:none!important}
 #looks .lk-look[data-look="04"]{padding-top:clamp(24px, 3.4vw, 56px)}
 /* will-change: отпечаток — свой слой. Иначе после «падения» (transition transform) слой снимается и повёрнутый отпечаток
    с фото перерастрируется в общий слой (на телефоне 60–270 мс); в своём слое он растрится один раз без поворота */
-#looks .lk-print{position:relative; background:#fff; padding:12px 12px 40px; transform:rotate(var(--r, 0deg)); will-change:transform}
+#looks .lk-print{position:relative; background:#fff; padding:12px 12px 48px; transform:rotate(var(--r, 0deg)); will-change:transform}
 /* тень под отпечатком — градиентом, не box-shadow: размытая тень на повёрнутом блоке на телефоне стоила 50–130 мс растра
    (T3 v3.1). Профиль как у прежней 0 22px 34px -22px rgb(0 0 0/.9): у кромки .45, через 17 px .14, к 34 px — ноль */
 #looks .lk-print::before{content:""; position:absolute; left:14px; right:14px; top:100%; height:34px; pointer-events:none;
@@ -192,7 +201,7 @@ html[data-shot="1"] .art *{transition:none!important; animation:none!important}
 #looks .lk-look[data-look="02"] .lk-print{--r:1.1deg}
 #looks .lk-look[data-look="03"] .lk-print{--r:-.8deg}
 #looks .lk-look[data-look="04"] .lk-print{--r:1.6deg}
-#looks .lk-photo{display:block; background:var(--c-black)}
+#looks .lk-photo{display:block; background:var(--c-black); aspect-ratio:4/5}
 #looks .lk-photo img{display:block; width:100%; height:auto; outline:1px solid rgb(0 0 0 / .07); outline-offset:-1px}
 
 /* лента — на белом поле отпечатка и над ним, не на фото (верх поля 12 px, кусок уходит наружу) */
@@ -200,6 +209,33 @@ html[data-shot="1"] .art *{transition:none!important; animation:none!important}
 #looks .lk-tape--t{left:50%; top:0; --tx:-50%; --ty:-80%; --rot:-3deg}
 #looks .lk-tape--tl{left:-6px; top:0; --tx:-46%; --ty:-58%; --rot:-34deg; --w:clamp(96px, 8vw, 132px)}
 #looks .lk-tape--tr{right:-6px; top:0; --tx:46%; --ty:-58%; --rot:31deg; --w:clamp(96px, 8vw, 132px)}
+
+/* ---- v4: полароид, мультяшный скотч, стикеры ---- */
+/* кусок мультяшного скотча (hf tape-torn-*, оба конца рваные): контур и блик нарисованы — тени не нужны, filter нет */
+.tape--toon{--pad:0px}
+.tape--toon-black{--ar:430/131; --src:url("{{asset:img/v4/looks/tape-black.webp}}")}
+.tape--toon-lime{--ar:430/139; --src:url("{{asset:img/v4/looks/tape-lime.webp}}")}
+html[data-tape="black"] #looks .tape--toon-lime{--ar:430/131; --src:url("{{asset:img/v4/looks/tape-black.webp}}")}
+#looks .lk-tape.tape--toon{--w:clamp(120px, 10vw, 168px)}
+#looks .lk-tape--tl.tape--toon,#looks .lk-tape--tr.tape--toon{--w:clamp(108px, 9vw, 148px)}
+/* номер образа — на нижнем поле полароида, крупно и чуть криво, как подписано от руки */
+#looks .lk-no{position:absolute; left:14px; bottom:9px; font:900 1.125rem/1 var(--font-display); letter-spacing:-.03em; color:#000;
+  transform:rotate(-3deg); transform-origin:0 100%; pointer-events:none}
+/* стикеры: белые варианты (лайм на экране — только скотч ’02), шлёпаются после скотча; ось data-stickers on|max|off */
+#looks .lk-stk{position:absolute; z-index:4; display:block; width:clamp(62px, 5.4vw, 92px); pointer-events:none; transform:rotate(var(--sr, 10deg))}
+#looks .lk-stk img{display:block; width:100%; height:auto}
+#looks .lk-stk--br{right:-20px; bottom:-18px; --sr:12deg}
+#looks .lk-stk--tr{right:-22px; top:-22px; --sr:-10deg}
+#looks .lk-stk--crown{width:clamp(72px, 6.4vw, 108px); --sr:-9deg; bottom:-12px}
+#looks .lk-stk--arrow{--sr:16deg}
+#looks .lk-stk--max{display:none}
+html[data-stickers="max"] #looks .lk-stk--max{display:block}
+html[data-stickers="off"] #looks .lk-stk{display:none}
+.js #looks .lk-stk:not(.is-stuck){opacity:.002}
+#looks .lk-stk.is-landing{animation:stk-pop .44s cubic-bezier(.3,1.6,.5,1) both}
+@keyframes stk-pop{0%{opacity:0; scale:1.6} 30%{opacity:1} 100%{opacity:1; scale:1}}
+html[data-shot="1"] #looks .lk-stk{animation:none}
+@media (prefers-reduced-motion:reduce){ #looks .lk-stk.is-landing{animation:none} }
 
 #looks .lk-cap{display:flex; flex-wrap:wrap; align-items:baseline; column-gap:14px; row-gap:4px; min-height:48px}
 #looks .lk-n{font:500 .875rem/1.4 var(--font-mono); letter-spacing:.02em; color:var(--c-white)}
@@ -224,7 +260,15 @@ html[data-shot="1"] #looks .lk-print{transition:none}
   #looks .lk-rail::-webkit-scrollbar{display:none}
   #looks .lk-look{flex:0 0 min(72vw, 320px); scroll-snap-align:start; scroll-snap-stop:always; justify-content:flex-start}
   #looks .lk-look[data-look]{padding-top:0}
-  #looks .lk-print{padding:10px 10px 32px}
+  #looks .lk-print{padding:10px 10px 40px}
+  #looks .lk-no{font-size:1rem; left:12px; bottom:8px}
+  #looks .lk-stk{width:68px}
+  #looks .lk-stk--crown{width:78px}
+  #looks .lk-tape.tape--toon{--w:118px}
+  #looks .lk-tape--tl.tape--toon,#looks .lk-tape--tr.tape--toon{--w:104px}
+  /* угловой скотч на телефоне — ближе к углу внутрь: у первого отпечатка иначе срезается краем экрана */
+  #looks .lk-tape--tl.tape--toon{--tx:-24%; --ty:-64%; --rot:-26deg}
+  #looks .lk-tape--tr.tape--toon{--tx:24%; --ty:-64%; --rot:24deg}
   #looks .lk-tape{--w:104px}
   #looks .lk-tape--tl,#looks .lk-tape--tr{--w:92px}
   #looks .lk-cap a{display:inline-block; padding-block:12px; margin-block:-12px}

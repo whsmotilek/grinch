@@ -281,7 +281,7 @@ html[data-cards="d"] .card:hover .szt--quick[data-sel]:not([data-sel=""]) .szt-c
 /* ---------- оверлеи: общее ---------- */
 .ov{position:fixed;inset:0;z-index:var(--z-overlay)}
 .ov[hidden]{display:none}
-.ov-scrim{position:absolute;inset:0;background:color-mix(in srgb,var(--c-black) 62%,transparent);opacity:0;transition:opacity .3s ease}
+.ov-scrim{position:absolute;inset:0;background:color-mix(in srgb,var(--c-black) 80%,transparent);opacity:0;transition:opacity .3s ease}
 .ov.is-open .ov-scrim{opacity:1}
 .ov-panel{position:absolute;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .ov-panel:focus,.ov-panel:focus-visible{outline:none}
@@ -317,7 +317,7 @@ html[data-cards="d"] .card:hover .szt--quick[data-sel]:not([data-sel=""]) .szt-c
    Только transform; вход из display:none — @starting-style. desktop — по содержимому, под ним затемнение;
    mobile — на весь экран под шапкой. Текущий раздел обведён от руки (единственный зелёный объект в меню). */
 .ov--menu{top:var(--header-h)}
-.ov--menu .ov-scrim{background:color-mix(in srgb,var(--c-black) 50%,transparent)}
+.ov--menu .ov-scrim{background:color-mix(in srgb,var(--c-black) 72%,transparent)}   /* плотнее: лаймовый маскот hero под листом не спорит с маскотом меню */
 .menu-panel{left:0;right:0;top:0;max-height:100%;color:var(--c-white);padding-bottom:18px;
   background:linear-gradient(var(--c-black),var(--c-black)) top/100% calc(100% - 17px) no-repeat;
   transform:translateY(calc(-100% - 2px));transition:transform .22s cubic-bezier(.5,0,.75,0)}
@@ -335,8 +335,8 @@ html[data-cards="d"] .card:hover .szt--quick[data-sel]:not([data-sel=""]) .szt-c
 .mi-n{font-variant-numeric:tabular-nums}
 .mi-o{position:absolute;left:-.32em;right:-.38em;top:-.32em;bottom:-.3em;width:calc(100% + .7em);height:calc(100% + .62em);overflow:visible;pointer-events:none}
 .mi-o path{fill:none;stroke:var(--c-green);stroke-width:3;stroke-linecap:round;stroke-dasharray:1 1;stroke-dashoffset:1;opacity:0}
-/* один зелёный в меню (T4): если в меню стоит маскот (он лаймовый), обводка текущего пункта — белым маркером */
-.ov--menu:has(.menu-mascot:not(:empty)) .mi-o path{stroke:var(--c-white)}
+/* один зелёный в меню: маскот в меню лаймовый — обводка текущего пункта белым маркером (лайм — только если маскот выключен осью) */
+html:not([data-mascot="quiet"]):not([data-mascot="none"]) .ov--menu .mi-o path{stroke:var(--c-white)}
 .ov--menu.is-open .mi.is-current .mi-o path{stroke-dashoffset:0;opacity:1;transition:stroke-dashoffset .42s cubic-bezier(.4,.1,.3,1) .32s,opacity 0s linear .32s}
 .menu-side{display:grid;align-content:start;gap:4px}
 .menu-sub{color:var(--c-white)}
@@ -351,8 +351,21 @@ html[data-cards="d"] .card:hover .szt--quick[data-sel]:not([data-sel=""]) .szt-c
 .menu-mode-k{margin-left:auto;font:var(--t-mono);letter-spacing:.02em;color:var(--text-2);transition:color .2s}
 .menu-mode:hover .menu-mode-k{color:var(--c-white)}
 html[data-clean] .menu-mode{display:none}
-.menu-mascot:empty{display:none}
-.menu-mascot{width:clamp(96px,12vw,150px);margin-top:12px}
+/* маскот меню (V1 v4): выглядывает из-за правого края и машет. Слот задаёт ширину, высоту даёт поза (333×600) */
+/* телефон/планшет: справа от первых пунктов (короткие слова, справа пусто) — виден целиком сразу при открытии, без прокрутки листа */
+.menu-mascot{position:absolute;right:0;top:72px;width:96px;margin:0;pointer-events:none;overflow:hidden}
+@media (min-width:768px) and (max-width:1099px){.menu-mascot{top:96px;width:120px}}
+.menu-mascot:empty,html:is([data-mascot="quiet"],[data-mascot="none"]) .menu-mascot{display:none}
+.menu-mascot-fb{display:block;width:100%;height:auto;transform-origin:100% 100%}
+.ov--menu.is-open .menu-mascot-fb{animation:mm-peek .62s cubic-bezier(.2,1.25,.4,1) .22s both,mm-wave 1.1s ease-in-out .9s 1}
+@keyframes mm-peek{from{transform:translateX(105%) rotate(10deg)}to{transform:none}}
+@keyframes mm-wave{0%,100%{transform:none}25%{transform:rotate(-3deg)}55%{transform:rotate(2deg)}80%{transform:rotate(-1deg)}}
+@media (min-width:1100px){
+  /* desktop: у правого края над рваной кромкой, рядом со строкой подвала меню; правой колонке — место под ним */
+  .menu-mascot{position:absolute;right:0;bottom:18px;width:120px;margin:0}
+  html:not([data-mascot="quiet"]):not([data-mascot="none"]) .menu-side{padding-bottom:140px}
+  html:not([data-mascot="quiet"]):not([data-mascot="none"]) .menu-foot{padding-right:150px}
+}
 .menu-foot{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 24px;padding-top:16px;border-top:1px solid var(--c-line)}
 .menu-foot .t-mono{color:var(--text-2)}
 .menu-slogan{font:900 1.125rem/1 var(--font-display);letter-spacing:-.02em;color:var(--c-white)}
@@ -575,6 +588,7 @@ html[data-overlay="product"] .toast:not(.is-anchored){bottom:calc(96px + env(saf
   .ov--menu.is-open .menu-panel{opacity:1}
   .sz-panel{transform:none!important}
   .card-sizes,.menu-main>.mi,.menu-side,.menu-foot,.toast{transition:opacity .15s ease!important;transform:none!important}
+  .ov--menu.is-open .menu-mascot-fb{animation:none!important}
   .bg-strip{transition:opacity .15s ease!important}
   .stk path,.mi-o path{transition:opacity .12s ease!important;stroke-dashoffset:0!important}
   .szt-l{transition:none!important}
@@ -592,3 +606,6 @@ html[data-overlay="product"] .toast:not(.is-anchored){bottom:calc(96px + env(saf
 
 /* разделы получают фокус после навигации (для скринридера) — без кольца на весь блок */
 main [tabindex="-1"]:focus-visible,#footer[tabindex="-1"]:focus-visible,#hero[tabindex="-1"]:focus-visible,#main:focus-visible{outline:none}
+/* подпись дропа (V1 v4): мышь — «наведи», палец — «нажми и держи» (как переключается ghost-фото у V2) */
+.dn-touch{display:none}
+@media (hover:none),(pointer:coarse){.dn-hover{display:none}.dn-touch{display:inline}}

@@ -1,37 +1,142 @@
-<!-- K4 · HERO v3. IGNORE THE SIGNS постером. Оси: data-hero (asphalt|static), data-heroimg (model|mascot|crop).
-     #g3d — место 3D-G (рисует K2), обёртка .hx-g двигается по прокрутке (asphalt). #hero-media — кадр по data-heroimg.
-     Зелёный в кадре — только G: кнопка белая, подпись серая. Лент поверх текста нет. -->
+<!-- V1 · HERO v4. Фон — сцена hero-A1 (винил-диорама ночного перекрёстка, монохром), заголовок IGNORE THE SIGNS, подпись и CTA — живые слои.
+     Оси: data-hero (asphalt|static — движение при прокрутке), data-heroimg (mascot — сцена + маскот · scene — только сцена · look — лукбук-кадр).
+     #g3d — 3D-G справа (three-g.js). ОДИН ЗЕЛЁНЫЙ НА ЭКРАН: при маскоте лаймовый объект кадра — он, а G уходит в чёрный винил (материал «ink»)
+     и становится меньше — «ещё один знак на ночной улице», который маскот игнорирует. В режимах scene/look лайм снова у G.
+     Маскот hero: свой слот (data-mascot-slot="hero" + data-mascot-manual — mascot.js его не монтирует), видео из hf/mascot/final/anim:
+     hero_crossout играет один раз → держит последний кадр (= поза hero) → hero_idle_wave по наведению/тапу и в простое. -->
 <section id="hero" class="hx" aria-labelledby="hero-title">
  <div class="hx-sticky">
   <div class="hx-bg" aria-hidden="true"></div>
   <div class="hx-media-wrap" aria-hidden="true"><div id="hero-media" class="hx-media"></div></div>
   <!-- варианты кадра: в DOM попадает только нужный (до загрузки картинок), остальные не качаются -->
-  <template id="hx-media-model"><picture class="hx-pic hx-pic--model">
-    <source type="image/avif" srcset="{{asset:img/hero/hero-640.avif}} 640w, {{asset:img/hero/hero-1024.avif}} 1024w" sizes="(max-width: 767px) 80vw, 62vh">
-    <img src="{{asset:img/hero/hero-1024.jpg}}" srcset="{{asset:img/hero/hero-640.jpg}} 640w, {{asset:img/hero/hero-1024.jpg}} 1024w" sizes="(max-width: 767px) 80vw, 62vh"
-         alt="" width="1024" height="1536" decoding="async" fetchpriority="high"></picture></template>
-  <template id="hx-media-crop"><picture class="hx-pic hx-pic--crop">
-    <img src="{{asset:img/hero/crop-880.webp}}" srcset="{{asset:img/hero/crop-560.webp}} 560w, {{asset:img/hero/crop-880.webp}} 880w" sizes="(max-width: 767px) 90vw, 60vw"
-         alt="" width="880" height="864" decoding="async" fetchpriority="high"></picture></template>
-  <template id="hx-media-mascot"><div class="hx-mascot" data-mascot-slot="hero" data-pose="hero">
-    <svg class="hx-mascot-fb" viewBox="0 0 400 640" aria-hidden="true"><path d="M200 34c-58 0-98 46-98 108 0 34 12 62 30 80l-6 22c-62 18-92 64-100 132l-14 264h376l-14-264c-8-68-38-114-100-132l-6-22c18-18 30-46 30-80 0-62-40-108-98-108z"/><path class="hx-mascot-fb-grin" d="M150 168c18 14 34 20 50 20s32-6 50-20c-6 22-24 38-50 38s-44-16-50-38z"/></svg>
+  <template id="hx-media-scene"><picture class="hx-pic hx-pic--scene">
+    <!-- телефон — только 720: сцена — тёмная дымка, разницы с 1080 на экране нет, а растр/загрузка в GPU вдвое легче (кадр ~100 мс на CPU×4 уходит) -->
+    <source type="image/avif" media="(max-width: 767px)" srcset="{{asset:img/v4/hero/scene-m-720.avif}}">
+    <source type="image/webp" media="(max-width: 767px)" srcset="{{asset:img/v4/hero/scene-m-720.webp}}">
+    <source type="image/avif" srcset="{{asset:img/v4/hero/scene-1440.avif}} 1440w, {{asset:img/v4/hero/scene-2560.avif}} 2560w" sizes="100vw">
+    <img src="{{asset:img/v4/hero/scene-1440.webp}}" srcset="{{asset:img/v4/hero/scene-1440.webp}} 1440w, {{asset:img/v4/hero/scene-2560.webp}} 2560w" sizes="100vw"
+         alt="" width="1440" height="810" decoding="async" fetchpriority="high"></picture></template>
+  <template id="hx-media-look"><picture class="hx-pic hx-pic--look">
+    <source type="image/avif" srcset="{{asset:img/v4/hero/look-640.avif}} 640w, {{asset:img/v4/hero/look-1200.avif}} 1200w" sizes="(max-width: 767px) 80vw, 50vw">
+    <img src="{{asset:img/v4/hero/look-640.webp}}" srcset="{{asset:img/v4/hero/look-640.webp}} 640w, {{asset:img/v4/hero/look-1200.webp}} 1200w" sizes="(max-width: 767px) 80vw, 50vw"
+         alt="" width="1200" height="1500" decoding="async" fetchpriority="high"></picture></template>
+  <!-- маскот (только data-heroimg="mascot"): квадрат кадра видео 720×720; .hm-still — первый/последний кадр картинкой, видео — поверх -->
+  <template id="hx-mascot-t"><div class="hx-mascot" data-mascot-slot="hero" data-mascot-manual data-pose="hero">
+    <div class="hm-box" data-state="still">
+      <span class="hm-shadow" aria-hidden="true"></span>
+      <img class="hm-still" alt="" width="720" height="720" decoding="async" draggable="false">
+      <video class="hm-v hm-v--cross" muted playsinline preload="none" disablepictureinpicture disableremoteplayback aria-hidden="true" tabindex="-1"></video>
+      <video class="hm-v hm-v--wave" muted playsinline preload="none" disablepictureinpicture disableremoteplayback aria-hidden="true" tabindex="-1"></video>
+    </div>
   </div></template>
-  <script>
-  (function(){var h=document.documentElement,v=h.getAttribute('data-heroimg')||'model',t=document.getElementById('hx-media-'+v)||document.getElementById('hx-media-model');
-  var m=document.getElementById('hero-media');m.setAttribute('data-v',t.id.slice(9));m.appendChild(t.content.cloneNode(true));})();
-  </script>
   <div class="hx-lane" aria-hidden="true"><i></i></div>
+  <script>
+  (function(){var D=document,h=D.documentElement,v=h.getAttribute('data-heroimg')||'mascot',m=D.getElementById('hero-media');
+  var t=D.getElementById(v==='look'?'hx-media-look':'hx-media-scene');m.setAttribute('data-v',v);m.appendChild(t.content.cloneNode(true));
+  if(v!=='mascot')return;
+  /* маскот: первый кадр (чистый знак), пока видео не пошло; без анимации (reduced-motion, ?shot=1, экономия трафика) — сразу итоговый кадр */
+  var c=navigator.connection,still=false;
+  try{still=h.dataset.shot==='1'||matchMedia('(prefers-reduced-motion: reduce)').matches||!!(c&&(c.saveData||/(^|-)2g$/.test(c.effectiveType||'')));}catch(e){}
+  var f=D.getElementById('hx-mascot-t').content.cloneNode(true),img=f.querySelector('.hm-still');
+  img.src=still?'{{asset:img/v4/hero/cross-last.webp}}':'{{asset:img/v4/hero/cross-first.webp}}';
+  if(still)f.querySelector('.hm-box').setAttribute('data-still','1');
+  D.querySelector('#hero .hx-sticky').insertBefore(f,D.querySelector('#hero .hx-lane'));})();
+  </script>
   <div class="hx-g"><div id="g3d" data-g-dock="hero" aria-hidden="true"></div></div>
   <div class="hx-stage">
     <h1 id="hero-title" class="hx-title" lang="en"><span class="hx-ln"><span>Ignore</span></span> <span class="hx-ln"><span>the</span></span> <span class="hx-ln"><span>signs</span></span></h1>
   </div>
+  <p class="hx-sub">одежда для&nbsp;тех, кто не&nbsp;идёт по&nbsp;заданному маршруту</p>
   <div class="hx-foot">
-    <p class="hx-sub">одежда для&nbsp;тех, кто не&nbsp;идёт по&nbsp;заданному маршруту</p>
     <a class="btn hx-cta" href="#drop" data-nav="drop">Смотреть дроп <span aria-hidden="true">↓</span></a>
   </div>
  </div>
 </section>
-<!-- бегущая лента (data-marquee="on"): одна, лайм/чёрная — куски настоящих лент K3 (.tape-strip--lime с печатью GRiNCHiN
+<script>
+/* V1 · маскот hero: hero_crossout один раз → держим последний кадр → hero_idle_wave (наведение / тап / простой).
+   Видео: Safari и любой браузер на iOS — HEVC с альфой (.mov, hvc1); остальные — VP9 с альфой (.webm). Chrome на macOS умеет HEVC,
+   но без альфы — поэтому выбор по движку, а не canPlayType. Качаем после первого кадра страницы (сцена — раньше),
+   играем после grinchin:ready и только когда hero на экране. Ошибка/автоплей запрещён → итоговый кадр картинкой.
+   API: GV.heroMascot = {state, wave(), still()}; событие grinchin:hero-mascot {state: cross|hold|wave|idle|still}. */
+(function(){
+  'use strict';
+  var D=document,h=D.documentElement,W=window,box=D.querySelector('#hero .hm-box');
+  if(!box)return;
+  var GV=W.GV=W.GV||{},img=box.querySelector('.hm-still'),vc=box.querySelector('.hm-v--cross'),vw=box.querySelector('.hm-v--wave');
+  var LAST='{{asset:img/v4/hero/cross-last.webp}}';
+  var ua=navigator.userAgent,IOS=/iP(hone|ad|od)/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);
+  var APPLE=IOS||/^((?!chrome|chromium|crios|fxios|edg|opr|android).)*safari/i.test(ua);
+  var SRC={cross:APPLE?'{{asset:img/v4/hero/cross.mov}}':'{{asset:img/v4/hero/cross.webm}}',
+           wave:APPLE?'{{asset:img/v4/hero/wave.mov}}':'{{asset:img/v4/hero/wave.webm}}'};
+  var ANIM=h.getAttribute('data-mzfx')==='max',st='still',vis=true,ready=false,loaded=false,waveT=0,autoN=0;
+  var api=GV.heroMascot={state:'still',src:SRC,wave:function(){wave();},still:toStill};
+  function set(s){st=api.state=s;box.setAttribute('data-state',s);D.dispatchEvent(new CustomEvent('grinchin:hero-mascot',{detail:{state:s}}));}
+  function toStill(){clearTimeout(waveT);[vc,vw].forEach(function(v){try{v.pause();}catch(e){}});img.src=LAST;set('still');}
+  if(box.hasAttribute('data-still'))return;
+  [vc,vw].forEach(function(v){v.muted=true;v.defaultMuted=true;v.playsInline=true;v.setAttribute('webkit-playsinline','');});
+  function play(v){var p;try{p=v.play();}catch(e){return Promise.reject(e);}return p&&p.then?p:Promise.resolve();}
+  // первый кадр видео реально на экране → убираем картинку (иначе на миг две копии альфы друг на друге)
+  function onFrame(v,fn){if(v.requestVideoFrameCallback)v.requestVideoFrameCallback(function(){fn();});else{var k=function(){v.removeEventListener('timeupdate',k);fn();};v.addEventListener('timeupdate',k);}}
+  function load(){
+    if(loaded)return;loaded=true;
+    vc.addEventListener('error',toStill,{once:true});
+    vc.preload='auto';vc.src=SRC.cross;try{vc.load();}catch(e){}
+    var pre=new Image();pre.decoding='async';pre.src=LAST;   // итоговый кадр — в кэш заранее (фолбэк)
+    go();
+  }
+  /* play() сразу, без ожидания canplay: iOS Safari не буферизует по preload="auto", readyState растёт только после play().
+     Кадр не пришёл за 9 с (сеть) — итоговая картинка, без зависания на «чистом знаке». */
+  /* программная графика (SwiftShader/llvmpipe — её же ловит three-g.js) или слабое устройство: видео с альфой там композится
+     на CPU — кадры по 100–1000 мс. Ждём, пока 3D-движок определится (≤2,5 с), и в этом случае показываем итоговый кадр картинкой. */
+  var nav=navigator,WEAK=!!((nav.deviceMemory&&nav.deviceMemory<=2)||(nav.hardwareConcurrency&&nav.hardwareConcurrency<=2)),gt0=0;
+  function softGL(){var g=GV.g,l=GV.gl;return /software|weak/i.test(((g&&g.why)||'')+' '+((l&&l.why)||''));}
+  function glKnown(){var g=GV.g,l=GV.gl;return !l||!g||g.mode!=='none'||(l.state&&l.state()==='off');}
+  function go(){
+    if(st!=='still'||!ready||!vis||!loaded)return;
+    if(WEAK||softGL()){toStill();return;}
+    if(!glKnown()){if(!gt0)gt0=Date.now();if(Date.now()-gt0<2500){setTimeout(go,150);return;}}
+    set('cross-wait');
+    onFrame(vc,function(){if(st==='cross-wait')set('cross');});
+    play(vc).catch(function(){toStill();});
+    setTimeout(function(){if(st==='cross-wait')toStill();},9000);
+  }
+  vc.addEventListener('ended',function(){img.src=LAST;set('hold');schedule(3200);});
+  function schedule(ms){clearTimeout(waveT);waveT=setTimeout(function(){
+    if(st!=='hold'&&st!=='idle')return;
+    if(vis&&!D.hidden&&(ANIM||autoN<1)){autoN++;wave();}else if(ANIM)schedule(4000);},ms);}
+  function wave(){
+    if(st!=='hold'&&st!=='idle')return;
+    clearTimeout(waveT);
+    if(!vw.getAttribute('src')){vw.addEventListener('error',function(){set('hold');},{once:true});vw.preload='auto';vw.src=SRC.wave;try{vw.load();}catch(e){}}
+    try{if(vw.currentTime)vw.currentTime=0;}catch(e){}
+    set(st==='idle'?'wave':'wave-wait');   // из idle видео уже на экране (последний кадр = первый) — без возврата к позе со знаком
+    onFrame(vw,function(){if(st==='wave-wait')set('wave');});
+    play(vw).catch(function(){if(st==='wave-wait')set('hold');});
+    setTimeout(function(){if(st==='wave-wait'){try{vw.pause();}catch(e){}set('hold');}},9000);
+  }
+  vw.addEventListener('ended',function(){set('idle');if(ANIM)schedule(9000);});
+  // наведение мышью и тап по маскоту — помахать
+  box.addEventListener('pointerenter',function(e){if(e.pointerType==='mouse')wave();});
+  box.addEventListener('click',function(){wave();});
+  // вне экрана — пауза и без автоповторов
+  if('IntersectionObserver' in W)new IntersectionObserver(function(es){es.forEach(function(e){vis=e.isIntersecting;
+    if(!vis){[vc,vw].forEach(function(v){if(!v.paused&&!v.ended)try{v.pause();}catch(er){}});}
+    else if(st==='cross'||st==='cross-wait')play(vc).catch(toStill);
+    else if(st==='wave'||st==='wave-wait')play(vw).catch(function(){});
+    else go();
+  });},{threshold:.15}).observe(box);
+  D.addEventListener('visibilitychange',function(){if(!D.hidden&&st==='idle'&&ANIM)schedule(4000);});
+  // старт: качаем после первого кадра страницы и сцены, играем после ready (прелоадер раскрыл сайт)
+  function kick(){var s=D.querySelector('#hero-media img'),done=false;
+    if(GV.gl&&GV.gl.onOff)GV.gl.onOff(function(){if(softGL()&&st!=='still')toStill();});   // three-g.js уже подключён (DOMContentLoaded)
+    var f=function(){if(done)return;done=true;requestAnimationFrame(function(){setTimeout(load,60);});};
+    if(s&&!s.complete){s.addEventListener('load',f,{once:true});s.addEventListener('error',f,{once:true});setTimeout(f,1500);}else f();}
+  if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',kick,{once:true});else kick();
+  function onReady(){ready=true;setTimeout(go,h.getAttribute('data-loader')==='off'?150:350);}
+  if(h.getAttribute('data-ready')==='1')onReady();else D.addEventListener('grinchin:ready',onReady,{once:true});
+})();
+</script>
+<!-- бегущая лента (data-marquee="on"): одна, лайм/чёрная — куски настоящих лент (.tape-strip--lime с печатью GRiNCHiN
      + .tape-strip--black с IGNORE THE SIGNS), постоянная скорость, только transform; ни на чём не лежит -->
 <div class="hx-marquee" aria-hidden="true">
   <div class="hx-mq-band"><div class="hx-mq-track"><span class="hx-mq-unit"><i class="hx-mq-logo tape-strip tape-strip--lime"></i><b class="hx-mq-txt tape-strip tape-strip--black">Ignore the signs</b></span></div></div>

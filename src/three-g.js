@@ -1,6 +1,6 @@
 /* GRINCHIN v3 · K2 · 3D. Один WebGL-контекст на страницу → window.GV.gl (движок) и window.GV.g (знак G в hero).
    Сцены движка: 'g' — новая рубленая G со стрелкой (grinchin_new.svg, путь M203.1,342.8…, экструзия),
-   'sign' — дорожный знак ONE WAY or ANOTHER на столбе, 'roll' — рулон фирменной ленты на асфальте.
+   'sign' — дорожный знак ONE WAY or ANOTHER на столбе (рулон ленты в v4 — CSS-спрайт V3, 3D-сцены рулона нет).
    Сцены sign/roll ведёт scenes.js; они строятся, только если включены осью (data-brand="sign", data-roll="on")
    и их блок подошёл к экрану.
 
@@ -46,8 +46,7 @@
   const LOGO_BOX = [134.9, 302, 1783.8, 748.5];
   const URL3 = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.186.1/three.module.min.js';
   const URL3B = 'https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.min.js';   // запасной CDN: сбой сети не должен гасить 3D
-  const TAPE = { lime: '{{asset:img/tape/lime-strip.webp}}', black: '{{asset:img/tape/black-strip.webp}}' };   // те же полосы, что кладёт roll.js
-  const MC = { lime: '{{asset:img/3d/m-lime.jpg}}', tape: '{{asset:img/3d/m-tape.jpg}}', side: '{{asset:img/3d/m-side.jpg}}', black: '{{asset:img/3d/m-black.jpg}}' };
+  const MC = { lime: '{{asset:img/3d/m-lime.jpg}}', tape: '{{asset:img/3d/m-tape.jpg}}', side: '{{asset:img/3d/m-side.jpg}}', black: '{{asset:img/3d/m-black.jpg}}', ink: '{{asset:img/v4/hero/m-ink.jpg}}', inkside: '{{asset:img/v4/hero/m-ink-side.jpg}}' };
 
   const Q = new URLSearchParams(location.search);
   const SHOT = R.dataset.shot === '1' || Q.get('shot') === '1';
@@ -62,7 +61,8 @@
   const now = () => performance.now();
   const idle = (f, to) => (W.requestIdleCallback ? W.requestIdleCallback(f, { timeout: to || 1500 }) : setTimeout(f, 60));
   const abs = (u) => { try { return new URL(u, location.href).href; } catch (e) { return u; } };
-  const matOf = () => { const m = R.dataset.g; return m === 'lime' || m === 'black' || m === 'tape' ? m : 'tape'; };
+  // v4 (V1): маскот в hero — он лаймовый объект кадра, G уходит в чёрный винил без лайма (ink) при любом значении оси g
+  const matOf = () => { if (R.dataset.heroimg === 'mascot') return 'ink'; const m = R.dataset.g; return m === 'lime' || m === 'black' || m === 'tape' ? m : 'tape'; };
 
   /* ═════════════════════ АРТ: процедурные текстуры (воркер и главный поток) ═════════════════════
      Самодостаточная функция: в воркер уходит её исходник. Шрифтов нет — буквы знака нарисованы штрихами
@@ -198,25 +198,6 @@
       return c;
     }
     // фирменная лента: лайм, логотипы чёрным, продольные волокна и непрокрас
-    function tapeStrip(reps, w, h) {
-      const c = cv2d(w, h), g = c.getContext('2d'), r = rng(3);
-      g.fillStyle = LIME; g.fillRect(0, 0, w, h);
-      const step = w / reps, lh = Math.min(h * 0.6, (step * 0.84) / LOGO_AR);
-      for (let k = 0; k < reps; k++) logo(g, k * step + (step - lh * LOGO_AR) / 2, (h - lh) / 2, lh, '#0b0b0b');
-      for (let k = 0; k < 120; k++) { g.fillStyle = `rgba(${r() < 0.5 ? '255,255,255' : '0,0,0'},${0.025 + r() * 0.05})`; g.fillRect(r() * w, r() * h, 40 + r() * 400, 1 + r() * 2.5); }
-      g.fillStyle = 'rgba(40,70,0,.35)'; g.fillRect(0, 0, w, 2); g.fillRect(0, h - 2, w, 2);
-      return c;
-    }
-    // торец рулона: слои ленты кольцами (лайм — светлые/тёмные полосы, чёрная — блики плёнки)
-    function rollFace(N, kind) {
-      const c = cv2d(N, N), g = c.getContext('2d'), h = N / 2, blk = kind === 'black';
-      g.fillStyle = blk ? '#141514' : '#7cb806'; g.fillRect(0, 0, N, N);
-      for (let k = 0; k < 70; k++) {
-        g.strokeStyle = blk ? (k % 4 ? 'rgba(255,255,255,.05)' : 'rgba(142,211,8,.16)') : (k % 3 ? 'rgba(20,45,0,.16)' : 'rgba(225,255,160,.3)');
-        g.lineWidth = 1.1; g.beginPath(); g.arc(h, h, h * (0.42 + k * 0.0083), 0, TAU); g.stroke();
-      }
-      return c;
-    }
     // скотч: полосы внахлёст + заломы → высота → нормали (Собель); тайлится
     function tapeNormal(N, seed, crease) {
       const c = cv2d(N, N), g = c.getContext('2d', { willReadFrequently: true }), r = rng(seed);
@@ -253,7 +234,7 @@
       while (y < N) { const hh = Math.min(N - y, N * (0.12 + r() * 0.14)); g.fillStyle = `rgba(${r() < 0.5 ? '255,255,255' : '0,30,0'},${0.05 + r() * 0.08})`; g.fillRect(0, y, N, hh); g.fillStyle = 'rgba(0,40,0,.13)'; g.fillRect(0, y + hh - 1.5, N, 1.5); g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(0, y, N, 1); y += hh; }
       return c;
     }
-    return { signFace, graffiti, signBack, tapeStrip, rollFace, tapeNormal, tapeTint, logo, LOGO_AR, rng };
+    return { signFace, graffiti, signBack, tapeNormal, tapeTint, logo, LOGO_AR, rng };
   }
 
   /* ═════════════════════ ДВИЖОК WebGL (воркер или главный поток) ═════════════════════ */
@@ -331,7 +312,10 @@
       async function mat(name) {
         if (mats[name]) return mats[name];
         let face, side;
-        if (name === 'black') {
+        if (name === 'ink') {   // v4: чёрный винил, торец графитовый — ни грамма лайма
+          face = new T.MeshMatcapMaterial({ matcap: await mc('ink') });
+          side = new T.MeshMatcapMaterial({ matcap: await mc('inkside') });
+        } else if (name === 'black') {
           face = new T.MeshMatcapMaterial({ matcap: await mc('black') });
           side = new T.MeshMatcapMaterial({ matcap: await mc('lime') });
         } else if (name === 'tape') {
@@ -412,110 +396,15 @@
       };
     }
 
-    /* ── сцена рулона ленты (v3.1): один рулон на плоскости страницы, без фона и асфальта ──
-       Мир = CSS-пиксели экрана: x вправо, y вверх (= −y экрана), z — к зрителю; страница — плоскость z=0.
-       Камера «как глаз над всем окном» (fov узкий), а холст рулона — только кусок кадра вокруг него (setViewOffset):
-       перспектива честная — у края экрана виден торец, обращённый к центру. Поза p (её шлёт roll.js):
-       x,y — точка касания на экране; vw,vh — окно; cs — сторона холста (CSS px); hd — курс (0 вправо, π/2 вниз);
-       R — радиус намотки; w — ширина ленты; rc — радиус шпули; sp — угол качения; tip — 0 стоит, 1 лёг на торец;
-       mat — 'lime'|'black'; sh — сила тени (0 — рулон ещё в воздухе). */
-    async function buildRoll() {
-      const scene = new T.Scene();
-      scene.add(new T.HemisphereLight('#ffffff', '#3a3a3a', 1.35));
-      const sun = new T.DirectionalLight('#ffffff', 2.4); sun.position.set(-0.55, 0.75, 1); scene.add(sun);   // свет сверху-слева, как тени интерфейса
-      const rim = new T.DirectionalLight('#eaffc4', 0.6); rim.position.set(0.7, -0.4, 0.6); scene.add(rim);
-      const lite = !!o.lite, NS = lite ? 48 : 72;
-      async function img(url) {
-        const b = await (await fetch(url)).blob(), bmp = await createImageBitmap(b);
-        const c = cv2d(bmp.width, bmp.height); c.getContext('2d').drawImage(bmp, 0, 0); if (bmp.close) bmp.close();
-        return c;
-      }
-      // полоса ленты — та же, что лежит на странице (K3: img/tape/*-strip.webp, бесшовная по X); нет сети — процедурная
-      const strip = {};
-      for (const k of ['lime', 'black']) {
-        let c = null;
-        try { c = await img(o.tape[k]); } catch (e) { c = A.tapeStrip(4, 1024, 128); }
-        const t = ctex(c, true, true); t.wrapT = T.ClampToEdgeWrapping; strip[k] = { t, ar: c.width / c.height };
-      }
-      const nrm = ctex(A.tapeNormal(128, 7, 30), false, true);
-      const outerM = {
-        lime: new T.MeshStandardMaterial({ map: strip.lime.t, roughness: 0.44, normalMap: nrm, normalScale: new T.Vector2(0.22, 0.22) }),
-        black: new T.MeshStandardMaterial({ map: strip.black.t, roughness: 0.3, normalMap: nrm, normalScale: new T.Vector2(0.22, 0.22) }),
-      };
-      const faceM = {
-        lime: new T.MeshStandardMaterial({ map: ctex(A.rollFace(lite ? 128 : 256, 'lime'), true), roughness: 0.3 }),
-        black: new T.MeshStandardMaterial({ map: ctex(A.rollFace(lite ? 128 : 256, 'black'), true), roughness: 0.22, metalness: 0.1 }),
-      };
-      const base = new T.Group(), tiltG = new T.Group(), spin = new T.Group();
-      base.add(tiltG); tiltG.add(spin); scene.add(base);
-      // намотка: ось цилиндра — локальная Y (поперёк курса), курс — локальная X
-      const outer = new T.Mesh(new T.CylinderGeometry(1, 1, 1, NS, 1, true), outerM.lime); spin.add(outer);
-      // торцы: кольцо от шпули до радиуса намотки, внешние вершины едут с R
-      const ringGeo = (sd) => {
-        const g = new T.BufferGeometry(), idx = [];
-        for (let i = 0; i < NS; i++) { const a = i * 2, b = a + 1, c = a + 2, d2 = a + 3; if (sd > 0) idx.push(a, c, b, b, c, d2); else idx.push(a, b, c, b, d2, c); }
-        g.setAttribute('position', new T.BufferAttribute(new Float32Array((NS + 1) * 6), 3)); g.setAttribute('uv', new T.BufferAttribute(new Float32Array((NS + 1) * 4), 2)); g.setIndex(idx);
-        g.setAttribute('normal', new T.BufferAttribute(new Float32Array((NS + 1) * 6).map((_, i) => (i % 3 === 1 ? sd : 0)), 3));
-        g.userData.sd = sd; return g;
-      };
-      const faces = [1, -1].map((sd) => { const m = new T.Mesh(ringGeo(sd), faceM.lime); spin.add(m); return m; });
-      const card = new T.MeshStandardMaterial({ color: '#b48f5c', roughness: 0.92 });
-      const cardIn = new T.MeshStandardMaterial({ color: '#7a5f39', roughness: 1, side: T.BackSide });
-      const core = new T.Mesh(new T.CylinderGeometry(1, 1, 1, 40, 1, true), card); spin.add(core);
-      const coreIn = new T.Mesh(new T.CylinderGeometry(1, 1, 1, 40, 1, true), cardIn); spin.add(coreIn);
-      const capG = new T.RingGeometry(0.86, 1, 40);
-      const caps = [1, -1].map((sd) => { const m = new T.Mesh(capG, card); m.rotation.x = -sd * Math.PI / 2; spin.add(m); m.userData.sd = sd; return m; });
-      // контактная тень — градиент на плоскости страницы (под рулоном, не поворачивается с наклоном)
-      const shC = cv2d(64, 64), sg = shC.getContext('2d'), rg = sg.createRadialGradient(32, 32, 0, 32, 32, 32);
-      rg.addColorStop(0, 'rgba(0,0,0,.62)'); rg.addColorStop(0.55, 'rgba(0,0,0,.28)'); rg.addColorStop(1, 'rgba(0,0,0,0)'); sg.fillStyle = rg; sg.fillRect(0, 0, 64, 64);
-      const shM = new T.MeshBasicMaterial({ map: ctex(shC, false), transparent: true, depthWrite: false });
-      const shadow = new T.Mesh(new T.PlaneGeometry(1, 1), shM); shadow.position.z = 0.2; shadow.renderOrder = -1; base.add(shadow);
-      const cam = new T.PerspectiveCamera(o.rollFov || 14, 1, 1, 10);
-      let curMat = 'lime';
-      return {
-        scene, cam,
-        apply(p0) {
-          const p = Object.assign({ x: 60, y: 60, vw: 120, vh: 120, cs: 120, hd: Math.PI / 2, R: 40, w: 30, rc: 22, sp: 0, tip: 0, mat: 'lime', sh: 1 }, p0);
-          const R = Math.max(p.R, p.rc + 0.5), w = p.w, rc = p.rc, tip = clamp01(p.tip);
-          if (p.mat !== curMat && outerM[p.mat]) { curMat = p.mat; outer.material = outerM[p.mat]; faces.forEach((f) => { f.material = faceM[p.mat]; }); }
-          base.position.set(p.x, -p.y, 0); base.rotation.z = -p.hd;
-          // лёг на торец: поворот вокруг курса, центр опускается с R на w/2 (с лёгким «плюхом» в конце)
-          const tz = tip * tip * (3 - 2 * tip);
-          tiltG.rotation.x = tz * Math.PI / 2; tiltG.position.z = R + (w / 2 - R) * tz + Math.sin(tip * Math.PI) * R * 0.18;
-          spin.rotation.y = p.sp;
-          outer.scale.set(R, w, R);
-          const st = strip[curMat]; st.t.repeat.set((TAU * R) / (w * st.ar), 1);
-          core.scale.set(rc, w * 1.02, rc); coreIn.scale.set(rc * 0.86, w * 1.02, rc * 0.86);
-          for (const c of caps) { c.scale.set(rc, rc, 1); c.position.y = c.userData.sd * w * 0.511; }
-          for (const f of faces) {
-            const g = f.geometry, pa = g.attributes.position, ua = g.attributes.uv, sd = g.userData.sd;
-            for (let i = 0; i <= NS; i++) {
-              const a = (i / NS) * TAU, c = Math.cos(a), s = Math.sin(a);
-              pa.setXYZ(i * 2, rc * c, (sd * w) / 2, rc * s); pa.setXYZ(i * 2 + 1, R * c, (sd * w) / 2, R * s);
-              ua.setXY(i * 2, 0.5 + (rc / R) * c * 0.5, 0.5 + (rc / R) * s * 0.5); ua.setXY(i * 2 + 1, 0.5 + c * 0.5, 0.5 + s * 0.5);
-            }
-            pa.needsUpdate = true; ua.needsUpdate = true; g.computeBoundingSphere();
-          }
-          const sx = R * 2.3 + (R * 2.4 - R * 2.3) * tz, sy = w * 1.5 + (R * 2.4 - w * 1.5) * tz;
-          shadow.scale.set(sx, sy, 1); shM.opacity = clamp01(p.sh);
-          // глаз над страницей на высоте ED; холст — кусок большого кадра вокруг рулона (setViewOffset). Глаз смещён от
-          // рулона к центру экрана и вниз (p.ex, p.ey): торец и бок видны всегда, как на настоящем рулоне на столе
-          const ED = p.ed || 4000, F = 6000, ex = p.ex == null ? p.vw / 2 : p.ex, ey = p.ey == null ? p.vh / 2 : p.ey;
-          cam.fov = (2 * Math.atan(F / ED) * 180) / Math.PI; cam.aspect = 1;
-          cam.near = Math.max(1, ED - 6 * R - 40); cam.far = ED + 20;
-          cam.position.set(ex, -ey, ED); cam.rotation.set(0, 0, 0);
-          cam.setViewOffset(2 * F, 2 * F, p.x - ex + F - p.cs / 2, p.y - ey + F - p.cs / 2, p.cs, p.cs);
-          cam.updateProjectionMatrix();
-        },
-      };
-    }
-    const BUILD = { g: buildG, sign: buildSign, roll: buildRoll };
+    const BUILD = { g: buildG, sign: buildSign };   // v4: рулон — CSS-спрайт V3 (roll.js), 3D-сцена удалена
 
     async function scene(kind) {
       if (SC[kind]) return SC[kind];
-      const pr = BUILD[kind](); SC[kind] = pr;
+      // внешняя сцена (хук GV.gl.ext, S1 «рейл»): фабрика (T, {renderer}) → {scene, cam, apply(p, aspect), msg(m)} — тот же рендерер и контекст
+      const X = o.ext && o.ext[kind];
+      const pr = X ? X(T, { renderer, maxAniso }) : BUILD[kind](); SC[kind] = pr;
       const v = await pr;
-      v.apply({ u: 0.5, ry: 0, g: 1, flip: true }, 1.6);   // граффити видно — его программа собирается сейчас, а не на первом кадре оборота
+      if (!X) v.apply({ u: 0.5, ry: 0, g: 1, flip: true }, 1.6);   // граффити видно — его программа собирается сейчас, а не на первом кадре оборота
       if (renderer.compileAsync) await renderer.compileAsync(v.scene, v.cam); else renderer.compile(v.scene, v.cam);
       SC[kind] = v;
       return v;
@@ -536,7 +425,7 @@
 const ART = ${ART.toString()};
 const ENGINE = ${ENGINE.toString()};
 let E = null, pend = false;
-const V = new Map(), P = new Map();
+const V = new Map(), P = new Map(), EXT = {};
 const raf = self.requestAnimationFrame ? (f) => self.requestAnimationFrame(f) : (f) => setTimeout(f, 0);
 function draw() {
   pend = false;
@@ -572,7 +461,7 @@ self.onmessage = async (ev) => {
       const probe = new OffscreenCanvas(1, 1);
       if (!(probe.getContext('webgl2') || probe.getContext('webgl'))) { postMessage({ t: 'nogl' }); return; }
       const T = await load(m.urls);
-      E = ENGINE(T, new OffscreenCanvas(2, 2), m.o);
+      E = ENGINE(T, new OffscreenCanvas(2, 2), Object.assign(m.o, { ext: EXT }));
       E.onLost(() => postMessage({ t: 'lost' }));
       postMessage({ t: 'built' });
     } else if (!E) return;
@@ -581,11 +470,16 @@ self.onmessage = async (ev) => {
     else if (m.t === 'mat') { await E.setMat(m.name); postMessage({ t: 'mat', name: m.name }); }
     else if (m.t === 'pose') { P.set(m.id, m); if (!pend) { pend = true; raf(draw); } }
     else if (m.t === 'stats') postMessage({ t: 'stats', id: m.id, v: E.info() });
+    else if (m.t === 'ext') EXT[m.kind] = (0, eval)('(' + m.src + ')');
+    else if (m.t === 'xmsg') {
+      try { const s = await E.scene(m.kind); postMessage({ t: 'xres', id: m.id, r: await s.msg(m.m) }); }
+      catch (e) { postMessage({ t: 'xres', id: m.id, err: String((e && e.message) || e) }); }
+    }
   } catch (e) { postMessage({ t: 'error', kind: m.kind, msg: String((e && e.message) || e) }); }
 };`;
 
   /* ═════════════════════ ХАБ: один контекст на страницу ═════════════════════ */
-  const HUB = { st: 'idle', kind: '', why: '', wait: [], scenes: {}, sceneCb: {}, renders: 0, wk: null, E: null, uid: 0, stCb: new Map(), offCb: [] };
+  const HUB = { st: 'idle', kind: '', why: '', wait: [], scenes: {}, sceneCb: {}, renders: 0, wk: null, E: null, uid: 0, stCb: new Map(), offCb: [], ext: {}, xCb: new Map() };
   function weakDevice() {
     const n = navigator, c = n.connection;
     return !!((c && c.saveData) || (n.deviceMemory && n.deviceMemory <= 2) || (n.hardwareConcurrency && n.hardwareConcurrency <= 2));
@@ -595,8 +489,7 @@ self.onmessage = async (ev) => {
     const mc = {}; for (const k in MC) mc[k] = abs(MC[k]);
     return {
       lite: !FINEQ.matches || NARROWQ.matches, aa: Math.min(W.devicePixelRatio || 1, 2) < 2, strict: !Q.has('soft'), soft: Q.has('soft'),
-      P_G, LOGO, LOGO_BOX, mc, mat: matOf(), rollFov: 10,
-      tape: { lime: abs(TAPE.lime), black: abs(TAPE.black) },
+      P_G, LOGO, LOGO_BOX, mc, mat: matOf(), ext: HUB.ext,
     };
   }
   function hubOff(why) {
@@ -623,6 +516,7 @@ self.onmessage = async (ev) => {
           else if (m.t === 'scene') sceneDone(m.kind);
           else if (m.t === 'mat') D.dispatchEvent(new CustomEvent('grinchin:gl-mat', { detail: { name: m.name } }));
           else if (m.t === 'stats') { const cb = HUB.stCb.get(m.id); if (cb) { HUB.stCb.delete(m.id); cb(m.v); } }
+          else if (m.t === 'xres') { const cb = HUB.xCb.get(m.id); if (cb) { HUB.xCb.delete(m.id); if (m.err) cb[1](new Error(m.err)); else cb[0](m.r); } }
           else if (m.t === 'error' || m.t === 'lost') { if (m.kind) sceneFail(m.kind, m.msg); else hubOff(m.msg || m.t); }
         };
         wk.onerror = () => hubOff('worker');
@@ -708,6 +602,18 @@ self.onmessage = async (ev) => {
       if (HUB.kind === 'worker') HUB.wk.postMessage({ t: 'mat', name });
       else HUB.E.setMat(name).then(() => D.dispatchEvent(new CustomEvent('grinchin:gl-mat', { detail: { name } })));
     },
+    // хук внешних сцен (S1 «Дроп на вешалках»): та же WebGL-сцена в том же воркере/контексте.
+    // ext(kind, src) — исходник фабрики «(T, {renderer}) → сцена»; вызывать, когда state() === 'ok', до needScene(kind).
+    // xmsg(kind, m, transfer) → Promise — сообщение сцене (её метод msg), например загрузка модели.
+    ext: (kind, src) => {
+      if (HUB.kind === 'worker' && HUB.wk) HUB.wk.postMessage({ t: 'ext', kind, src });
+      else HUB.ext[kind] = (0, eval)('(' + src + ')');
+    },
+    xmsg: (kind, m, transfer) => new Promise((res, rej) => {
+      if (HUB.st !== 'ok') { rej(new Error('gl ' + HUB.st)); return; }
+      if (HUB.kind === 'worker') { const id = ++HUB.uid; HUB.xCb.set(id, [res, rej]); HUB.wk.postMessage({ t: 'xmsg', kind, id, m }, transfer || []); }
+      else HUB.E.scene(kind).then((s) => s.msg(m)).then(res, rej);
+    }),
     art: () => ART((w, h) => { const c = D.createElement('canvas'); c.width = w; c.height = h; return c; }, LOGO, LOGO_BOX),
     P_G, G_VB, LOGO, LOGO_BOX,
   };
@@ -874,10 +780,8 @@ self.onmessage = async (ev) => {
     measure();
     S.overlay = R.hasAttribute('data-overlay');
     box.dataset.mat = matOf();
-    // data-heroimg="mascot": K4 прячет обёртку G (главный объект hero — маскот) → сцену G не строим и не рендерим
-    const hidG = R.dataset.heroimg === 'mascot';
-    if (hidG) { toSVG('mascot'); GV.gl.start(); }
-    else if (wantGL()) {
+    // v4: при data-heroimg="mascot" G не прячется, а рендерится материалом ink (см. matOf)
+    if (wantGL()) {
       cv = D.createElement('canvas'); cv.className = 'g3d__cv'; cv.setAttribute('aria-hidden', 'true');
       box.appendChild(cv);
       V = GV.gl.view('g', cv);

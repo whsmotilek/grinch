@@ -1,8 +1,10 @@
 <section id="looks" aria-labelledby="looks-title">
-  <!-- K3. «Образы» — улица v1: стена, отпечатки на ленте. Фото без Вити: ’01 pg-011-010, ’02 pg-011-018 крупно — косуха от подбородка до бёдер (в hero этот кадр целиком),
-       ’03 жаккардовая G у подола (pg-015-038), ’04 бирка в горловине (pg-015-040). Наклонён только отпечаток, подписи
-       ровные. Лента — на белом поле отпечатка и над ним, НЕ на лице / вещи / подписи; одна лаймовая на экран.
-       Имена вещей синхронизирует cards-art.js из GV_PRODUCTS (статичный текст — запасной), клик — карточка товара. -->
+  <!-- V2 (v4). «Образы» — четыре lookbook-кадра Higgsfield (hf/scenes/final/look-1..4, 4:5) полароидами на чёрной стене.
+       Механика v3 сохранена: отпечаток падает один раз при входе, скотч «шлёпает» после посадки (GV.art.stick), на телефоне —
+       лента-свайп со счётчиком. Скотч v4 — мультяшный (tape-torn-*, оба конца рваные), стикеры — белые варианты (лайм только
+       один на экран: скотч ’02). Стикеры по оси data-stickers: on — два, max — все четыре, off — нет. Тени запечены/градиентом —
+       без filter и box-shadow. Фото грузятся только при подходе к блоку (data-srcset → srcset, cards-art.js):
+       нативный lazy на телефоне качал первые два кадра по 1200 px ещё до первого экрана. Подписи — вещи на образе; имена синхронизирует cards-art.js, клик — карточка товара. -->
   <div class="lk-wall" aria-hidden="true"></div>
   <div class="lk-in">
     <div class="lk-head">
@@ -13,58 +15,76 @@
       <figure class="lk-look" data-look="01">
         <div class="lk-print">
           <picture class="lk-photo">
-            <source type="image/avif" srcset="{{asset:img/street/look-a-480.avif}} 480w, {{asset:img/street/look-a-960.avif}} 960w" sizes="(max-width: 767px) 70vw, 22vw">
-            <img src="{{asset:img/street/look-a-960.jpg}}" srcset="{{asset:img/street/look-a-480.jpg}} 480w, {{asset:img/street/look-a-960.jpg}} 960w" sizes="(max-width: 767px) 70vw, 22vw"
-                 alt="Джинсы КАРАКУЛИ на модели: с джинсовой курткой и светлым худи" width="960" height="1280" loading="lazy" fetchpriority="low" decoding="async">
+            <source type="image/avif" data-srcset="{{asset:img/v4/looks/look-1-hoodie-karakuli-640.avif}} 640w, {{asset:img/v4/looks/look-1-hoodie-karakuli-900.avif}} 900w, {{asset:img/v4/looks/look-1-hoodie-karakuli-1200.avif}} 1200w" sizes="(max-width: 767px) min(72vw, 320px), 24vw">
+            <img data-src="{{asset:img/v4/looks/look-1-hoodie-karakuli-900.webp}}" data-srcset="{{asset:img/v4/looks/look-1-hoodie-karakuli-640.webp}} 640w, {{asset:img/v4/looks/look-1-hoodie-karakuli-900.webp}} 900w, {{asset:img/v4/looks/look-1-hoodie-karakuli-1200.webp}} 1200w" sizes="(max-width: 767px) min(72vw, 320px), 24vw"
+                 alt="Худи ТРЕЩИНА и джинсы КАРАКУЛИ на модели, мокрая ночная улица" width="1200" height="1500" decoding="async">
           </picture>
-          <span class="tape tape--black tape--2 lk-tape lk-tape--tl" data-stick aria-hidden="true"></span>
+          <span class="lk-no" aria-hidden="true">’01</span>
+          <span class="tape tape--toon tape--toon-black lk-tape lk-tape--tl" data-stick aria-hidden="true"></span>
+          <picture class="lk-stk lk-stk--br" aria-hidden="true">
+            <source type="image/avif" srcset="{{asset:img/v4/looks/sticker-4-sparkle-w.avif}}">
+            <img src="{{asset:img/v4/looks/sticker-4-sparkle-w.webp}}" alt="" width="254" height="260" loading="lazy" decoding="async">
+          </picture>
         </div>
         <figcaption class="lk-cap">
-          <span class="lk-n">’01</span>
+          <a href="#drop" data-product="hoodie-crack">Худи ТРЕЩИНА</a>
           <a href="#drop" data-product="jeans-scribble">Джинсы КАРАКУЛИ</a>
         </figcaption>
       </figure>
       <figure class="lk-look" data-look="02">
         <div class="lk-print">
           <picture class="lk-photo">
-            <source type="image/avif" srcset="{{asset:img/street/look-j-480.avif}} 480w, {{asset:img/street/look-j-960.avif}} 960w" sizes="(max-width: 767px) 70vw, 24vw">
-            <img src="{{asset:img/street/look-j-960.jpg}}" srcset="{{asset:img/street/look-j-480.jpg}} 480w, {{asset:img/street/look-j-960.jpg}} 960w" sizes="(max-width: 767px) 70vw, 24vw"
-                 alt="Косуха КАПЮШОН на модели крупно: две молнии, лацканы на кнопках, ремень с пряжкой" width="960" height="1200" loading="lazy" fetchpriority="low" decoding="async">
+            <source type="image/avif" data-srcset="{{asset:img/v4/looks/look-2-suit-obezd-640.avif}} 640w, {{asset:img/v4/looks/look-2-suit-obezd-900.avif}} 900w, {{asset:img/v4/looks/look-2-suit-obezd-1200.avif}} 1200w" sizes="(max-width: 767px) min(72vw, 320px), 24vw">
+            <img data-src="{{asset:img/v4/looks/look-2-suit-obezd-900.webp}}" data-srcset="{{asset:img/v4/looks/look-2-suit-obezd-640.webp}} 640w, {{asset:img/v4/looks/look-2-suit-obezd-900.webp}} 900w, {{asset:img/v4/looks/look-2-suit-obezd-1200.webp}} 1200w" sizes="(max-width: 767px) min(72vw, 320px), 24vw"
+                 alt="Костюм ОБЪЕЗД на модели: ветровка и широкие брюки, ночная улица" width="1200" height="1500" decoding="async">
           </picture>
-          <span class="tape tape--lime tape--1 lk-tape lk-tape--t" data-stick aria-hidden="true"></span>
+          <span class="lk-no" aria-hidden="true">’02</span>
+          <span class="tape tape--toon tape--toon-lime lk-tape lk-tape--t" data-stick aria-hidden="true"></span>
+          <picture class="lk-stk lk-stk--tr lk-stk--max" aria-hidden="true">
+            <source type="image/avif" srcset="{{asset:img/v4/looks/sticker-6-stars-w.avif}}">
+            <img src="{{asset:img/v4/looks/sticker-6-stars-w.webp}}" alt="" width="245" height="260" loading="lazy" decoding="async">
+          </picture>
         </div>
         <figcaption class="lk-cap">
-          <span class="lk-n">’02</span>
-          <a href="#drop" data-product="jacket-biker">Косуха КАПЮШОН</a>
+          <a href="#drop" data-product="suit-detour">Костюм ОБЪЕЗД</a>
         </figcaption>
       </figure>
       <figure class="lk-look" data-look="03">
         <div class="lk-print">
           <picture class="lk-photo">
-            <source type="image/avif" srcset="{{asset:img/street/look-c-480.avif}} 480w, {{asset:img/street/look-c-960.avif}} 960w" sizes="(max-width: 767px) 70vw, 20vw">
-            <img src="{{asset:img/street/look-c-960.jpg}}" srcset="{{asset:img/street/look-c-480.jpg}} 480w, {{asset:img/street/look-c-960.jpg}} 960w" sizes="(max-width: 767px) 70vw, 20vw"
-                 alt="Жаккардовая G у подола белой футболки, крупно" width="960" height="1024" loading="lazy" fetchpriority="low" decoding="async">
+            <source type="image/avif" data-srcset="{{asset:img/v4/looks/look-3-jacket-restart-640.avif}} 640w, {{asset:img/v4/looks/look-3-jacket-restart-900.avif}} 900w, {{asset:img/v4/looks/look-3-jacket-restart-1200.avif}} 1200w" sizes="(max-width: 767px) min(72vw, 320px), 24vw">
+            <img data-src="{{asset:img/v4/looks/look-3-jacket-restart-900.webp}}" data-srcset="{{asset:img/v4/looks/look-3-jacket-restart-640.webp}} 640w, {{asset:img/v4/looks/look-3-jacket-restart-900.webp}} 900w, {{asset:img/v4/looks/look-3-jacket-restart-1200.webp}} 1200w" sizes="(max-width: 767px) min(72vw, 320px), 24vw"
+                 alt="Косуха КАПЮШОН и джинсы RESTART на модели, ночная улица" width="1200" height="1500" decoding="async">
           </picture>
-          <span class="tape tape--black tape--3 lk-tape lk-tape--tr" data-stick aria-hidden="true"></span>
+          <span class="lk-no" aria-hidden="true">’03</span>
+          <span class="tape tape--toon tape--toon-black lk-tape lk-tape--tr" data-stick aria-hidden="true"></span>
+          <picture class="lk-stk lk-stk--br lk-stk--crown" aria-hidden="true">
+            <source type="image/avif" srcset="{{asset:img/v4/looks/sticker-8-crown.avif}}">
+            <img src="{{asset:img/v4/looks/sticker-8-crown.webp}}" alt="" width="260" height="197" loading="lazy" decoding="async">
+          </picture>
         </div>
         <figcaption class="lk-cap">
-          <span class="lk-n">’03</span>
-          <a href="#drop" data-product="tee-blank">Футболка ФОН</a>
-          <a href="#drop" data-product="longsleeve-blank">Лонгслив ФОН</a>
+          <a href="#drop" data-product="jacket-biker">Косуха КАПЮШОН</a>
+          <a href="#drop" data-product="jeans-restart">Джинсы RESTART</a>
         </figcaption>
       </figure>
       <figure class="lk-look" data-look="04">
         <div class="lk-print">
           <picture class="lk-photo">
-            <source type="image/avif" srcset="{{asset:img/street/look-d-480.avif}} 480w, {{asset:img/street/look-d-960.avif}} 960w" sizes="(max-width: 767px) 70vw, 19vw">
-            <img src="{{asset:img/street/look-d-960.jpg}}" srcset="{{asset:img/street/look-d-480.jpg}} 480w, {{asset:img/street/look-d-960.jpg}} 960w" sizes="(max-width: 767px) 70vw, 19vw"
-                 alt="Бирка G в горловине белой футболки" width="960" height="1152" loading="lazy" fetchpriority="low" decoding="async">
+            <source type="image/avif" data-srcset="{{asset:img/v4/looks/look-4-longsleeve-redline-640.avif}} 640w, {{asset:img/v4/looks/look-4-longsleeve-redline-900.avif}} 900w, {{asset:img/v4/looks/look-4-longsleeve-redline-1200.avif}} 1200w" sizes="(max-width: 767px) min(72vw, 320px), 24vw">
+            <img data-src="{{asset:img/v4/looks/look-4-longsleeve-redline-900.webp}}" data-srcset="{{asset:img/v4/looks/look-4-longsleeve-redline-640.webp}} 640w, {{asset:img/v4/looks/look-4-longsleeve-redline-900.webp}} 900w, {{asset:img/v4/looks/look-4-longsleeve-redline-1200.webp}} 1200w" sizes="(max-width: 767px) min(72vw, 320px), 24vw"
+                 alt="Лонгслив ФОН и джинсы КРАСНАЯ ЛИНИЯ на модели, ночная улица" width="1200" height="1500" decoding="async">
           </picture>
-          <span class="tape tape--black tape--1 lk-tape lk-tape--t" data-stick aria-hidden="true"></span>
+          <span class="lk-no" aria-hidden="true">’04</span>
+          <span class="tape tape--toon tape--toon-black lk-tape lk-tape--t" data-stick aria-hidden="true"></span>
+          <picture class="lk-stk lk-stk--tr lk-stk--max lk-stk--arrow" aria-hidden="true">
+            <source type="image/avif" srcset="{{asset:img/v4/looks/sticker-1-arrow-turn-w.avif}}">
+            <img src="{{asset:img/v4/looks/sticker-1-arrow-turn-w.webp}}" alt="" width="260" height="243" loading="lazy" decoding="async">
+          </picture>
         </div>
         <figcaption class="lk-cap">
-          <span class="lk-n">’04</span>
-          <a href="#drop" data-product="tee-blank">Футболка ФОН</a>
+          <a href="#drop" data-product="longsleeve-blank">Лонгслив ФОН</a>
+          <a href="#drop" data-product="jeans-redline">Джинсы КРАСНАЯ ЛИНИЯ</a>
         </figcaption>
       </figure>
     </div>

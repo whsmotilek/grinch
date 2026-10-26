@@ -1,4 +1,4 @@
-/* GRINCHIN v3 · финал страницы (K5): #next «Разобрали — вернём», #footer, 404.
+/* GRINCHIN v4 · финал страницы (V3; основа K5 v3): #next «Разобрали — вернём», #footer, 404.
    Свои префиксы (nx-, fo-, e404-). Шрифты — из типошкалы K1 (--t-*), если она есть; иначе те же значения здесь.
    Один зелёный на экран: в подписке — кнопка (после успеха — лаймовая лента на пакете), в подвале — логотип. */
 
@@ -55,14 +55,14 @@
 .nx-shine{fill:var(--c-white);opacity:.08}
 .nx-print{fill:var(--c-black);opacity:.9}
 .nx-ign{font:800 19px/1 var(--font-display);letter-spacing:.08em;fill:var(--c-black);opacity:.9}
-/* ленты крест-накрест: растровые полосы K3 (.tape-strip, плитка бесшовна по X); концы уходят за кадр — их режет overflow */
-.nx-x{position:absolute;left:50%;top:51.4%;width:150%;height:12.8%;transform:translate(-50%,-50%) rotate(var(--r));
-  box-shadow:0 10px 18px -8px rgba(0,0,0,.7)}
-.nx-x--l{--r:23.6deg}
-.nx-x--k{--r:-23.6deg}
-/* маскот выглядывает из-за нижней кромки кадра справа */
-.nx-mz{position:absolute;right:3%;bottom:-2%;width:24%;transform-origin:50% 100%}
-.nx-mz[data-mz-char="uhmyl"]{bottom:5%;right:4%;width:26%;padding:2.2% 2%;background:var(--c-black);border:2px solid color-mix(in srgb,var(--c-white) 22%,transparent);border-radius:14px} /* лицо-наклейка: на лаймовой ленте иначе не читается */
+/* крест из двух мультяшных лент (tape-cross) и стикер «класс» — «шлёпаются» на пакет (end.js) */
+.nx-x{position:absolute;left:50%;top:52%;width:56%;height:auto;transform:translate(-50%,-50%) rotate(-3deg);pointer-events:none}
+.nx-st{position:absolute;right:3%;bottom:4%;width:17%;height:auto;transform:rotate(9deg);pointer-events:none}
+/* маскот подписки стоит на верхней кромке поля-бирки справа (над переключателем); после подписки — на пакете */
+.nx-side{position:relative}
+.nx-mz{position:absolute;z-index:2;right:2px;top:60px;width:clamp(78px,10vw,150px);transform:translateY(-100%);pointer-events:none}
+.nx-side:has(.nx-done:not([hidden])) .nx-mz{top:0;right:4%}
+@media (max-width:599px){.nx-sub{max-width:min(34ch,calc(100% - 96px))}}
 .nx-done-t{font:var(--t-d2,800 clamp(1.5rem,1.1rem + 1.4vw,2.25rem)/1.1 var(--font-display));letter-spacing:-.035em;color:var(--c-white)}
 .nx-done-t:focus{outline:none}
 .nx-done-s{margin-top:8px;font:var(--t-body,400 1rem/1.5 var(--font-text));color:var(--text-2)}
@@ -106,7 +106,9 @@ button.fo-row:hover,.fo-acc>summary:hover{text-decoration:underline;text-underli
 
 /* логотип на мятой бумаге: форма — вектор нового лого (маска), цвет — бренд, заломы — ТОТ ЖЕ лист, что и фон
    (end.js совмещает --cx/--cy/--cw/--ch с фоном подвала). Размер задаёт невидимый inline-вектор (пропорции нового лого) */
-.fo-logo-box{position:relative;margin-top:calc(var(--fo-mz-w) * 1.1 + 24px);--fo-mz-w:clamp(78px,15vw,210px)}
+/* место над логотипом под маскота: высота фигуры над линией сиденья = ширина / пропорция × сиденье (видео: .565 и .694) */
+.fo-logo-box{position:relative;--fo-mz-w:clamp(84px,15vw,200px);margin-top:calc(var(--fo-mz-w) / .565 * .694 + 24px)}
+html[data-mascot="none"] .fo-logo-box{margin-top:clamp(40px,6vw,72px)}
 .fo-logo{position:relative;width:100%;background-color:var(--c-green);
   background-position:var(--cx,50%) var(--cy,50%);background-size:var(--cw,cover) var(--ch,);background-repeat:no-repeat;
   background-blend-mode:multiply;
@@ -118,11 +120,14 @@ html:not(.js) .fo-logo,#footer.is-near .fo-logo{
 .fo-geom svg{display:block;width:100%;height:auto}
 /* «IGNORE THE SIGNS» под логотипом — как на упаковке (Grinchin2, стр. 10) */
 .fo-sign{margin:clamp(14px,2vw,26px) 0 0;text-align:center;font:800 clamp(.95rem,.5rem + 2.4vw,2.6rem)/1 var(--font-display);letter-spacing:.08em;color:var(--c-white)}
-/* маскот сидит на букве H (x 1057–1242, верх y≈93 из 1660×458): линия сиденья его вектора (y=694 из 800) — на верхе буквы */
+/* маскот (v4) сидит на букве H (x 1057–1242 из 1660, верх ≈ 6 % ширины лого): линия сиденья видео footer_swing
+   (--mz-seat ≈ .694 высоты рамки, ставит mascot.js вместе с --mz-ar) — на верх буквы; ноги свисают поверх лого */
 .fo-mz{position:absolute;z-index:2;top:0;width:var(--fo-mz-w);left:calc(var(--fo-seat-x,69.3%) - var(--fo-mz-w) / 2);
-  margin-top:calc(var(--fo-seat-y,6%) - var(--fo-mz-w) * 1.1567)} /* % у margin — от ширины: верх буквы = доля ширины лого */
-/* Ухмыл — одно лицо (600×340): нижний край улыбки ложится на верх буквы */
-.fo-mz[data-mz-char="uhmyl"]{--fo-mz-w:clamp(84px,15vw,230px);margin-top:calc(var(--fo-seat-y,6%) - var(--fo-mz-w) * .64)}
+  margin-top:calc(var(--fo-seat-y,6%) - var(--fo-mz-w) / var(--mz-ar,.565) * var(--mz-seat,.66))} /* % у margin — от ширины: верх буквы = доля ширины лого */
+/* стикеры подвала (режим «максимум»): в полях у логотипа, не на тексте */
+.fo-st{position:absolute;z-index:1;display:none}
+html[data-stickers="max"] .fo-st{display:block}
+.fo-st--1{--st-w:clamp(56px,7vw,104px);--st-r:-14deg;left:2%;top:calc(-1 * clamp(40px,6vw,96px))}
 
 .fo-legal{display:flex;flex-wrap:wrap;gap:4px 0;margin-top:clamp(32px,4vw,48px);padding-top:16px;
   border-top:1px solid color-mix(in srgb,var(--c-white) 18%,transparent);
@@ -131,31 +136,34 @@ html:not(.js) .fo-logo,#footer.is-near .fo-logo{
 .fo-legal span+span::before{content:"·";padding:0 .7em}
 @media (max-width:599px){.fo-legal span:last-child{flex-basis:100%;white-space:normal}.fo-legal span:last-child::before{content:none}}
 
-/* ============ 404 ============ */
-.e404{inset:0;display:grid;grid-template-rows:auto 1fr;overflow:hidden;background:var(--c-black);color:var(--c-white);
+/* ============ 404 (v4) ============
+   Фон — диорама «тупик» 404-bg (стена, барьер с лаймовым крестом, щель в заборе справа), cover: «сцена» .e404-art
+   держит пропорцию картинки (16:9 desktop / 9:16 телефон-портрет) и покрывает экран; маскот 404 (карта вверх ногами
+   + знак ONE WAY) стоит на диораме — его место в % сцены, поэтому он всегда на одном и том же пятачке картинки. */
+.e404{inset:0;display:grid;grid-template-rows:auto 1fr;overflow:hidden;background:#050505;color:var(--c-white);isolation:isolate;
   padding:max(8px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(20px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
 @media (min-width:768px){.e404{padding-inline:32px}}
 @media (min-width:1100px){.e404{padding-inline:48px}}
+.e404-art{position:absolute;z-index:-1;left:50%;top:50%;width:max(100vw,100dvh * 16 / 9);aspect-ratio:16/9;transform:translate(-50%,-50%);pointer-events:none}
+.e404-bg,.e404-bg img{position:absolute;inset:0;width:100%;height:100%;display:block}
+.e404-mz{position:absolute;left:72.5%;bottom:24.5%;width:15.5%}
+@media (max-aspect-ratio:4/5){
+  .e404-art{width:max(100vw,100dvh * 9 / 16);aspect-ratio:9/16;top:auto;bottom:0;transform:translateX(-50%)}
+  .e404-mz{left:max(13%,calc(50% - 50vw + 12px));bottom:21%;width:28%}
+}
 .e404-logo{justify-self:start;display:grid;place-items:center;min-height:var(--header-h,60px);min-width:44px;padding:0;border:0;background:none;color:var(--c-white);cursor:pointer}
 .e404-logo svg{height:26px;width:auto;display:block}
 .e404-in{display:grid;grid-template-rows:auto minmax(0,1fr) auto;align-content:stretch;gap:clamp(12px,3vh,32px);padding:clamp(8px,3vh,32px) 0 0;min-height:0}
 .e404-code{width:fit-content;margin:0 0 clamp(14px,2.4vw,32px);font:var(--t-mono,500 .75rem/1.3 var(--font-mono));letter-spacing:.04em;color:color-mix(in srgb,var(--c-white) 72%,transparent)}
-.e404-title{margin:0 0 0 -.04em;font:900 clamp(3.4rem,2rem + 9vw,9rem)/.86 var(--font-display);letter-spacing:-.06em}
-.e404-sub{margin:14px 0 0;font:var(--t-body,400 1rem/1.5 var(--font-text));color:var(--text-2)}
-/* сцена: полоса во всю ширину, ленты уходят за края панели (панель их обрезает) */
-.e404-stage{position:relative;display:grid;place-items:end center;min-height:0;z-index:0;clip-path:inset(-100vh -100vw 0 -100vw)} /* ленты не опускаются ниже сцены — к кнопке не подходят */
-.e404-mz{position:relative;width:min(88vw,52vh,560px);transform:translateX(min(16vw,240px))}
-.e404-mz[data-mz-char="uhmyl"]{width:min(80vw,44vh,460px)}
-.e404-fence{display:none;position:relative;width:100%;height:clamp(120px,22vh,220px)}
-.e404-t{position:absolute;left:50%;width:400vw;height:clamp(38px,6vh,60px);transform:translate(-50%,-50%) rotate(var(--r))}
-.e404-t1{top:42%;--r:-6deg}.e404-t2{top:62%;--r:3deg} /* передняя поднимается к левому краю — подальше от кнопки */
-html[data-mascot="none"] .e404-fence{display:block}
-/* кнопка белая: зелёный на этом экране — маскот и надписи ленты */
+.e404-title{margin:0 0 0 -.04em;font:900 clamp(3.4rem,2rem + 9vw,9rem)/.86 var(--font-display);letter-spacing:-.06em;text-shadow:0 2px 24px rgb(0 0 0 / .6)}
+.e404-sub{margin:14px 0 0;max-width:30ch;font:var(--t-body,400 1rem/1.5 var(--font-text));color:var(--text-2)}
+.e404-stage{min-height:0}
+/* кнопка белая: зелёный на этом экране — крест на барьере и маскот */
 .e404-home{justify-self:start;min-width:min(100%,260px);position:relative;z-index:1;background:var(--c-white);color:var(--c-black)}
 .e404-home:hover{background:var(--c-white);box-shadow:none;text-decoration:underline;text-underline-offset:4px}
 .e404-home .gl{width:16px;height:auto}
-@media (max-width:599px){.e404-mz{transform:none}.e404-home{width:100%;justify-self:stretch}}
-@media (max-height:520px) and (orientation:landscape){.e404-title{font-size:3rem}.e404-mz{width:min(40vh,240px)}}
+@media (max-width:599px){.e404-home{width:100%;justify-self:stretch}}
+@media (max-height:520px) and (orientation:landscape){.e404-title{font-size:3rem}}
 
 @media (prefers-reduced-motion:reduce){
   .fo-acc[open]>p{animation:none}

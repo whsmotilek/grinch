@@ -57,7 +57,7 @@
     function apply(y) {
       var p = clamp(0, 1, y / (vh * .55)); if (p === last && y > vh) return; last = p;
       title.style.transform = 'translateY(' + (30 * p).toFixed(3) + 'vh) rotateX(' + (74 * p).toFixed(2) + 'deg) scaleY(' + (1 + 1.9 * p).toFixed(4) + ')';
-      var o = (1 - clamp(0, 1, y / (vh * .2))).toFixed(3); fade.forEach(function (e) { e.style.opacity = o; });
+      var o = (1 - clamp(0, 1, y / (vh * .09))).toFixed(3); fade.forEach(function (e) { e.style.opacity = o; });
       if (lane) lane.style.opacity = clamp(0, 1, (y - vh * .08) / (vh * .28)).toFixed(3);
       if (dash) dash.style.transform = 'translateY(' + (50 * clamp(0, 1, y / vh)).toFixed(2) + '%)';
       var q = clamp(0, 1, y / (vh * .55));

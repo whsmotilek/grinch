@@ -3,26 +3,34 @@
 <head>
 <meta charset="utf-8">
 <script>
-/* Должно идти первым, до стилей: ставит на <html> всё, от чего зависит первая отрисовка. Владелец: K1.
+/* Должно идти первым, до стилей: ставит на <html> всё, от чего зависит первая отрисовка. Владелец: V1 (v4).
    1) ?shot=1 → сайт сразу в конечном состоянии (контракт); класс js.
-   2) РЕЖИМЫ (SPEC_V3 «Режимы»): оси data-<ось> + data-m. Источник: URL (?m=1..4, ?<ось>=…) → localStorage → пресет 1.
+   2) РЕЖИМЫ (SPEC_V4 «Режимы v4»): оси data-<ось> + data-m. Источник: URL (?m=1..4, ?<ось>=…) → localStorage → пресет 1.
       ?m=N в адресе сбрасывает сохранённые правки осей. ?skip=1 → data-skip (прелоадер не играет), ?clean=1 → data-clean (плашка скрыта).
    3) window.GV.mode = {get, set, preset, all, live, reset} — set/preset перезагружают страницу с &skip=1,
       если ось не объявлена живой через GV.mode.live(ось); живые — меняют атрибут и шлют grinchin:mode {axis, value}. */
 (function(){
-var h=document.documentElement,q,KEY="grinchin:mode:v3";
+var h=document.documentElement,q,KEY="grinchin:mode:v4";
+try{localStorage.removeItem("grinchin:mode:v3")}catch(e){}
 try{q=new URLSearchParams(location.search)}catch(e){q={get:function(){return null}}}
 if(q.get("shot")==="1")h.dataset.shot="1";
 if(q.get("skip")==="1")h.dataset.skip="1";
 if(q.get("clean")==="1")h.dataset.clean="1";
 h.classList.add("js");
-var A={g:["lime","tape","black"],hero:["asphalt","static"],heroimg:["model","mascot","crop"],cards:["a","b","c","d"],size:["vector","hand"],
-brand:["sign","story"],roll:["page","quiet","off"],marquee:["off","on"],mascot:["kapushon","grinchin","uhmyl","none"],cart:["count","menu"],
-tape:["lime","black"]};
+/* v4 (SPEC_V4 «Режимы v4»): heroimg — mascot|scene|look (было model|mascot|crop), mascot — grinchin|quiet|none (было kapushon|grinchin|uhmyl|none;
+   quiet = только подвал, как читает mascot.js V3), mzfx — живость маскота calm|max (max = «анимации везде», режим 2);
+   новые оси: ghost (V2: ghost-фото на карточке), rack (S1: дроп на вешалках), stickers (стикеры: on|max|off).
+   Старые значения из URL/localStorage не проходят проверку ok() и сбрасываются к пресету; ключ хранилища сменён на :v4. */
+var A={g:["lime","tape","black"],hero:["asphalt","static"],heroimg:["mascot","scene","look"],cards:["a","b","c","d"],ghost:["on","off"],
+size:["vector","hand"],rack:["on","drag","chain","off"],brand:["sign","story"],roll:["page","quiet","off"],tape:["lime","black"],marquee:["off","on"],
+stickers:["on","max","off"],mascot:["grinchin","quiet","none"],mzfx:["calm","max"],cart:["count","menu"]};
 var K=Object.keys(A);
-function pr(s){var r={},v=s.split(" ");K.forEach(function(k,i){r[k]=v[i]});return r}
-var P={1:pr("tape asphalt model d hand sign page off kapushon count lime"),2:pr("tape asphalt mascot c hand sign page on grinchin count lime"),
-3:pr("lime static crop a vector story quiet off uhmyl menu black"),4:pr("black asphalt model b hand story page on grinchin count black")};
+function pr(s){var r={},v=s.trim().split(/\s+/);K.forEach(function(k,i){r[k]=v[i]});return r}
+/*            g     hero    heroimg cards ghost size  rack brand roll  tape  marquee stickers mascot   mzfx  cart */
+var P={1:pr("tape  asphalt mascot  d     on    hand   on  sign  page  lime  off     on       grinchin calm  count"),
+2:pr("tape  asphalt mascot  d     on    hand   on  sign  page  lime  on      max      grinchin max   count"),
+3:pr("lime  static  scene   a     on    vector on  story quiet black off     off      quiet    calm  menu"),
+4:pr("black asphalt look    b     on    hand   on  story page  black on      on       grinchin calm  count")};
 var st={},m=1,o={},LIVE={};
 try{st=JSON.parse(localStorage.getItem(KEY))||{}}catch(e){}
 var um=q.get("m");
@@ -59,6 +67,15 @@ reset:function(){return GV.mode.preset(m)}};
 })();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>
+/* V1 v4: картинка первого экрана — preload сразу из <head> (иначе запрос уходит, только когда парсер дойдёт до hero, после ~0,7 МБ инлайна).
+   Отдельным скриптом ПОСЛЕ meta viewport: до неё media (min-width:768px) на телефоне ещё истинно (вьюпорт 980) — качалась бы картинка desktop. */
+try{var pl=function(set,sz,media){var l=document.createElement("link");l.rel="preload";l.as="image";l.type="image/avif";l.setAttribute("imagesrcset",set);
+l.setAttribute("imagesizes",sz);if(media)l.media=media;l.setAttribute("fetchpriority","high");document.head.appendChild(l)};
+if(window.GV.mode.get("heroimg")==="look")pl("{{asset:img/v4/hero/look-640.avif}} 640w, {{asset:img/v4/hero/look-1200.avif}} 1200w","(max-width: 767px) 80vw, 50vw");
+else{pl("{{asset:img/v4/hero/scene-m-720.avif}} 720w","100vw","(max-width: 767px)");
+pl("{{asset:img/v4/hero/scene-1440.avif}} 1440w, {{asset:img/v4/hero/scene-2560.avif}} 2560w","100vw","(min-width: 768px)")}}catch(e){}
+</script>
 <title>GRINCHIN — IGNORE THE SIGNS · Дроп 01</title>
 <meta name="description" content="GRINCHIN — IGNORE THE SIGNS. Дроп 01: восемь вещей — джинсы, костюм, худи, косуха, футболка, лонгслив. Предзаказ, отправка с 01.12.">
 <meta name="robots" content="noindex, nofollow">
@@ -86,6 +103,7 @@ reset:function(){return GV.mode.preset(m)}};
 <!--@css:roll.css-->
 <!--@css:mascot.css-->
 <!--@css:end.css-->
+<!--@css:rack.css-->
 <!--@css:modes.css-->
 </head>
 <body>
@@ -118,11 +136,14 @@ reset:function(){return GV.mode.preset(m)}};
   <div class="wrap">
     <div class="drop-head">
       <h2 id="drop-title" class="drop-title">Дроп&nbsp;01<sup aria-label="восемь вещей">08</sup></h2>
-      <p class="drop-note">предзаказ · отправка с&nbsp;01.12 · эскизы, фото после съёмки</p>
+      <p class="drop-note">предзаказ · отправка с&nbsp;01.12 · <span class="dn-hover">наведи&nbsp;— фото, 3D в&nbsp;карточке</span><span class="dn-touch">нажми и&nbsp;держи&nbsp;— фото, 3D в&nbsp;карточке</span></p>
     </div>
     <div class="grid" data-grid></div>
   </div>
 </section>
+
+<!-- ============ ДРОП НА ВЕШАЛКАХ (S1): рейл с 8 вещами в 3D, rack.js; ось data-rack: on|drag|chain|off ============ -->
+<section id="rack" aria-label="Дроп на вешалках" data-rack-mount></section>
 
 <!-- ============ ОБРАЗЫ (K3) ============ -->
 <!--@html:looks.html-->
@@ -169,12 +190,15 @@ reset:function(){return GV.mode.preset(m)}};
         </dl>
         <!-- режим показа (modes.js показывает и подписывает; при ?clean=1 скрыт): на телефоне — основной вход в настройки, бирка в шве узкая -->
         <button type="button" class="menu-mode" data-mode-open hidden aria-haspopup="dialog" aria-controls="mode-panel"><span class="t-mono">режим:</span> <span data-mode-name></span><span class="menu-mode-k" aria-hidden="true">настроить</span></button>
-        <div class="menu-mascot" data-mascot-slot="menu" aria-hidden="true"></div>
       </div>
       <div class="menu-foot" style="--i:6">
         <p class="t-mono">ДРОП 01 · ПРЕДЗАКАЗ · ОТПРАВКА С&nbsp;01.12</p>
         <p class="menu-slogan" lang="en">IGNORE THE SIGNS</p>
       </div>
+      <!-- V1 v4: маскот машет из-за правого края (поза menu обрезана кромкой справа). Рисует V3 (GV.mascot.mount — коробка = ширина слота × пропорция позы);
+           <img> внутри — запасной вариант, если mascot.js не смонтировал. Размеры слота: desktop 120 px у правого края над рваной кромкой листа,
+           телефон 96 px / планшет 120 px — у правого края рядом с первыми пунктами (виден сразу). Скрыт при data-mascot="quiet|none". -->
+      <div class="menu-mascot" data-mascot-slot="menu" data-mascot-pose="menu" aria-hidden="true"><img class="menu-mascot-fb" src="{{asset:img/v4/hero/menu-600.webp}}" alt="" width="333" height="600" loading="lazy" decoding="async"></div>
     </div>
     <svg class="menu-edge" viewBox="0 0 1200 18" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M0 0H1200V6L1188 11 1171 5 1157 13 1139 7 1124 15 1103 6 1090 10 1071 4 1058 12 1036 8 1021 16 1004 6 989 11 968 5 951 13 936 7 917 14 902 5 884 10 866 6 851 15 830 7 816 12 797 4 780 13 763 8 744 15 729 6 711 11 692 5 676 14 657 8 641 12 622 4 607 13 588 7 572 16 553 6 538 10 519 5 503 14 484 8 466 12 451 4 433 13 414 7 398 15 379 6 362 11 345 5 328 14 309 8 293 12 274 4 258 13 241 7 222 16 207 6 190 11 171 5 156 13 137 8 121 14 102 5 87 10 68 4 51 13 33 7 17 12 0 6Z"/></svg>
   </div>
@@ -249,6 +273,8 @@ reset:function(){return GV.mode.preset(m)}};
 <!--@js:motion.js-->
 <!--@js:door.js--><!-- T2 v3.1: дверь на телефоне (камера вдоль GRINCHIN → отъезд), блок .ab-door в about.html -->
 <!--@js:three-g.js-->
+<!--@js:rack-scene.js--><!-- S1: 3D-часть «Дроп на вешалках» (исходник уходит в воркер GV.gl) -->
+<!--@js:rack.js-->
 <!--@js:scenes.js-->
 <!--@js:roll.js-->
 <!--@js:mascot.js-->

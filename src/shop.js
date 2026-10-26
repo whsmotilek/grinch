@@ -1,4 +1,8 @@
-/* GRINCHIN v3 — каркас и магазин. Владелец: K1. База — shop.js v2 (перенос почти дословный, R2 §1.4–1.5).
+/* GRINCHIN v4 — каркас и магазин. Владелец: V2 (v3 — K1).
+   v4: карточка дропа — рисунок K3 + ghost-фото вещи («призрачный манекен», GV_PHOTOS): desktop — наведение, телефон — удержание
+   или свайп по обложке (точки «рисунок · фото»), бейдж «3D» на фото. Карточка товара: вкладки «Кадры | 3D», галерея
+   рисунок → перед → спина → бок → образ на модели, точки + счётчик, зум (двойной тап / клик), 3D — GV.rack.mountProduct (S1).
+   Новые хуки: GV.productTab('photo'|'3d'), ?open=product:<id>:3d, событие grinchin:product-view {id, view}. База — shop.js v2 (перенос почти дословный, R2 §1.4–1.5).
    window.GV: open/close оверлеев (стек, фокус-ловушка, Esc, inert, блокировка скролла, свайп шитов), корзина,
    навигация (свой плавный скролл, без wipe), тост над кнопкой. Рендер сетки дропа, карточки товара, корзины, меню.
    Выбор размера — «бирка»: тап по размеру → остальные зачёркиваются каскадом, выбранный обводится (R4 §3.6);
@@ -29,7 +33,9 @@
   // игры больше нет (SPEC_V3): у тех, кто играл в v1, чистим её ключи
   try { localStorage.removeItem("grinchin:gather:v1"); localStorage.removeItem("grinchin:gather:invited"); } catch (e) { /* без хранилища */ }
   // оси, которые этот модуль рисует сам и умеет менять на лету (только CSS)
-  if (GV.mode) { GV.mode.live("size"); GV.mode.live("cart"); }
+  if (GV.mode) { GV.mode.live("size"); GV.mode.live("cart"); GV.mode.live("ghost"); }
+  // ось v4 ghost = on | off: ghost-фото на обложке карточки (живая — только CSS + ленивая подгрузка)
+  function ghostOn() { return root.dataset.ghost !== "off"; }
   function cardStyle() { return (GV.mode && GV.mode.get("cards")) || root.dataset.cards || "a"; }
 
   /* ---------- утилиты ---------- */
@@ -207,6 +213,25 @@
 
   /* ---------- сетка дропа ---------- */
   var grid = $("[data-grid]");
+  /* ---------- фото вещей (v4) ---------- */
+  var PH = window.GV_PHOTOS || {}, LOOKP = window.GV_LOOK_PHOTOS || {};
+  // src из srcset по ширине (фолбэк <img src> для браузеров без srcset)
+  function srcOf(ss, w) {
+    var hit = String(ss).split(/,\s*/).filter(function (x) { return new RegExp("\\s" + w + "w$").test(x); })[0];
+    return (hit || String(ss).split(/,\s*/)[0]).replace(/\s+\d+w$/, "");
+  }
+  function pictureHTML(set, sizes, alt, cls, lazy, w, h) {
+    return '<picture' + (cls ? ' class="' + cls + '"' : "") + '><source type="image/avif" srcset="' + set.avif + '" sizes="' + sizes + '">' +
+      '<img src="' + srcOf(set.webp, 800) + '" srcset="' + set.webp + '" sizes="' + sizes + '" alt="' + esc(alt) + '" width="' + (w || 800) + '" height="' + (h || 1000) + '" decoding="async"' +
+      (lazy ? ' loading="lazy"' : "") + "></picture>";
+  }
+  // маленькое превью (С этим, корзина): фото-перёд, если есть; иначе эскиз
+  function thumbHTML(p) {
+    var f = PH[p.id] && PH[p.id].front;
+    return f ? pictureHTML(f, "120px", "", "", true) : '<img src="' + p.img[0] + '" alt="" width="800" height="1000" loading="lazy" decoding="async">';
+  }
+  GV.photos = { picture: pictureHTML, of: function (id) { return PH[id] || null; }, look: function (n) { return LOOKP[n] || null; } };
+
   function sketchHTML(p) {
     return '<img class="card-img" src="' + p.img[0] + '" alt="' + esc(p.name) + ' — эскиз" width="800" height="1000" decoding="async">' +
       (canHover ? '<img class="card-img card-img--alt" src="' + p.img[1] + '" alt="" aria-hidden="true" width="800" height="1000" loading="lazy" decoding="async">' : "");
@@ -226,7 +251,7 @@
   function cardHTML(p) {
     var st = statusOf(p), all = anyStock(p);
     return '<article class="card" data-id="' + p.id + '" data-state="' + (all ? p.state : "soldout") + '">' +
-      '<div class="card-media">' + sketchHTML(p) + "</div>" +
+      '<div class="card-media">' + sketchHTML(p) + ghostShell(p) + "</div>" +
       (all && canHover ? quickHTML(p) : "") +
       '<div class="card-body">' +
       '<p class="card-num">' + num(p) + "</p>" +
@@ -237,23 +262,141 @@
       (all ? "" : '<svg class="stk stk--price" viewBox="0 0 96 64" preserveAspectRatio="none" aria-hidden="true" focusable="false"><g class="stk-v">' + pth("n", NV, 0) + '</g><g class="stk-h">' + pth("n", NH, 0) + "</g></svg>") +
       "</p></div></article>";
   }
+  /* ghost-слой: div (не picture — GV.art.render чистит прямых детей-<picture>), фото вставляется при «гидрации» —
+     после загрузки страницы рядом с экраном или сразу при наведении/касании: первые обложки-рисунки не делят канал с фото */
+  function ghostShell(p) {
+    if (!PH[p.id]) return "";
+    return '<div class="card-ghost" aria-hidden="true">' + (p.d3 ? '<span class="card-3d" data-card-3d title="Покрутить в 3D">3D</span>' : "") + "</div>" +
+      (canHover ? "" : '<span class="card-pg" aria-hidden="true"><i></i><i></i></span>');
+  }
+  var CARD_SIZES = "(max-width: 1099px) 46vw, 340px";
+  function arm(card) { var g = card && $(".card-ghost", card); if (g) g.classList.add("is-armed"); }
+  function hydrate(card) {
+    var g = card && $(".card-ghost", card), p = card && byId[card.dataset.id];
+    if (!g || g.dataset.h || !p || !PH[p.id] || !ghostOn()) return;
+    g.dataset.h = "1";
+    g.insertAdjacentHTML("afterbegin", pictureHTML(PH[p.id].front, CARD_SIZES, "", "cg-pic", false));
+    var img = $("img", g);
+    var ok = function () {
+      var dec = img.decode ? img.decode() : null;
+      (dec ? dec.catch(function () {}) : Promise.resolve()).then(function () { g.classList.add("is-ready"); });
+    };
+    if (img.complete && img.naturalWidth) ok(); else { img.addEventListener("load", ok, { once: true }); img.addEventListener("error", function () { g.remove(); }, { once: true }); }
+  }
+  function ghostSchedule() {
+    if (!grid) return;
+    var cards = $$(".card", grid);
+    if (isShot) { cards.forEach(hydrate); return; }
+    var start = function () {
+      if (!("IntersectionObserver" in window)) { cards.forEach(hydrate); return; }
+      var io = new IntersectionObserver(function (es) {
+        es.forEach(function (e) { if (e.isIntersecting) { io.unobserve(e.target); hydrate(e.target); } });
+      }, { rootMargin: "60% 0px 60% 0px" });
+      cards.forEach(function (c) { io.observe(c); });
+    };
+    // после load страницы и простоя: фото не толкаются с первым экраном
+    var idle = function () { (window.requestIdleCallback || function (f) { setTimeout(f, 200); })(start, { timeout: 1500 }); };
+    if (d.readyState === "complete") idle(); else window.addEventListener("load", idle, { once: true });
+  }
   // обложка карточки: рисунок K3, если модуль подключён; иначе (или при ошибке) — эскиз
   function paintArt(card) {
     var p = byId[card.dataset.id], media = $(".card-media", card), A = GV.art;
     if (!p || !media || !A || typeof A.render !== "function") return;
+    // эскизы-фолбэк убираем точечно: ghost-слой и точки (v4) остаются
+    var drop = function () { $$(":scope > img.card-img, :scope > .art", media).forEach(function (n) { n.remove(); }); };
     try {
-      media.innerHTML = "";
+      drop();
       if (A.render(card, p, cardStyle()) === false) throw new Error("art: false");
       media.dataset.art = "1";
-    } catch (e) { media.innerHTML = sketchHTML(p); delete media.dataset.art; }
+    } catch (e) { drop(); media.insertAdjacentHTML("afterbegin", sketchHTML(p)); delete media.dataset.art; }
   }
   if (grid) {
     grid.innerHTML = P.map(cardHTML).join("");
     var artPass = function () { if (GV.art) $$(".card", grid).forEach(paintArt); };
     if (d.readyState === "loading") d.addEventListener("DOMContentLoaded", artPass, { once: true }); else setTimeout(artPass, 0);
+    ghostSchedule();
+    d.addEventListener("grinchin:mode", function (e) { if (e.detail && e.detail.axis === "ghost" && ghostOn()) $$(".card", grid).forEach(hydrate); });
+  }
+  /* наведение: фото грузится сразу, проявляется, когда декодировано (CSS: :hover + .is-ready) */
+  if (grid && canHover) grid.addEventListener("pointerover", function (e) {
+    var c = e.target.closest && e.target.closest(".card");
+    if (c) { hydrate(c); arm(c); }
+  });
+  if (grid) grid.addEventListener("focusin", function (e) { var c = e.target.closest(".card"); if (c) { hydrate(c); arm(c); } });
+  /* телефон: удержание обложки — фото, пока палец лежит; свайп влево — фото, вправо — рисунок (точки внизу).
+     Клик после жеста гасится, чтобы карточка не открылась. Вертикальный скролл — как обычно (touch-action: pan-y). */
+  var swallowClick = 0;
+  if (grid && !canHover) {
+    var tg = null;
+    var release = function () {
+      if (!tg) return;
+      clearTimeout(tg.timer);
+      if (tg.held) { tg.card.classList.remove("is-hold"); swallowClick = Date.now(); }
+      tg = null;
+    };
+    grid.addEventListener("touchstart", function (e) {
+      var m = e.target.closest && e.target.closest(".card-media");
+      if (!m || e.touches.length > 1) { release(); return; }
+      var card = m.closest(".card"), t = e.touches[0];
+      if (!$(".card-ghost", card) || !ghostOn()) return;
+      hydrate(card); arm(card);
+      tg = { card: card, x: t.clientX, y: t.clientY, axis: null, held: false };
+      tg.timer = setTimeout(function () { if (tg && !tg.axis) { tg.held = true; tg.card.classList.add("is-hold"); } }, 280);
+    }, { passive: true });
+    grid.addEventListener("touchmove", function (e) {
+      if (!tg) return;
+      var t = e.touches[0], dx = t.clientX - tg.x, dy = t.clientY - tg.y;
+      if (!tg.axis && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+        tg.axis = Math.abs(dx) > Math.abs(dy) * 1.2 ? "x" : "y";
+        if (!tg.held) clearTimeout(tg.timer);
+        if (tg.axis === "y" && !tg.held) tg = null;      // это прокрутка страницы
+      }
+      if (tg) tg.dx = dx;
+    }, { passive: true });
+    grid.addEventListener("touchend", function () {
+      if (tg && tg.axis === "x" && Math.abs(tg.dx || 0) > 32) {
+        tg.card.classList.toggle("is-ghost", tg.dx < 0);
+        swallowClick = Date.now();
+      }
+      release();
+    }, { passive: true });
+    grid.addEventListener("touchcancel", release, { passive: true });
+    grid.addEventListener("contextmenu", function (e) { if (e.target.closest(".card-media")) e.preventDefault(); });
+    /* подсказка жеста: первая карточка один раз за сессию «моргает» фото, когда встала в середину экрана */
+    var peeked = false;
+    try { peeked = isShot || reduced || sessionStorage.getItem("grinchin:peek") === "1"; } catch (e) { peeked = isShot || reduced; }
+    var first = $(".card", grid);
+    if (!peeked && first && "IntersectionObserver" in window) {
+      var pio = new IntersectionObserver(function (es) {
+        if (!es[0].isIntersecting) return;
+        pio.disconnect(); hydrate(first);
+        try { sessionStorage.setItem("grinchin:peek", "1"); } catch (e) {}
+        var g = $(".card-ghost", first), n = 0;
+        (function wait() {
+          if (!g) return;
+          if (!g.classList.contains("is-ready")) { if (++n < 40) setTimeout(wait, 150); return; }
+          // моргаем, только когда прокрутка стоит (слой фото растрится в этот момент, а не посреди жеста)
+          var lastY = window.scrollY, still = 0;
+          (function idle() {
+            if (first.classList.contains("is-ghost")) return;
+            if (Math.abs(window.scrollY - lastY) > 1) { lastY = window.scrollY; still = 0; } else still++;
+            if (still < 4) { setTimeout(idle, 120); return; }
+            var r = first.getBoundingClientRect();
+            if (r.bottom < 0 || r.top > window.innerHeight) return;   // уехала — без подсказки
+            arm(first);
+            requestAnimationFrame(function () {
+              first.classList.add("is-peek");
+              setTimeout(function () { first.classList.remove("is-peek"); }, 1100);
+            });
+          })();
+        })();
+      }, { rootMargin: "-30% 0px -30% 0px" });
+      pio.observe(first);
+    }
   }
   var quickT = new WeakMap();
   if (grid) grid.addEventListener("click", function (e) {
+    if (swallowClick && Date.now() - swallowClick < 600) { swallowClick = 0; e.stopPropagation(); e.preventDefault(); return; }
     var row = e.target.closest(".card-sizes");
     if (row) {
       e.stopPropagation(); // ряд размеров перехватывает клики сам: карточка не открывается
@@ -270,6 +413,7 @@
       e.stopPropagation();
       var ob = $(".card-open", card); if (ob && d.activeElement !== ob) ob.focus({ preventScroll: true }); // сюда вернётся фокус
       GV.open("product", card.dataset.id);
+      if (e.target.closest("[data-card-3d]")) GV.productTab("3d");
     }
   });
   if (grid) grid.addEventListener("keydown", function (e) {
@@ -290,19 +434,47 @@
   var sheetBody = $("[data-ps-body]");
   var cur = { id: null, size: null };
   function lookOf(p) { return LOOKS.filter(function (l) { return (l.items || []).indexOf(p.id) > -1; })[0]; }
-  // галерея: первые кадры — нарисованные (K3), дальше фото (когда появятся — p.photos)
+  /* галерея v4: рисунок (K3, первый кадр GV.art.gallery) → ghost перед → спина → бок → образ на модели (если вещь в образе).
+     Деталь-лупа K3 в v4 не показываем: её место заняли фото. */
+  var GAL_SIZES = "(max-width: 767px) 100vw, (max-width: 1119px) 52vw, 590px";
   function galleryOf(p) {
-    var g = null;
-    if (GV.art && typeof GV.art.gallery === "function") { try { g = GV.art.gallery(p, cardStyle()); } catch (e) { g = null; } }
-    if (!g || !g.length) g = p.img.map(function (src, i) { return { type: "img", src: src, alt: p.name + (i ? " — деталь, эскиз" : " — эскиз") }; });
+    var g = [], art = null;
+    if (GV.art && typeof GV.art.gallery === "function") { try { art = (GV.art.gallery(p, cardStyle()) || [])[0]; } catch (e) { art = null; } }
+    g.push(art && art.html ? { type: "svg", html: art.html, alt: art.alt, tag: "рисунок" } : { type: "img", src: p.img[0], alt: p.name + " — эскиз", tag: "эскиз" });
+    var ph = PH[p.id];
+    if (ph) [["front", "перед"], ["back", "спина"], ["side", "бок"]].forEach(function (v) {
+      if (ph[v[0]]) g.push({ type: "photo", set: ph[v[0]], alt: p.name + " — " + v[1] + ", фото на невидимом манекене", tag: v[1] });
+    });
+    var lk = lookOf(p);
+    if (lk && LOOKP[lk.n]) g.push({ type: "photo", set: LOOKP[lk.n], alt: lk.alt || (p.name + " — на модели"), tag: "образ ’" + lk.n, look: true });
     var seen = {};
-    g.forEach(function (x) { if (x.src) seen[x.src] = 1; });
     (p.photos || []).forEach(function (src, i) { if (!seen[src]) { seen[src] = 1; g.push({ type: "img", src: src, alt: p.name + " — фото " + (i + 1) }); } });
     return g;
   }
   function slideHTML(s, i) {
-    if (s.type === "svg") return '<figure class="ps-slide ps-slide--art" role="img" aria-label="' + esc(s.alt || "") + '">' + s.html + "</figure>";
-    return '<figure class="ps-slide"><img src="' + s.src + '" alt="' + esc(s.alt || "") + '" width="800" height="1000" decoding="async"' + (i ? ' loading="lazy"' : "") + "></figure>";
+    var tag = s.tag ? '<span class="ps-tag" aria-hidden="true">' + esc(s.tag) + "</span>" : "";
+    if (s.type === "svg") return '<figure class="ps-slide ps-slide--art" role="img" aria-label="' + esc(s.alt || "") + '">' + s.html + tag + "</figure>";
+    if (s.type === "photo") return '<figure class="ps-slide ps-slide--photo' + (s.look ? " ps-slide--look" : "") + '" data-zoom>' +
+      pictureHTML(s.set, GAL_SIZES, s.alt || "", "ps-pic", i > 1) + tag + "</figure>";
+    return '<figure class="ps-slide"><img src="' + s.src + '" alt="' + esc(s.alt || "") + '" width="800" height="1000" decoding="async"' + (i ? ' loading="lazy"' : "") + ">" + tag + "</figure>";
+  }
+  function galleryHTML(p, gal) {
+    var n = gal.length, has3d = !!p.d3;
+    return '<div class="ps-gallery" data-view="photo">' +
+      (has3d ? '<div class="ps-tabs-w"><div class="ps-tabs" role="tablist" aria-label="Как смотреть вещь">' +
+        '<button type="button" role="tab" id="ps-tab-photo" aria-controls="ps-pane-photo" aria-selected="true" data-ps-tab="photo">Кадры<span class="ps-tabs-n">' + n + "</span></button>" +
+        '<button type="button" role="tab" id="ps-tab-3d" aria-controls="ps-pane-3d" aria-selected="false" tabindex="-1" data-ps-tab="3d">3D<span class="ps-tabs-k">на вешалке</span></button></div></div>' : "") +
+      '<div class="ps-stage" id="ps-pane-photo"' + (has3d ? ' role="tabpanel" aria-labelledby="ps-tab-photo"' : "") + ">" +
+      '<div class="ps-track" tabindex="0" role="region" aria-label="Кадры вещи, листай">' + gal.map(slideHTML).join("") + "</div>" +
+      (n > 1 ? '<p class="ps-count" aria-hidden="true"><span data-ps-i>1</span>/' + n + "</p>" +
+        '<div class="ps-dots" aria-hidden="true">' + gal.map(function (s, i) { return '<i' + (i ? "" : ' class="is-on"') + "></i>"; }).join("") + "</div>" : "") +
+      "</div>" +
+      (has3d ? '<div class="ps-3d" id="ps-pane-3d" role="tabpanel" aria-labelledby="ps-tab-3d" hidden>' +
+        '<div class="ps-3d-mount" data-rack-product="' + p.id + '"></div>' +
+        '<div class="ps-3d-ph" data-ps-3d-ph><div class="ps-3d-art">' + (gal[0].type === "svg" ? gal[0].html : "") + "</div>" +
+        '<p class="ps-3d-msg" data-ps-3d-msg>Вешаем на вешалку…</p></div>' +
+        '<p class="ps-3d-hint t-mono" aria-hidden="true">тяни, чтобы покрутить</p></div>' : "") +
+      "</div>";
   }
   function sizeTagHTML(p) {
     var sizes = sizesOf(p);
@@ -317,6 +489,7 @@
       }).join("") + "</div>";
   }
   function renderSheet(p) {
+    rackOff(); unzoom();
     cur = { id: p.id, size: null };
     var all = anyStock(p);
     var pairs = (p.pairs || []).map(function (id) { return byId[id]; }).filter(Boolean);
@@ -325,11 +498,7 @@
     if (GV.art && typeof GV.art.caption === "function") { try { cap = GV.art.caption(p) || ""; } catch (e) { cap = ""; } }
     sheetBody.innerHTML =
       '<div class="ps-grid" data-state="' + (all ? p.state : "soldout") + '">' +
-      '<div class="ps-gallery"><div class="ps-stage">' +
-      '<div class="ps-track" tabindex="0" role="region" aria-label="Кадры вещи, листай">' + gal.map(slideHTML).join("") + "</div>" +
-      (gal.length > 1 ? '<p class="ps-count" aria-hidden="true"><span data-ps-i>1</span>/' + gal.length + "</p>" : "") + "</div>" +
-      (cap ? '<p class="ps-cap">' + esc(typo(cap)) + "</p>" : "") +
-      "</div>" +
+      galleryHTML(p, gal).replace(/<\/div>$/, (cap ? '<p class="ps-cap">' + esc(typo(cap)) + "</p>" : "") + "</div>") +
       '<div class="ps-info">' +
       '<p class="ps-num">' + num(p) + "</p>" +
       '<h2 id="ps-title" class="ps-title">' + esc(p.name) + "</h2>" +
@@ -357,18 +526,27 @@
         '<div class="ps-more"><div class="ps-more-head"><h3 class="t-h3">С этим</h3>' +
         (look ? '<button type="button" class="link" data-look-go="' + look.n + '">Из образа ’' + look.n + ARROW + "</button>" : "") + "</div>" +
         '<div class="ps-more-grid">' + pairs.map(function (q) {
-          return '<button type="button" class="mini" data-open-product="' + q.id + '"><img src="' + q.img[0] + '" alt="" width="800" height="1000" loading="lazy" decoding="async">' +
+          return '<button type="button" class="mini" data-open-product="' + q.id + '">' + thumbHTML(q) +
             '<span class="mini-name">' + esc(q.name) + '</span><span class="mini-price">' + money(q.price) + "</span></button>";
         }).join("") + "</div></div>" : "") +
       "</div>";
     setBuy(p);
     var panel = $(".ps-panel");
     if (panel) panel.scrollTop = 0;
-    var track = $(".ps-track", sheetBody);
+    var track = $(".ps-track", sheetBody), raf = 0, lastI = 0;
+    var dots = $$(".ps-dots i", sheetBody), numEl = $("[data-ps-i]", sheetBody);
     track.addEventListener("scroll", function () {
-      var i = Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
-      var el = $("[data-ps-i]", sheetBody);
-      if (el) el.textContent = i + 1;
+      if (raf) return;
+      raf = requestAnimationFrame(function () {
+        raf = 0;
+        var i = Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
+        if (i === lastI) return;
+        if (dots[lastI]) dots[lastI].classList.remove("is-on");
+        if (dots[i]) dots[i].classList.add("is-on");
+        lastI = i;
+        if (numEl) numEl.textContent = i + 1;
+        unzoom();
+      });
     }, { passive: true });
   }
   function acc(t, body) { return '<details class="acc"><summary>' + t + '</summary><div class="acc-body">' + body + "</div></details>"; }
@@ -461,6 +639,142 @@
       $("p", box).focus();
     });
   }
+  /* ---------- вкладки «Кадры | 3D» ----------
+     3D рисует S1: GV.rack.mountProduct(el, id) → (необяз.) ручка {destroy|unmount}. Пока модуля нет — заглушка-рисунок
+     и подпись; появится позже (ленивая загрузка) — смонтируем, как только объявится, пока вкладка открыта. */
+  var rackH = null, rackWait = 0;
+  function rackOff() {
+    clearTimeout(rackWait); rackWait = 0;
+    var box = sheetBody && $(".ps-3d-mount", sheetBody);
+    if (rackH) {
+      try { if (typeof rackH.destroy === "function") rackH.destroy(); else if (typeof rackH.unmount === "function") rackH.unmount(); } catch (e) { /* модуль S1 сам разберётся */ }
+    } else if (box && box.dataset.mounted && GV.rack && typeof GV.rack.unmountProduct === "function") { try { GV.rack.unmountProduct(box); } catch (e) { /* — */ } }
+    rackH = null;
+    if (box) { delete box.dataset.mounted; box.innerHTML = ""; }
+    var pane = sheetBody && $(".ps-3d", sheetBody);
+    if (pane) pane.classList.remove("is-live", "is-stub");
+  }
+  function rackOn(p) {
+    var pane = $(".ps-3d", sheetBody), box = pane && $(".ps-3d-mount", pane), msg = pane && $("[data-ps-3d-msg]", pane);
+    if (!box || box.dataset.mounted) return;
+    if (msg) msg.textContent = "Вешаем на вешалку…";
+    var tries = 0;
+    (function attempt() {
+      rackWait = 0;
+      if (!pane.isConnected || pane.hidden) return;
+      var R = GV.rack;
+      if (R && typeof R.mountProduct === "function") {
+        try {
+          rackH = R.mountProduct(box, p.id) || null;
+          box.dataset.mounted = "1";
+          pane.classList.add("is-live");
+        } catch (e) { if (msg) msg.textContent = "3D не открылось. Листай кадры."; pane.classList.add("is-stub"); }
+        return;
+      }
+      // модуля пока нет: ждём до ~8 с (вдруг грузится), потом честная заглушка
+      if (++tries <= 16) { rackWait = setTimeout(attempt, 500); return; }
+      if (msg) msg.textContent = "3D скоро. Пока листай кадры.";
+      pane.classList.add("is-stub");
+    })();
+  }
+  function setTab(view, focus) {
+    var gal = sheetBody && $(".ps-gallery", sheetBody), p = sheetProduct();
+    if (!gal || !p || !p.d3 || gal.dataset.view === view) return;
+    gal.dataset.view = view;
+    $$("[data-ps-tab]", gal).forEach(function (b) {
+      var on = b.dataset.psTab === view;
+      b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1;
+      if (on && focus) b.focus();
+    });
+    $("#ps-pane-photo", gal).hidden = view !== "photo";
+    $("#ps-pane-3d", gal).hidden = view !== "3d";
+    unzoom();
+    if (view === "3d") rackOn(p); else rackOff();
+    emit("grinchin:product-view", { id: p.id, view: view });
+  }
+  GV.productTab = function (view) { setTab(view === "3d" ? "3d" : "photo"); };
+  if (sheetBody) {
+    sheetBody.addEventListener("click", function (e) {
+      var tb = e.target.closest("[data-ps-tab]");
+      if (tb) setTab(tb.dataset.psTab);
+    });
+    sheetBody.addEventListener("keydown", function (e) {
+      var tb = e.target.closest && e.target.closest("[data-ps-tab]");
+      if (tb && (e.key === "ArrowLeft" || e.key === "ArrowRight")) { e.preventDefault(); setTab(tb.dataset.psTab === "3d" ? "photo" : "3d", true); }
+    });
+  }
+  d.addEventListener("grinchin:overlay", function (e) { if (e.detail && e.detail.name === "product" && !e.detail.open) { rackOff(); unzoom(); } });
+
+  /* ---------- зум кадра: телефон — двойной тап (палец водит картинку), мышь — клик, кадр едет за курсором ----------
+     Только transform на <picture>; пока кадр увеличен, лента не листается и шит не тянется. */
+  var Z = 2.4, zEl = null, zPan = null;
+  function zoomAt(slide, cx, cy) {
+    var r = slide.getBoundingClientRect(), pic = $(".ps-pic", slide);
+    if (!pic) return;
+    zEl = slide;
+    zEl.dataset.zx = ((cx - r.left) / r.width * 100).toFixed(2);
+    zEl.dataset.zy = ((cy - r.top) / r.height * 100).toFixed(2);
+    pic.style.transformOrigin = zEl.dataset.zx + "% " + zEl.dataset.zy + "%";
+    pic.style.transform = "scale(" + Z + ")";
+    slide.classList.add("is-zoom");
+    var tr = slide.closest(".ps-track"); if (tr) tr.classList.add("is-zoomed");
+  }
+  function unzoom() {
+    if (!zEl) return;
+    var pic = $(".ps-pic", zEl);
+    if (pic) pic.style.transform = "";
+    zEl.classList.remove("is-zoom");
+    var tr = zEl.closest(".ps-track"); if (tr) tr.classList.remove("is-zoomed");
+    zEl = null; zPan = null;
+  }
+  function panTo(cx, cy) {
+    if (!zEl) return;
+    var r = zEl.getBoundingClientRect(), pic = $(".ps-pic", zEl);
+    var x = Math.max(0, Math.min(100, (cx - r.left) / r.width * 100)), y = Math.max(0, Math.min(100, (cy - r.top) / r.height * 100));
+    pic.style.transformOrigin = x.toFixed(2) + "% " + y.toFixed(2) + "%";
+  }
+  if (sheetBody) {
+    sheetBody.addEventListener("click", function (e) {
+      if (!canHover || isPhone()) return;
+      var s = e.target.closest("[data-zoom]");
+      if (!s) { unzoom(); return; }
+      if (zEl === s) unzoom(); else { unzoom(); zoomAt(s, e.clientX, e.clientY); }
+    });
+    var zmRaf = 0, zmX = 0, zmY = 0;
+    sheetBody.addEventListener("mousemove", function (e) {
+      if (!zEl || !canHover) return;
+      zmX = e.clientX; zmY = e.clientY;
+      if (!zmRaf) zmRaf = requestAnimationFrame(function () { zmRaf = 0; panTo(zmX, zmY); });
+    });
+    sheetBody.addEventListener("mouseout", function (e) {
+      if (zEl && canHover && e.target.closest && e.target.closest("[data-zoom]") === zEl && !zEl.contains(e.relatedTarget)) unzoom();
+    });
+    var lastTap = null;
+    sheetBody.addEventListener("touchstart", function (e) {
+      var s = e.target.closest && e.target.closest("[data-zoom]");
+      if (!s || e.touches.length > 1) { lastTap = null; return; }
+      var t = e.touches[0], now = e.timeStamp;
+      if (zEl === s) zPan = { x: t.clientX, y: t.clientY };
+      if (lastTap && lastTap.s === s && now - lastTap.t < 320 && Math.abs(t.clientX - lastTap.x) < 30 && Math.abs(t.clientY - lastTap.y) < 30) {
+        lastTap = null;
+        if (zEl === s) unzoom(); else { unzoom(); zoomAt(s, t.clientX, t.clientY); }
+        return;
+      }
+      lastTap = { s: s, t: now, x: t.clientX, y: t.clientY };
+    }, { passive: true });
+    sheetBody.addEventListener("touchmove", function (e) {
+      if (!zEl || !zPan || e.touches.length > 1) return;
+      e.preventDefault();
+      var t = e.touches[0], r = zEl.getBoundingClientRect();
+      // палец тянет картинку: точка увеличения сдвигается против движения
+      var zx = parseFloat(zEl.dataset.zx) - (t.clientX - zPan.x) / r.width * 100 / (Z - 1);
+      var zy = parseFloat(zEl.dataset.zy) - (t.clientY - zPan.y) / r.height * 100 / (Z - 1);
+      zx = Math.max(0, Math.min(100, zx)); zy = Math.max(0, Math.min(100, zy));
+      zEl.dataset.zx = zx; zEl.dataset.zy = zy; zPan = { x: t.clientX, y: t.clientY };
+      $(".ps-pic", zEl).style.transformOrigin = zx.toFixed(2) + "% " + zy.toFixed(2) + "%";
+    }, { passive: false });
+  }
+
   function isTg(v) { return /^@?[A-Za-z0-9_]{5,32}$/.test(v); }
   function isMail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v); }
 
@@ -486,7 +800,8 @@
         '<span class="smile-sad" aria-hidden="true">' + SMILE_SVG + "</span>" +
         '<p class="cart-empty-big">Пусто.</p>' +
         '<button type="button" class="btn btn--dark" data-nav="drop">Смотреть дроп ' + ARROW + "</button></div>";
-      mountMascot($("[data-mascot-slot]", cartBody), { pose: "cart", mood: "sad" });
+      // пустая корзина: маскот V3 (поза cart-empty); на добавление V3 сам ловит grinchin:add и показывает cart-add
+      mountMascot($("[data-mascot-slot]", cartBody), { pose: "cart-empty", mood: "sad" });
       return;
     }
     var pre = items.some(function (i) { return anyStock(byId[i.id]); });
@@ -495,7 +810,7 @@
       '<ul class="cart-list">' + items.map(function (i) {
         var p = byId[i.id], k = keyOf(i), lim = limitOf(i.id, i.size);
         return '<li class="cart-item" data-key="' + k + '">' +
-          '<button type="button" class="ci-thumb" data-open-product="' + p.id + '" aria-label="Открыть: ' + esc(p.name) + '"><img src="' + p.img[0] + '" alt="" width="800" height="1000"></button>' +
+          '<button type="button" class="ci-thumb" data-open-product="' + p.id + '" aria-label="Открыть: ' + esc(p.name) + '">' + thumbHTML(p) + "</button>" +
           '<div class="ci-info"><p class="ci-name">' + esc(p.name) + '</p><p class="t-mono ci-meta"><span lang="en">size:</span> ' + i.size + "<br>предзаказ · с " + DROP.shipFrom + "</p></div>" +
           '<p class="ci-price">' + money(p.price * i.qty) + "</p>" +
           '<div class="ci-row"><div class="qty" role="group" aria-label="Количество: ' + esc(p.name) + '">' +
@@ -505,7 +820,7 @@
           '<button type="button" class="ci-remove" data-remove="' + k + '">Убрать</button></div>' +
           '<span class="ci-strike" aria-hidden="true"></span></li>';
       }).join("") + "</ul>" +
-      (up ? '<div class="cart-up"><p class="t-mono">С этим</p><button type="button" class="cu-card" data-open-product="' + up.id + '"><img src="' + up.img[0] + '" alt="" width="800" height="1000">' +
+      (up ? '<div class="cart-up"><p class="t-mono">С этим</p><button type="button" class="cu-card" data-open-product="' + up.id + '">' + thumbHTML(up) +
         '<span class="ci-name">' + esc(up.name) + '</span><span class="ci-price">' + money(up.price) + '</span><span class="cu-go" aria-hidden="true">' + ARROW + "</span></button></div>" : "") +
       '<div class="cart-foot">' +
       '<dl class="kv cart-sum"><div><dt>доставка:</dt><dd>при оформлении</dd></div>' +
@@ -720,6 +1035,8 @@
       var t = e.touches[0];
       y0 = yL = t.clientY; x0 = t.clientX; tL = e.timeStamp; v = 0; dy = 0; axis = null; drag = false;
       fromBar = !!e.target.closest(".sheet-bar");
+      // увеличенный кадр и 3D-сцена забирают жесты себе
+      if (!fromBar && e.target.closest(".is-zoom, .ps-3d")) { track = false; return; }
       track = fromBar || panel.scrollTop <= 0;
     }, { passive: true });
     panel.addEventListener("touchmove", function (e) {
@@ -869,7 +1186,7 @@
     var o = Q.get("open");
     if (o) {
       var parts = o.split(":");
-      if (parts[0] === "product") GV.open("product", parts[1]);
+      if (parts[0] === "product") { GV.open("product", parts[1]); if (parts[2] === "3d") GV.productTab("3d"); }
       else if (OV[parts[0]]) GV.open(parts[0]);
       else GV.open("404");
       return;
@@ -882,7 +1199,8 @@
     var h = (location.hash || "").slice(1);
     if (h && !d.getElementById(h) && !stack.length) GV.open("404");
   });
-  if (isShot) setTimeout(applyOpen, 0);
+  // shot: после разбора всей страницы — иначе соседние модули (GV.art, GV.rack) ещё не объявлены
+  if (isShot) { if (d.readyState === "loading") d.addEventListener("DOMContentLoaded", function () { setTimeout(applyOpen, 0); }, { once: true }); else setTimeout(applyOpen, 0); }
   else {
     d.addEventListener("grinchin:ready", applyOpen, { once: true });
     setTimeout(applyOpen, 4000); // если моушн-модуль не прислал ready

@@ -1,6 +1,7 @@
 /* ================================================================
-   GRINCHIN v3.1 · ДВЕРЬ НА ТЕЛЕФОНЕ (T2) → window.GV.door
-   Фото door.jpg 1448×1086: слово GRINCHIN из скотча — x 144–1324, y 386–603 (замер по лаймовым пикселям).
+   GRINCHIN v4 · ДВЕРЬ НА ТЕЛЕФОНЕ (V3; движок T2 v3.1) → window.GV.door
+   Кадр door-cam.* 1920×1080 (диорама door-A3, растушёвка верха/низа запечена): слово GRINCHIN из скотча —
+   x 216–1646, y 332–685 (замер по лаймовым пикселям, без рулона и отражения).
    На телефоне-портрете кадр cover режет слово до «NCH». Решение — «камера» по прокрутке:
      1) с последней трети въезда и до ~45 % залипания — камера в масштабе cover идёт вдоль слова G → N
         (буквы проходят по одной-две, как будто читаешь дверь глазами);
@@ -9,7 +10,7 @@
      3) хвост ~8 % — покой, кадр отпускается и уезжает вверх как обычный блок.
    Залипание — 80svh сверх кадра (CSS --door-run), высота задана заранее → CLS 0.
    Два слоя (.ab-door-cam и заголовок .ab-door-cap), только transform; один rAF, только когда блок рядом с экраном (IntersectionObserver).
-   Картинка в камере — <canvas> 1448×1086 c door-cam.* (растушёвка верха/низа запечена в файл), а не <img>: у <img> в слое
+   Картинка в камере — <canvas> 1920×1080 c door-cam.* (растушёвка верха/низа запечена в файл), а не <img>: у <img> в слое
    с will-change Chrome перерастрирует тайлы при смене масштаба (GPU-задача 160–180 мс в начале прохода, замер T2),
    у canvas (bitmaprenderer) — готовая текстура, масштаб и сдвиг ничего не перерисовывают. Декод — fetch →
    createImageBitmap (вне главного потока), за полтора экрана до блока. Не вышло — обычный <img> (.cv-fail).
@@ -25,9 +26,9 @@
   var SHOT = H.dataset.shot === '1';
   var MQ = W.matchMedia('(max-width: 767px) and (orientation: portrait) and (prefers-reduced-motion: no-preference)');
 
-  var IW = 1448, IH = 1086, WX0 = 144, WX1 = 1324, WCX = 734, WCY = 494;
+  var IW = 1920, IH = 1080, WX0 = 216, WX1 = 1646, WY0 = 332, WY1 = 685, WCX = 931, WCY = 508;
   var PAD_PAN = 14, PAD_FIT = 14;                    // поля у краёв кадра: при проходе и в финале
-  var CAP_IN = .1;                                   // в финале заголовок заходит на растаявший низ фото на 10 % его высоты
+  var CAP_IN = .12;                                  // в финале заголовок заходит на растаявший низ кадра на 12 % его высоты
   var clamp = function (v) { return v < 0 ? 0 : v > 1 ? 1 : v; };
   var sine = function (t) { return .5 - .5 * Math.cos(Math.PI * t); };
   var io3 = function (t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; };
@@ -39,9 +40,9 @@
     var fw = frame.clientWidth, fh = frame.clientHeight;
     if (!fw || !fh) return null;
     var kc = fh / IH;                                   // масштаб cover: при проходе картинка по высоте кадра
-    // Слой камеры — ровно 1448×1086 физ. пикселей (ширина 1448/DPR CSS px): растр = исходник 1:1, без лишних
+    // Слой камеры — ровно 1920×1080 физ. пикселей (ширина 1920/DPR CSS px): растр = исходник 1:1, без лишних
     // мегапикселей. В cover при DPR 3 был бы 3168×2376 (×5 по площади) — это давало кадр 116–133 мс на входе.
-    // Резкость та же: исходник всё равно 1448 px, больше деталей в нём нет.
+    // Резкость та же: исходник всё равно 1920 px, больше деталей в нём нет.
     var dpr = Math.max(1, Math.min(3, W.devicePixelRatio || 1));
     cam.style.width = (IW / dpr) + 'px'; cam.style.height = (IH / dpr) + 'px';
     var base = 1 / dpr;
@@ -138,19 +139,20 @@
       var ft = Math.min(Math.max(b.top, G.hh), b.bottom - G.fh), p = pose(G.hh - b.top), k = p.k;
       var ph = [p.tx, ft + p.ty, p.tx + IW * k, ft + p.ty + IH * k];
       out.view = R([0, ft, G.fw, ft + G.fh]); out.photo = R(ph); out.progress = { pan: +p.tp.toFixed(3), pull: +p.tf.toFixed(3) };
-      out.word = R([p.tx + WX0 * k, ft + p.ty + 386 * k, p.tx + WX1 * k, ft + p.ty + 603 * k]);
-      // фото тает в чёрный в верхних 9 % и нижних 20 % — это тоже «свободно»
-      var top = ph[1] + IH * k * .09, bot = Math.min(ph[3] - IH * k * .2, t.top);
+      out.word = R([p.tx + WX0 * k, ft + p.ty + WY0 * k, p.tx + WX1 * k, ft + p.ty + WY1 * k]);
+      // кадр тает в чёрный в верхних 8 % и нижних 14 % — это тоже «свободно»
+      var top = ph[1] + IH * k * .08, bot = Math.min(ph[3] - IH * k * .14, t.top);
       out.free = [R([0, ft, G.fw, Math.max(ft, top)]), R([0, Math.max(t.bottom, bot), G.fw, ft + G.fh])].filter(function (r) { return r[3] - r[1] > 8; });
     } else {
+      // статичный кадр: object-fit cover, object-position 50% 42% (desktop) / по ширине (телефон) — те же пропорции 16:9
       var i = img.getBoundingClientRect(), iw = i.width, ih = i.height, k2 = Math.max(iw / IW, ih / IH);
-      var ox = i.left + (iw - IW * k2) * .5, oy = i.top + (ih - IH * k2) * .46;
+      var ox = i.left + (iw - IW * k2) * .5, oy = i.top + (ih - IH * k2) * .42;
       out.view = out.photo = R([i.left, i.top, i.right, i.bottom]);
-      out.word = R([ox + WX0 * k2, oy + 386 * k2, ox + WX1 * k2, oy + 603 * k2]);
+      out.word = R([ox + WX0 * k2, oy + WY0 * k2, ox + WX1 * k2, oy + WY1 * k2]);
       out.free = [];
     }
     return out;
   }
 
-  GV.door = { state: function () { return { on: on, near: near, g: G, tf: last, cv: cv }; }, pose: function (y) { return G ? pose(y) : null; }, zones: zones, refresh: setup };
+  GV.door = { word: { iw: IW, ih: IH, x0: WX0, x1: WX1, y0: WY0, y1: WY1 }, state: function () { return { on: on, near: near, g: G, tf: last, cv: cv }; }, pose: function (y) { return G ? pose(y) : null; }, zones: zones, refresh: setup };
 })();

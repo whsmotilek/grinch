@@ -1,0 +1,156 @@
+/* GRINCHIN v4 · S1 · «Дроп на вешалках». Токены — из site/src/tokens.css (с запасными значениями).
+   Один зелёный объект на экран — лаймовый скотч в 3D (флажок на вешалке в фокусе / карабин);
+   интерфейс модуля чёрно-белый. Анимации — только transform/opacity. */
+.rk {
+  --rk-h: min(100svh, 920px);
+  --rk-pad: 32px;
+  --rk-text: var(--text, #fff);
+  --rk-text-2: var(--text-2, #b7b7b2);
+  --rk-muted: var(--c-muted, #8a8a8a);
+  --rk-line: var(--c-line, #1f1f1f);
+  position: relative;
+  color: var(--rk-text);
+  font-family: var(--font-text, Inter, system-ui, sans-serif);
+  background: #050505;
+}
+.rk *, .rk *::before, .rk *::after { box-sizing: border-box; }
+.rk-pin {
+  position: relative; height: var(--rk-h); overflow: hidden; isolation: isolate;
+  background: #070707;
+}
+.rk[data-drive="scroll"] .rk-pin { position: sticky; }
+/* пятно света за вещью в фокусе. Градиент во весь экран при DPR 3 растрируется сотни мс (на слабом GPU / программном
+   растре) — поэтому рисуем его в квадрате 64 px и растягиваем композитором (scale ставит rack.js по размеру сцены). */
+.rk[data-gl="on"] .rk-stage::before { content: ""; position: absolute; left: 50%; top: 44%; width: 64px; height: 64px; margin: -32px 0 0 -32px; z-index: -1; pointer-events: none;
+  background: radial-gradient(closest-side, #262626 0%, rgba(30,30,30,.55) 45%, rgba(7,7,7,0) 100%);
+  transform: scale(var(--rk-sx, 10), var(--rk-sy, 10)); will-change: transform; }
+.rk[data-ui="bare"][data-gl="on"] .rk-stage::before { top: 45%; }
+
+.rk-stage { position: absolute; inset: 0; touch-action: pan-y; cursor: grab; outline: none; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+.rk.is-drag .rk-stage { cursor: grabbing; }
+.rk-stage:focus-visible { box-shadow: inset 0 0 0 2px var(--rk-text); }
+.rk-cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity .5s ease; }
+.rk[data-gl="on"] .rk-cv { opacity: 1; }
+
+/* без WebGL — фото вещи (то же, что заглушка в 3D) */
+/* без WebGL (reduced-motion, слабое устройство, ?shot, ?nogl): ряд фото «призрачного манекена» на CSS-рейке.
+   Листание то же — ряд едет так, чтобы вещь в фокусе стояла по центру. */
+.rk-fb { position: absolute; inset: 9% 0 20%; display: none; pointer-events: none; overflow: hidden; --rk-fb-w: min(30vw, 300px); }
+/* рейка — сплошными полосами: градиент со скруглением и прозрачностью на программном растре стоил ~200 мс кадра */
+.rk-fb::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 6px; background: #8f8f8f; border-top: 2px solid #d6d6d6; border-bottom: 2px solid #4a4a4a; }
+.rk-fb-row { position: absolute; inset: 14px 0 0; will-change: transform; display: flex; align-items: flex-start; gap: calc(var(--rk-fb-w) * .12);
+  transform: translateX(calc(50% - var(--rk-fb-w) * (.5 + 1.12 * var(--rk-fb-i, 0)))); transition: transform .45s var(--ease-out, cubic-bezier(.16,1,.3,1)); width: 100%; }
+.rk-fb img { flex: none; width: var(--rk-fb-w); height: 100%; object-fit: contain; object-position: 50% 0; opacity: .38; transform: scale(.8); transform-origin: 50% 0;
+  transition: opacity .3s ease, transform .45s var(--ease-out, cubic-bezier(.16,1,.3,1)); will-change: transform, opacity; }
+.rk-fb img:not([src]) { visibility: hidden; }
+.rk-fb img.is-on { opacity: 1; transform: none; }
+.rk[data-gl="off"] .rk-fb { display: block; }
+.rk[data-ui="bare"] .rk-fb { inset: 4% 0 8%; --rk-fb-w: 100%; }
+.rk[data-ui="bare"] .rk-fb::before { display: none; }
+
+.rk-hint {
+  position: absolute; left: 50%; bottom: 112px; margin: 0; transform: translateX(-50%);
+  font: 500 11px/1 var(--font-mono, "Martian Mono", monospace); letter-spacing: .14em; text-transform: uppercase; color: var(--rk-muted);
+  pointer-events: none; transition: opacity .4s ease;
+}
+.rk-hint-chain, .rk[data-concept="chain"] .rk-hint-rail { display: none; }
+.rk[data-concept="chain"] .rk-hint-chain { display: inline; }
+.rk.is-used .rk-hint, .rk[data-gl="off"] .rk-hint { opacity: 0; }
+
+.rk-top { position: absolute; top: 20px; left: var(--rk-pad); right: var(--rk-pad); display: flex; justify-content: space-between; align-items: center; gap: 16px; pointer-events: none; z-index: 2; }
+.rk-kicker { margin: 0; font: 500 11px/1.2 var(--font-mono, "Martian Mono", monospace); letter-spacing: .14em; text-transform: uppercase; color: var(--rk-text-2); }
+.rk-switch { display: inline-flex; border: 1px solid #3a3a3a; border-radius: 999px; padding: 3px; pointer-events: auto; background: rgba(5,5,5,.6); }
+.rk-switch button {
+  appearance: none; border: 0; background: transparent; color: var(--rk-text-2); cursor: pointer;
+  font: 600 12px/1 var(--font-text, Inter, sans-serif); letter-spacing: .02em; padding: 9px 14px; border-radius: 999px; min-height: 32px;
+}
+.rk-switch button[aria-pressed="true"] { background: var(--rk-text); color: #000; }
+.rk-switch button:focus-visible, .rk-index button:focus-visible, .rk-add:focus-visible, .rk-arr:focus-visible { outline: 2px solid var(--rk-text); outline-offset: 2px; }
+
+/* подпись вещи в фокусе */
+.rk-info { position: absolute; left: var(--rk-pad); bottom: 104px; width: min(380px, 34vw); z-index: 2; }
+.rk-info::before { content: ""; position: absolute; inset: -110px -140px -60px -80px; z-index: -1; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(5,5,5,.94) 35%, rgba(5,5,5,.7) 62%, rgba(5,5,5,0)); }
+.rk-info > * { transition: opacity .14s ease, transform .2s var(--ease-out, cubic-bezier(.16,1,.3,1)); }
+.rk-info.is-out > * { opacity: 0; transform: translateY(6px); }
+.rk-num { margin: 0 0 6px; font: 500 12px/1.2 var(--font-mono, "Martian Mono", monospace); letter-spacing: .08em; color: var(--rk-text-2); text-transform: uppercase; }
+.rk-num b { color: var(--rk-text); font-weight: 600; }
+.rk-of { color: var(--rk-muted); }
+.rk-word { margin: 0 0 8px; font: 800 clamp(28px, 3.2vw, 46px)/.95 var(--font-display, Unbounded, "Arial Black", sans-serif); letter-spacing: -.01em; text-transform: uppercase; overflow-wrap: anywhere; }
+.rk-meta { margin: 0 0 16px; font: 400 13px/1.4 var(--font-text, Inter, sans-serif); color: var(--rk-text-2); display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.rk-color { color: var(--rk-text); font-weight: 500; letter-spacing: .02em; }
+.rk-buy { display: flex; align-items: center; gap: 16px; }
+.rk-price { font: 600 20px/1 var(--font-display, Unbounded, sans-serif); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rk-add {
+  appearance: none; border: 0; cursor: pointer; background: var(--rk-text); color: #000;
+  font: 700 14px/1 var(--font-text, Inter, sans-serif); padding: 0 22px; min-height: 48px; border-radius: 999px;
+  transition: transform .15s ease;
+}
+.rk-add:active { transform: scale(.97); }
+.rk-add:disabled { background: transparent; color: var(--rk-muted); border: 1px solid #3a3a3a; cursor: default; }
+
+/* индекс: 8 «ячеек вешалки» — видно, где ты и сколько всего */
+.rk-index { position: absolute; left: var(--rk-pad); right: var(--rk-pad); bottom: 22px; display: grid; grid-template-columns: repeat(var(--rk-n, 8), 1fr); gap: 4px; z-index: 2; }
+.rk-index button {
+  appearance: none; background: transparent; border: 0; border-top: 2px solid #2b2b2b; color: var(--rk-muted); cursor: pointer;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 10px 2px 4px; min-height: 52px; text-align: left; min-width: 0;
+  transition: color .2s ease, border-color .2s ease;
+}
+.rk-index b { font: 600 12px/1 var(--font-mono, "Martian Mono", monospace); }
+.rk-index span { font: 500 11px/1.2 var(--font-text, Inter, sans-serif); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.rk-index button:hover { color: var(--rk-text-2); }
+.rk-index button.is-on { color: var(--rk-text); border-top-color: var(--rk-text); }
+
+.rk-arr {
+  position: absolute; top: 50%; width: 48px; height: 48px; margin-top: -24px; border-radius: 50%; border: 1px solid #3a3a3a; background: rgba(5,5,5,.55);
+  color: var(--rk-text); display: grid; place-items: center; cursor: pointer; z-index: 2; transition: border-color .2s ease, opacity .2s ease;
+}
+.rk-arr svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.rk-arr:hover { border-color: var(--rk-text); }
+.rk-prev { left: 20px; } .rk-next { right: 20px; }
+
+.rk-toast {
+  position: absolute; left: 50%; top: 72px; margin: 0; transform: translate(-50%, -8px); opacity: 0; pointer-events: none; z-index: 3;
+  background: var(--rk-text); color: #000; font: 600 13px/1.2 var(--font-text, Inter, sans-serif); padding: 10px 16px; border-radius: 999px; white-space: nowrap;
+  transition: opacity .2s ease, transform .2s ease;
+}
+.rk-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+.rk-debug { position: absolute; right: 12px; top: 64px; margin: 0; z-index: 4; font: 11px/1.4 var(--font-mono, monospace); color: #9f9; background: rgba(0,0,0,.7); padding: 6px 8px; pointer-events: none; white-space: pre; }
+
+/* ── телефон: сцена сверху, подпись и индекс — под ней (ничего не перекрывает вещь) ── */
+@media (max-width: 767px) {
+  .rk { --rk-pad: 16px; --rk-h: auto; }
+  .rk-pin { display: flex; flex-direction: column; }
+  .rk[data-drive="drag"] .rk-pin { height: auto; }
+  .rk-stage { position: relative; inset: auto; height: min(62svh, 560px); flex: none; }
+  .rk[data-drive="scroll"] .rk-stage { height: auto; flex: 1 1 auto; min-height: 0; }
+  .rk-top { top: 14px; }
+  .rk-switch button { padding: 8px 12px; min-height: 36px; }
+  .rk-hint { bottom: 14px; }
+  .rk-info { position: relative; left: auto; bottom: auto; width: auto; padding: 4px var(--rk-pad) 0; }
+  .rk-info::before { display: none; }
+  .rk-word { font-size: 30px; }
+  .rk-meta { margin-bottom: 12px; }
+  .rk-buy { justify-content: space-between; }
+  .rk-add { min-height: 48px; padding: 0 26px; }
+  .rk-index { position: relative; left: auto; right: auto; bottom: auto; padding: 14px var(--rk-pad) 16px; gap: 3px; }
+  .rk-index span { display: none; }
+  .rk-index button { align-items: center; min-height: 44px; padding-top: 12px; }
+  .rk-arr { top: auto; bottom: 12px; margin-top: 0; width: 44px; height: 44px; }
+  .rk-prev { left: 12px; } .rk-next { right: 12px; }
+  .rk-toast { top: 60px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rk-fb-row, .rk-fb img,
+  .rk-cv, .rk-info > *, .rk-toast, .rk-hint { transition: none; }
+}
+
+/* вкладка «3D» в карточке товара: только сцена, размер задаёт контейнер карточки */
+.rk[data-ui="bare"] { background: transparent; height: 100%; min-height: 320px; }
+.rk[data-ui="bare"] .rk-pin { height: 100%; min-height: inherit; background: #0a0a0a; }
+.rk[data-ui="bare"] .rk-stage { position: absolute; inset: 0; height: auto; }
+.rk[data-ui="bare"] .rk-top, .rk[data-ui="bare"] .rk-info, .rk[data-ui="bare"] .rk-index, .rk[data-ui="bare"] .rk-arr, .rk[data-ui="bare"] .rk-toast { display: none; }
+.rk[data-ui="bare"] .rk-hint { bottom: 14px; }
+/* в ленте сайта: шапка липкая — сцена закрепляется под ней */
+.rk[data-drive="scroll"] .rk-pin { top: var(--header-h, 0px); height: calc(100svh - var(--header-h, 0px)); }
+.rk[data-drive="scroll"] { height: calc(100svh - var(--header-h, 0px) + (var(--rk-n, 8) - 1) * var(--rk-step, 45svh)); }

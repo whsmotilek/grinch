@@ -1,6 +1,7 @@
-<!-- K5 · «Разобрали — вернём». Подписка без сети: Telegram / почта, поле-бирка, ошибки aria-live.
-     Успех: zip-пакет с печатью GRiNCHiN (вектор, end.js рисует по намерению подписаться) + две ленты K3 (растр: лаймовая
-     и чёрная, .tape-strip) «прилепляются» крест-накрест; пока блок hidden, их фон не грузится. Маскот выглядывает из-за пакета: [data-mascot-slot="next"]. -->
+<!-- V3 · «Разобрали — вернём» (v4). Подписка без сети: Telegram / почта, поле-бирка, ошибки aria-live.
+     Маскот subscribe ([data-mascot-slot="subscribe"]: телефон и конверт) стоит у формы; после подписки — показывает
+     «класс» (поза cart-add) и подпрыгивает. Успех: zip-пакет GRiNCHiN (вектор, end.js) + мультяшный крест из двух лент
+     (tape-cross) «шлёпается» поверх, в угол — стикер. Пока блок hidden, картинки не грузятся (loading=lazy). -->
 <section id="next" aria-labelledby="next-title">
   <div class="wrap nx-grid">
     <div class="nx-copy">
@@ -9,6 +10,7 @@
     </div>
 
     <div class="nx-side">
+      <div class="nx-mz" data-mascot-slot="subscribe" aria-hidden="true"></div>
       <form class="nx-form" data-nx-form novalidate>
         <fieldset class="nx-switch">
           <legend class="vh">Куда написать</legend>
@@ -30,9 +32,8 @@
       <div class="nx-done" data-nx-done hidden>
         <figure class="nx-bag" data-nx-bag aria-label="Прозрачный zip-пакет GRINCHIN, крест-накрест заклеенный лентами — лаймовой и чёрной" role="img">
           <div class="nx-scene" data-nx-scene></div>
-          <span class="tape-strip tape-strip--lime nx-x nx-x--l" aria-hidden="true"></span>
-          <span class="tape-strip tape-strip--black nx-x nx-x--k" aria-hidden="true"></span>
-          <div class="nx-mz" data-mascot-slot="next" data-mascot-pose="head" data-mascot-mood="joy" aria-hidden="true"></div>
+          <img class="nx-x" src="{{asset:img/v4/tape/cross.webp}}" alt="" width="440" height="436" loading="lazy" decoding="async">
+          <img class="nx-st" src="{{asset:img/v4/mascot/st-thumbsup.webp}}" alt="" width="320" height="418" loading="lazy" decoding="async">
         </figure>
         <div class="nx-done-txt" role="status">
           <p class="nx-done-t" tabindex="-1" data-nx-done-title>Есть. Ты в&nbsp;списке.</p>

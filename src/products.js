@@ -1,4 +1,6 @@
-/* GRINCHIN v3 — данные дропа 01. Владелец: K1.
+/* GRINCHIN v4 — данные дропа 01. Владелец: V2 (v3 — K1).
+   v4: фото вещей «призрачный манекен» — window.GV_PHOTOS[id] = {front|back|side: {avif, webp}} (srcset 480–1200w, кадр 4:5),
+   образы на модели — window.GV_LOOK_PHOTOS[n]; 3D-модель вещи на вешалке есть, если p.d3 (рисует S1: GV.rack.mountProduct).
    Цены, размеры, наличие, составы и даты — ПРИМЕР (example:true), до решения владельцев.
    Имена и тексты — copy deck v2 (v2/audit/05 §4.3–4.4): ТИП + СЛОВО, цвет — [в скобках].
    id не менялись с v1 (на них ссылаются соседи: looks.html → a[data-product="…"], GV.art по p.id).
@@ -105,14 +107,148 @@ window.GV_PRODUCTS = [
     example: true
   }
 ];
-window.GV_PRODUCTS.forEach(function (p) { p.name = p.type + " " + p.word; });
+window.GV_PRODUCTS.forEach(function (p) { p.name = p.type + " " + p.word; p.d3 = true; }); // 3D-модели есть у всех восьми (hf/3d/manifest.json; костюм — верх+низ)
 
-/* Образы — данные (вёрстка и анимация у K3 в looks.html / cards-art.js). По кадрам K3:
-   ’01 — джинсы КАРАКУЛИ, ’02 — косуха КАПЮШОН, ’03 — футболка и лонгслив ФОН, ’04 — футболка ФОН.
-   Карточка товара показывает «Из образа ’NN» по первому образу, где вещь есть (у кого образа нет — ссылки нет). */
+/* Образы v4 — lookbook-кадры Higgsfield (hf/scenes/final/look-1..4, 4:5), вёрстка — looks.html (V2).
+   Карточка товара показывает кадр «на модели» и ссылку «Из образа ’NN» по первому образу, где вещь есть (у футболки образа нет). */
 window.GV_LOOKS = [
-  { n: "01", items: ["jeans-scribble"] },
-  { n: "02", items: ["jacket-biker"] },
-  { n: "03", items: ["tee-blank", "longsleeve-blank"] },
-  { n: "04", items: ["tee-blank"] }
+  { n: "01", items: ["hoodie-crack", "jeans-scribble"], alt: "Худи ТРЕЩИНА и джинсы КАРАКУЛИ на модели, ночная улица" },
+  { n: "02", items: ["suit-detour"], alt: "Костюм ОБЪЕЗД на модели: ветровка и широкие брюки, ночная улица" },
+  { n: "03", items: ["jacket-biker", "jeans-restart"], alt: "Косуха КАПЮШОН и джинсы RESTART на модели, ночная улица" },
+  { n: "04", items: ["longsleeve-blank", "jeans-redline"], alt: "Лонгслив ФОН и джинсы КРАСНАЯ ЛИНИЯ на модели, ночная улица" }
 ];
+
+/*<photos> — пишет v4/build/V2/_tools/gen_photos.py, руками не править */
+window.GV_PHOTOS = {
+"jeans-restart": {
+"front": {
+"avif": "{{asset:img/v4/products/jeans-restart-front-480.avif}} 480w, {{asset:img/v4/products/jeans-restart-front-640.avif}} 640w, {{asset:img/v4/products/jeans-restart-front-800.avif}} 800w, {{asset:img/v4/products/jeans-restart-front-1200.avif}} 1200w",
+"webp": "{{asset:img/v4/products/jeans-restart-front-480.webp}} 480w, {{asset:img/v4/products/jeans-restart-front-640.webp}} 640w, {{asset:img/v4/products/jeans-restart-front-800.webp}} 800w, {{asset:img/v4/products/jeans-restart-front-1200.webp}} 1200w"
+},
+"back": {
+"avif": "{{asset:img/v4/products/jeans-restart-back-480.avif}} 480w, {{asset:img/v4/products/jeans-restart-back-640.avif}} 640w, {{asset:img/v4/products/jeans-restart-back-800.avif}} 800w, {{asset:img/v4/products/jeans-restart-back-1200.avif}} 1200w",
+"webp": "{{asset:img/v4/products/jeans-restart-back-480.webp}} 480w, {{asset:img/v4/products/jeans-restart-back-640.webp}} 640w, {{asset:img/v4/products/jeans-restart-back-800.webp}} 800w, {{asset:img/v4/products/jeans-restart-back-1200.webp}} 1200w"
+},
+"side": {
+"avif": "{{asset:img/v4/products/jeans-restart-side-480.avif}} 480w, {{asset:img/v4/products/jeans-restart-side-640.avif}} 640w, {{asset:img/v4/products/jeans-restart-side-800.avif}} 800w, {{asset:img/v4/products/jeans-restart-side-1200.avif}} 1200w",
+"webp": "{{asset:img/v4/products/jeans-restart-side-480.webp}} 480w, {{asset:img/v4/products/jeans-restart-side-640.webp}} 640w, {{asset:img/v4/products/jeans-restart-side-800.webp}} 800w, {{asset:img/v4/products/jeans-restart-side-1200.webp}} 1200w"
+}
+},
+"suit-detour": {
+"front": {
+"avif": "{{asset:img/v4/products/suit-detour-front-480.avif}} 480w, {{asset:img/v4/products/suit-detour-front-640.avif}} 640w, {{asset:img/v4/products/suit-detour-front-800.avif}} 800w, {{asset:img/v4/products/suit-detour-front-1200.avif}} 1200w",
+"webp": "{{asset:img/v4/products/suit-detour-front-480.webp}} 480w, {{asset:img/v4/products/suit-detour-front-640.webp}} 640w, {{asset:img/v4/products/suit-detour-front-800.webp}} 800w, {{asset:img/v4/products/suit-detour-front-1200.webp}} 1200w"
+},
+"back": {
+"avif": "{{asset:img/v4/products/suit-detour-back-480.avif}} 480w, {{asset:img/v4/products/suit-detour-back-640.avif}} 640w, {{asset:img/v4/products/suit-detour-back-800.avif}} 800w, {{asset:img/v4/products/suit-detour-back-1200.avif}} 1200w",
+"webp": "{{asset:img/v4/products/suit-detour-back-480.webp}} 480w, {{asset:img/v4/products/suit-detour-back-640.webp}} 640w, {{asset:img/v4/products/suit-detour-back-800.webp}} 800w, {{asset:img/v4/products/suit-detour-back-1200.webp}} 1200w"
+},
+"side": {
+"avif": "{{asset:img/v4/products/suit-detour-side-480.avif}} 480w, {{asset:img/v4/products/suit-detour-side-640.avif}} 640w, {{asset:img/v4/products/suit-detour-side-800.avif}} 800w, {{asset:img/v4/products/suit-detour-side-1200.avif}} 1200w",
+"webp": "{{asset:img/v4/products/suit-detour-side-480.webp}} 480w, {{asset:img/v4/products/suit-detour-side-640.webp}} 640w, {{asset:img/v4/products/suit-detour-side-800.webp}} 800w, {{asset:img/v4/products/suit-detour-side-1200.webp}} 1200w"
+}
+},
+"jeans-scribble": {
+"front": {
+"avif": "{{asset:img/v4/products/jeans-scribble-front-480.avif}} 480w, {{asset:img/v4/products/jeans-scribble-front-640.avif}} 640w, {{asset:img/v4/products/jeans-scribble-front-800.avif}} 800w, {{asset:img/v4/products/jeans-scribble-front-1200.avif}} 1200w",
+"webp": "{{asset:img/v4/products/jeans-scribble-front-480.webp}} 480w, {{asset:img/v4/products/jeans-scribble-front-640.webp}} 640w, {{asset:img/v4/products/jeans-scribble-front-800.webp}} 800w, {{asset:img/v4/products/jeans-scribble-front-1200.webp}} 1200w"
+},
+"back": {
+"avif": "{{asset:img/v4/products/jeans-scribble-back-480.avif}} 480w, {{asset:img/v4/products/jeans-scribble-back-640.avif}} 640w, {{asset:img/v4/products/jeans-scribble-back-800.avif}} 800w, {{asset:img/v4/products/jeans-scribble-back-1200.avif}} 1200w",
+"webp": "{{asset:img/v4/products/jeans-scribble-back-480.webp}} 480w, {{asset:img/v4/products/jeans-scribble-back-640.webp}} 640w, {{asset:img/v4/products/jeans-scribble-back-800.webp}} 800w, {{asset:img/v4/products/jeans-scribble-back-1200.webp}} 1200w"
+},
+"side": {
+"avif": "{{asset:img/v4/products/jeans-scribble-side-480.avif}} 480w, {{asset:img/v4/products/jeans-scribble-side-640.avif}} 640w, {{asset:img/v4/products/jeans-scribble-side-800.avif}} 800w, {{asset:img/v4/products/jeans-scribble-side-1200.avif}} 1200w",
+"webp": "{{asset:img/v4/products/jeans-scribble-side-480.webp}} 480w, {{asset:img/v4/products/jeans-scribble-side-640.webp}} 640w, {{asset:img/v4/products/jeans-scribble-side-800.webp}} 800w, {{asset:img/v4/products/jeans-scribble-side-1200.webp}} 1200w"
+}
+},
+"hoodie-crack": {
+"front": {
+"avif": "{{asset:img/v4/products/hoodie-crack-front-480.avif}} 480w, {{asset:img/v4/products/hoodie-crack-front-640.avif}} 640w, {{asset:img/v4/products/hoodie-crack-front-800.avif}} 800w, {{asset:img/v4/products/hoodie-crack-front-1200.avif}} 1200w",
+"webp": "{{asset:img/v4/products/hoodie-crack-front-480.webp}} 480w, {{asset:img/v4/products/hoodie-crack-front-640.webp}} 640w, {{asset:img/v4/products/hoodie-crack-front-800.webp}} 800w, {{asset:img/v4/products/hoodie-crack-front-1200.webp}} 1200w"
+},
+"back": {
+"avif": "{{asset:img/v4/products/hoodie-crack-back-480.avif}} 480w, {{asset:img/v4/products/hoodie-crack-back-640.avif}} 640w, {{asset:img/v4/products/hoodie-crack-back-800.avif}} 800w, {{asset:img/v4/products/hoodie-crack-back-1200.avif}} 1200w",
+"webp": "{{asset:img/v4/products/hoodie-crack-back-480.webp}} 480w, {{asset:img/v4/products/hoodie-crack-back-640.webp}} 640w, {{asset:img/v4/products/hoodie-crack-back-800.webp}} 800w, {{asset:img/v4/products/hoodie-crack-back-1200.webp}} 1200w"
+},
+"side": {
+"avif": "{{asset:img/v4/products/hoodie-crack-side-480.avif}} 480w, {{asset:img/v4/products/hoodie-crack-side-640.avif}} 640w, {{asset:img/v4/products/hoodie-crack-side-800.avif}} 800w, {{asset:img/v4/products/hoodie-crack-side-1200.avif}} 1200w",
+"webp": "{{asset:img/v4/products/hoodie-crack-side-480.webp}} 480w, {{asset:img/v4/products/hoodie-crack-side-640.webp}} 640w, {{asset:img/v4/products/hoodie-crack-side-800.webp}} 800w, {{asset:img/v4/products/hoodie-crack-side-1200.webp}} 1200w"
+}
+},
+"jacket-biker": {
+"front": {
+"avif": "{{asset:img/v4/products/jacket-biker-front-480.avif}} 480w, {{asset:img/v4/products/jacket-biker-front-640.avif}} 640w, {{asset:img/v4/products/jacket-biker-front-800.avif}} 800w, {{asset:img/v4/products/jacket-biker-front-1200.avif}} 1200w",
+"webp": "{{asset:img/v4/products/jacket-biker-front-480.webp}} 480w, {{asset:img/v4/products/jacket-biker-front-640.webp}} 640w, {{asset:img/v4/products/jacket-biker-front-800.webp}} 800w, {{asset:img/v4/products/jacket-biker-front-1200.webp}} 1200w"
+},
+"back": {
+"avif": "{{asset:img/v4/products/jacket-biker-back-480.avif}} 480w, {{asset:img/v4/products/jacket-biker-back-640.avif}} 640w, {{asset:img/v4/products/jacket-biker-back-800.avif}} 800w, {{asset:img/v4/products/jacket-biker-back-1200.avif}} 1200w",
+"webp": "{{asset:img/v4/products/jacket-biker-back-480.webp}} 480w, {{asset:img/v4/products/jacket-biker-back-640.webp}} 640w, {{asset:img/v4/products/jacket-biker-back-800.webp}} 800w, {{asset:img/v4/products/jacket-biker-back-1200.webp}} 1200w"
+},
+"side": {
+"avif": "{{asset:img/v4/products/jacket-biker-side-480.avif}} 480w, {{asset:img/v4/products/jacket-biker-side-640.avif}} 640w, {{asset:img/v4/products/jacket-biker-side-800.avif}} 800w, {{asset:img/v4/products/jacket-biker-side-1200.avif}} 1200w",
+"webp": "{{asset:img/v4/products/jacket-biker-side-480.webp}} 480w, {{asset:img/v4/products/jacket-biker-side-640.webp}} 640w, {{asset:img/v4/products/jacket-biker-side-800.webp}} 800w, {{asset:img/v4/products/jacket-biker-side-1200.webp}} 1200w"
+}
+},
+"jeans-redline": {
+"front": {
+"avif": "{{asset:img/v4/products/jeans-redline-front-480.avif}} 480w, {{asset:img/v4/products/jeans-redline-front-640.avif}} 640w, {{asset:img/v4/products/jeans-redline-front-800.avif}} 800w, {{asset:img/v4/products/jeans-redline-front-1200.avif}} 1200w",
+"webp": "{{asset:img/v4/products/jeans-redline-front-480.webp}} 480w, {{asset:img/v4/products/jeans-redline-front-640.webp}} 640w, {{asset:img/v4/products/jeans-redline-front-800.webp}} 800w, {{asset:img/v4/products/jeans-redline-front-1200.webp}} 1200w"
+},
+"back": {
+"avif": "{{asset:img/v4/products/jeans-redline-back-480.avif}} 480w, {{asset:img/v4/products/jeans-redline-back-640.avif}} 640w, {{asset:img/v4/products/jeans-redline-back-800.avif}} 800w, {{asset:img/v4/products/jeans-redline-back-1200.avif}} 1200w",
+"webp": "{{asset:img/v4/products/jeans-redline-back-480.webp}} 480w, {{asset:img/v4/products/jeans-redline-back-640.webp}} 640w, {{asset:img/v4/products/jeans-redline-back-800.webp}} 800w, {{asset:img/v4/products/jeans-redline-back-1200.webp}} 1200w"
+},
+"side": {
+"avif": "{{asset:img/v4/products/jeans-redline-side-480.avif}} 480w, {{asset:img/v4/products/jeans-redline-side-640.avif}} 640w, {{asset:img/v4/products/jeans-redline-side-800.avif}} 800w, {{asset:img/v4/products/jeans-redline-side-1200.avif}} 1200w",
+"webp": "{{asset:img/v4/products/jeans-redline-side-480.webp}} 480w, {{asset:img/v4/products/jeans-redline-side-640.webp}} 640w, {{asset:img/v4/products/jeans-redline-side-800.webp}} 800w, {{asset:img/v4/products/jeans-redline-side-1200.webp}} 1200w"
+}
+},
+"tee-blank": {
+"front": {
+"avif": "{{asset:img/v4/products/tee-blank-front-480.avif}} 480w, {{asset:img/v4/products/tee-blank-front-640.avif}} 640w, {{asset:img/v4/products/tee-blank-front-800.avif}} 800w, {{asset:img/v4/products/tee-blank-front-1200.avif}} 1200w",
+"webp": "{{asset:img/v4/products/tee-blank-front-480.webp}} 480w, {{asset:img/v4/products/tee-blank-front-640.webp}} 640w, {{asset:img/v4/products/tee-blank-front-800.webp}} 800w, {{asset:img/v4/products/tee-blank-front-1200.webp}} 1200w"
+},
+"back": {
+"avif": "{{asset:img/v4/products/tee-blank-back-480.avif}} 480w, {{asset:img/v4/products/tee-blank-back-640.avif}} 640w, {{asset:img/v4/products/tee-blank-back-800.avif}} 800w, {{asset:img/v4/products/tee-blank-back-1200.avif}} 1200w",
+"webp": "{{asset:img/v4/products/tee-blank-back-480.webp}} 480w, {{asset:img/v4/products/tee-blank-back-640.webp}} 640w, {{asset:img/v4/products/tee-blank-back-800.webp}} 800w, {{asset:img/v4/products/tee-blank-back-1200.webp}} 1200w"
+},
+"side": {
+"avif": "{{asset:img/v4/products/tee-blank-side-480.avif}} 480w, {{asset:img/v4/products/tee-blank-side-640.avif}} 640w, {{asset:img/v4/products/tee-blank-side-800.avif}} 800w, {{asset:img/v4/products/tee-blank-side-1200.avif}} 1200w",
+"webp": "{{asset:img/v4/products/tee-blank-side-480.webp}} 480w, {{asset:img/v4/products/tee-blank-side-640.webp}} 640w, {{asset:img/v4/products/tee-blank-side-800.webp}} 800w, {{asset:img/v4/products/tee-blank-side-1200.webp}} 1200w"
+}
+},
+"longsleeve-blank": {
+"front": {
+"avif": "{{asset:img/v4/products/longsleeve-blank-front-480.avif}} 480w, {{asset:img/v4/products/longsleeve-blank-front-640.avif}} 640w, {{asset:img/v4/products/longsleeve-blank-front-800.avif}} 800w, {{asset:img/v4/products/longsleeve-blank-front-1200.avif}} 1200w",
+"webp": "{{asset:img/v4/products/longsleeve-blank-front-480.webp}} 480w, {{asset:img/v4/products/longsleeve-blank-front-640.webp}} 640w, {{asset:img/v4/products/longsleeve-blank-front-800.webp}} 800w, {{asset:img/v4/products/longsleeve-blank-front-1200.webp}} 1200w"
+},
+"back": {
+"avif": "{{asset:img/v4/products/longsleeve-blank-back-480.avif}} 480w, {{asset:img/v4/products/longsleeve-blank-back-640.avif}} 640w, {{asset:img/v4/products/longsleeve-blank-back-800.avif}} 800w, {{asset:img/v4/products/longsleeve-blank-back-1200.avif}} 1200w",
+"webp": "{{asset:img/v4/products/longsleeve-blank-back-480.webp}} 480w, {{asset:img/v4/products/longsleeve-blank-back-640.webp}} 640w, {{asset:img/v4/products/longsleeve-blank-back-800.webp}} 800w, {{asset:img/v4/products/longsleeve-blank-back-1200.webp}} 1200w"
+},
+"side": {
+"avif": "{{asset:img/v4/products/longsleeve-blank-side-480.avif}} 480w, {{asset:img/v4/products/longsleeve-blank-side-640.avif}} 640w, {{asset:img/v4/products/longsleeve-blank-side-800.avif}} 800w, {{asset:img/v4/products/longsleeve-blank-side-1200.avif}} 1200w",
+"webp": "{{asset:img/v4/products/longsleeve-blank-side-480.webp}} 480w, {{asset:img/v4/products/longsleeve-blank-side-640.webp}} 640w, {{asset:img/v4/products/longsleeve-blank-side-800.webp}} 800w, {{asset:img/v4/products/longsleeve-blank-side-1200.webp}} 1200w"
+}
+}
+};
+window.GV_LOOK_PHOTOS = {
+"01": {
+"avif": "{{asset:img/v4/looks/look-1-hoodie-karakuli-640.avif}} 640w, {{asset:img/v4/looks/look-1-hoodie-karakuli-900.avif}} 900w, {{asset:img/v4/looks/look-1-hoodie-karakuli-1200.avif}} 1200w",
+"webp": "{{asset:img/v4/looks/look-1-hoodie-karakuli-640.webp}} 640w, {{asset:img/v4/looks/look-1-hoodie-karakuli-900.webp}} 900w, {{asset:img/v4/looks/look-1-hoodie-karakuli-1200.webp}} 1200w"
+},
+"02": {
+"avif": "{{asset:img/v4/looks/look-2-suit-obezd-640.avif}} 640w, {{asset:img/v4/looks/look-2-suit-obezd-900.avif}} 900w, {{asset:img/v4/looks/look-2-suit-obezd-1200.avif}} 1200w",
+"webp": "{{asset:img/v4/looks/look-2-suit-obezd-640.webp}} 640w, {{asset:img/v4/looks/look-2-suit-obezd-900.webp}} 900w, {{asset:img/v4/looks/look-2-suit-obezd-1200.webp}} 1200w"
+},
+"03": {
+"avif": "{{asset:img/v4/looks/look-3-jacket-restart-640.avif}} 640w, {{asset:img/v4/looks/look-3-jacket-restart-900.avif}} 900w, {{asset:img/v4/looks/look-3-jacket-restart-1200.avif}} 1200w",
+"webp": "{{asset:img/v4/looks/look-3-jacket-restart-640.webp}} 640w, {{asset:img/v4/looks/look-3-jacket-restart-900.webp}} 900w, {{asset:img/v4/looks/look-3-jacket-restart-1200.webp}} 1200w"
+},
+"04": {
+"avif": "{{asset:img/v4/looks/look-4-longsleeve-redline-640.avif}} 640w, {{asset:img/v4/looks/look-4-longsleeve-redline-900.avif}} 900w, {{asset:img/v4/looks/look-4-longsleeve-redline-1200.avif}} 1200w",
+"webp": "{{asset:img/v4/looks/look-4-longsleeve-redline-640.webp}} 640w, {{asset:img/v4/looks/look-4-longsleeve-redline-900.webp}} 900w, {{asset:img/v4/looks/look-4-longsleeve-redline-1200.webp}} 1200w"
+}
+};
+/*</photos>*/

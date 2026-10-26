@@ -5,8 +5,20 @@
 
 /* #roll-stage (рулон) — размеры и показ по оси data-roll задаёт его владелец; здесь правил нет намеренно */
 
+/* ---------------- каталог v4.1: обложка — фото «на манекене» (ось cards=photo) ----------------
+   Все кадры приведены к одной студии (normalize.py): фон #EAE9E7 с мягким светом к центру, вещь по центру, 80 % высоты
+   кадра (широкий верх — 84 % ширины), поэтому подложка карточки — того же цвета: пока фото грузится, швов нет */
+:root{--studio:#e7e6e4}
+html[data-cards="photo"] .card-media{background:var(--studio)}
+.card-photo{position:absolute; inset:0}
+.card-photo picture,.card-photo img{display:block; width:100%; height:100%; object-fit:cover}
+@media (hover:hover) and (pointer:fine){
+  html[data-cards="photo"] .card-photo img{transition:transform .6s var(--ease-out)}
+  html[data-cards="photo"] .card:hover .card-photo img{transform:scale(1.015)}
+}
+
 /* ---------------- каталог: ghost-фото ---------------- */
-.card-ghost{position:absolute; inset:0; z-index:1; opacity:0; pointer-events:none; background:#d3d3d5;
+.card-ghost{position:absolute; inset:0; z-index:1; opacity:0; pointer-events:none; background:var(--studio);
   transition:opacity .42s var(--ease-out)}
 /* свой слой — только когда к карточке потянулись (наведение/касание/подсказка): невидимые слои фото иначе растрятся
    прямо в прокрутке (телефон CPU×4: +80 мс на ряд) */
@@ -41,12 +53,12 @@ html[data-ghost="off"] .card-ghost,html[data-ghost="off"] .card-pg{display:none}
 
 /* ---------------- превью-фото: «С этим», корзина ---------------- */
 .mini picture,.ci-thumb picture{display:block}
-.mini picture img,.ci-thumb picture img,.cu-card picture img{object-fit:cover; background:#d3d3d5}
+.mini picture img,.ci-thumb picture img,.cu-card picture img{object-fit:cover; background:var(--studio)}
 .cu-card picture{grid-row:1/span 2; display:block; width:56px}
 
 /* ---------------- карточка товара: галерея ---------------- */
 .ps-gallery{position:relative}
-.ps-slide--photo{background:#d3d3d5; touch-action:manipulation}
+.ps-slide--photo{background:var(--studio); touch-action:manipulation}
 .ps-slide--look{background:#0b0b0b}
 .ps-pic{position:absolute; inset:0; display:block; transition:transform .38s var(--ease-out)}
 .ps-pic img{display:block; width:100%; height:100%; object-fit:cover}
@@ -68,7 +80,8 @@ html[data-ghost="off"] .card-ghost,html[data-ghost="off"] .card-pg{display:none}
 .ps-dots i.is-on{opacity:1; transform:scale(1.15)}
 
 /* вкладки «Кадры | 3D» — пилюля поверх галереи (телефон — над первым кадром, desktop — липнет к верху колонки) */
-.ps-tabs-w{position:absolute; top:12px; left:12px; z-index:4}
+/* v4.1: вкладки — своей строкой над кадром, не на рисунке/вороте (аудит) */
+.ps-tabs-w{display:flex; align-items:center; padding:10px var(--gutter); background:var(--c-paper)}
 .ps-tabs{display:inline-flex; padding:3px; border:2px solid #000; border-radius:999px; background:#fff}
 .ps-tabs button{display:inline-flex; align-items:baseline; gap:6px; min-height:36px; padding:10px 14px 8px; border-radius:999px;
   font:700 .75rem/1 var(--font-display); letter-spacing:.01em; color:#000; transition:background-color .2s ease, color .2s ease}
@@ -76,7 +89,6 @@ html[data-ghost="off"] .card-ghost,html[data-ghost="off"] .card-pg{display:none}
 .ps-tabs button:focus-visible{outline:2px solid #000; outline-offset:2px}
 .ps-tabs-n,.ps-tabs-k{font:500 .625rem/1 var(--font-mono); letter-spacing:.02em; opacity:.6}
 @media (max-width:767px){
-  .ps-tabs-w{top:10px; left:10px}
   .ps-tabs{padding:2px; border-width:1.5px}
   .ps-tabs button{min-height:32px; padding:9px 11px 7px; font-size:.6875rem}
 }
@@ -92,8 +104,6 @@ html[data-ghost="off"] .card-ghost,html[data-ghost="off"] .card-pg{display:none}
 .ps-3d-art .art-ov,.ps-3d-art .art-mark{display:none}
 .ps-3d-msg{position:relative; padding:8px 12px 7px; background:#fff; color:#000; font:500 .75rem/1.3 var(--font-mono); letter-spacing:.02em}
 .ps-3d.is-live .ps-3d-ph{display:none}
-.ps-3d-hint{position:absolute; left:0; right:0; bottom:16px; margin:0; text-align:center; color:var(--c-ink-2); font-size:.6875rem; opacity:0; transition:opacity .4s ease .6s; pointer-events:none}
-.ps-3d.is-live .ps-3d-hint{opacity:1}
 .ps-gallery[data-view="3d"] .ps-cap{visibility:hidden}
 
 @media (max-width:767px){
@@ -102,8 +112,7 @@ html[data-ghost="off"] .card-ghost,html[data-ghost="off"] .card-pg{display:none}
 @media (min-width:768px){
   .ps-dots{display:none}
   /* desktop: кадры столбиком (base.css), пилюля липнет к верху колонки, пока листаешь кадры */
-  .ps-tabs-w{position:sticky; top:16px; left:auto; height:0; margin-left:16px; overflow:visible}
-  .ps-3d{position:sticky; top:0}
+  .ps-tabs-w{padding:16px 16px 12px}
 }
 @media (prefers-reduced-motion:reduce){
   .card-ghost,.card-ghost img,.card-3d,.ps-pic{transition:none!important}
@@ -114,3 +123,74 @@ html[data-shot="1"] .card-ghost,html[data-shot="1"] .card-ghost img{transition:n
    легенда выносок внизу сама подписывает кадр — ярлык «рисунок» не нужен */
 .ps-gallery:has(.ps-tabs) .art--gallery .art-meta > .art-code,.ps-gallery:has(.ps-tabs) .art--gallery .art-meta > .art-hair{visibility:hidden}
 .ps-slide--art:has(.art--a) .ps-tag{display:none}
+
+/* v4.1: фото «разобранной» вещи не бледним до белого (белый лонгслив на светлом фоне иначе исчезает) */
+html[data-cards="photo"] .card[data-state="soldout"] .card-media{opacity:.82}
+/* «С этим»: подписи соседних превью на одной линии при переносе имени */
+@supports (grid-template-rows:subgrid){
+  .ps-more-grid{grid-auto-rows:auto; row-gap:0}
+  .ps-more-grid .mini{grid-row:span 3; grid-template-rows:subgrid; row-gap:8px; padding-bottom:12px}
+}
+
+
+/* ================= v4.1: аудит — карточка товара, бирка размеров, корзина ================= */
+/* desktop: одна сцена + миниатюры вместо столбика из 5 кадров по 730 px */
+.ps-thumbs{display:none}
+@media (min-width:768px){
+  .ps-gallery{padding-bottom:8px}
+  .ps-stage{width:min(100%, calc((100vh - 168px) * .8)); margin-inline:auto}
+  .ps-track{flex-direction:row; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; scroll-behavior:auto; overscroll-behavior-x:contain}
+  .ps-slide{flex:0 0 100%}
+  .ps-count{display:block; right:12px}
+  .ps-3d{width:min(100%, calc((100vh - 168px) * .8)); margin-inline:auto}
+  .ps-thumbs{display:flex; justify-content:center; gap:8px; padding:12px 16px 0; flex-wrap:wrap}
+  .ps-th{position:relative; width:56px; aspect-ratio:4/5; padding:0; overflow:hidden; background:var(--studio); outline:1px solid transparent;
+    outline-offset:2px; opacity:.62; transition:opacity .2s ease, outline-color .2s ease}
+  .ps-th picture,.ps-th img{display:block; width:100%; height:100%; object-fit:cover}
+  .ps-th--art{background:var(--paper-2)} .ps-th--art img{object-fit:contain}
+  .ps-th:hover{opacity:1}
+  .ps-th.is-on{opacity:1; outline-color:#000}
+  .ps-th:focus-visible{outline:2px solid #000; opacity:1}
+  .ps-gallery[data-view="3d"] .ps-thumbs{visibility:hidden}
+  /* крестик не уезжает с прокруткой шита */
+  .ps-panel .sheet-bar{position:sticky; top:0; left:auto; right:0; float:right; height:0; min-height:0; padding:0; overflow:visible; z-index:6; align-items:flex-start; background:none}
+  .ps-panel .sheet-bar .ov-x{margin:14px 14px 0 0; background:var(--c-paper); border-radius:50%}
+}
+/* бирка в шите: без «дырки» слева — её читали как лишний размер */
+.szt--sheet{grid-template-columns:repeat(var(--n,5),minmax(0,1fr)); padding-right:0}
+.szt--sheet .szt-hole{display:none}
+
+/* быстрые размеры на карточке каталога: светлая бирка поверх фото — легче, буквы с запасом, штрихи чёрные */
+@media (hover:hover) and (pointer:fine){
+  .card .szt--quick{height:38px; margin:0 12px 12px; padding:0 4px; background:rgb(255 255 255 / .94); color:#000; border-radius:999px;
+    box-shadow:inset 0 0 0 1px rgb(0 0 0 / .14)}
+  .card .szt--quick .szt-l{font:700 .75rem/1 var(--font-display); letter-spacing:.02em}
+  .card .szt--quick .szt-c{border-radius:999px; margin:4px 1px}
+  .card .szt--quick .szt-c:not([aria-disabled="true"]):hover{background:#000}
+  .card .szt--quick .szt-c:not([aria-disabled="true"]):hover .szt-l{color:#fff}
+  /* в тонкой бирке штрихи SVG сплющивались в каракулю: зачёркивание — одна ровная линия (transform), буква читается */
+  .card .szt--quick .stk .x,.card .szt--quick .stk .n{display:none}
+  .card .szt--quick .stk .o{stroke:#000}
+  .card .szt--quick .stk-h .o{stroke-width:2.6}
+  .card .szt--quick .stk{left:4px; width:calc(100% - 8px); top:1px; height:calc(100% - 2px)}
+  .card .szt--quick .szt-c::after{content:""; position:absolute; z-index:2; left:50%; top:50%; width:min(34px, 70%); height:1.5px; margin-left:calc(min(34px, 70%) / -2);
+    background:#000; transform:rotate(-16deg) scaleX(0); transform-origin:50% 50%; transition:transform .16s ease var(--d,0s); pointer-events:none}
+  .card .szt--quick .szt-c.is-x::after{transform:rotate(-16deg) scaleX(1)}
+  .card .szt--quick .szt-c.is-n::after{background:#9a9a96; transform:rotate(-16deg) scaleX(1); transition:none}
+  .card .szt--quick .szt-c.is-n .szt-l{opacity:.4}
+  .card .szt--quick .szt-c.is-x .szt-l{opacity:.45}
+  html[data-cards="d"] .card .szt--quick .szt-c{background:none!important}
+}
+
+/* корзина на desktop: итог и «Оформить» прижаты к низу панели, без пустоты под кнопкой */
+@media (min-width:768px){
+  .cart-body{flex:1 1 auto}
+  .cart-foot{margin-top:auto}
+}
+/* «В корзину» в карточке: всплывающий маскот (V3) не ложится на «+» аккордеонов и на кнопку */
+@media (min-width:768px){
+  html[data-overlay="product"] .mz-pop{right:auto; left:max(10px, calc(100vw - min(1120px, 100vw) - 150px))}
+}
+@media (max-width:767px){
+  html[data-overlay="product"] .mz-pop{bottom:calc(92px + env(safe-area-inset-bottom)); width:min(30vw,120px)}
+}

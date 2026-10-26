@@ -33,6 +33,9 @@
   const MODE = R.dataset.roll || 'page';
   if (MODE === 'off') { D.addEventListener('DOMContentLoaded', () => { const s = D.getElementById('roll-stage'); if (s) s.remove(); }); GV.roll = { v: 31, off: true }; return; }
   const QUIET = MODE === 'quiet';
+  // телефон: торец рулона смотрит НАРУЖУ (к краю экрана) — внутрь рулон выступает только на полширины ленты, и полоса
+  // в поле 24 px проходит мимо карточек, а не уходит под каталог туннелем (v4.1: «на мобильной ленты не видно»)
+  const faceOut = (Wd) => Wd < 768;
   const TAPE = R.dataset.tape === 'black' ? 'black' : 'lime';
   const Q = new URLSearchParams(location.search);
   const SHOT = R.dataset.shot === '1' || Q.get('shot') === '1';
@@ -44,7 +47,7 @@
   const now = () => performance.now();
   const idle = (f, to) => (W.requestIdleCallback ? W.requestIdleCallback(f, { timeout: to || 1200 }) : setTimeout(f, 60));
   const TILE_AR = { lime: 408 / 128, black: 488 / 128 };   // мультяшные тайлы v4 (высота 128 = ширина ленты)
-  const END_AR = 150 / 128, END_BODY = 105 / 128, END_TOP = 20 / 128;   // рваный конец end-*: тело ленты — 82 % высоты спрайта, с 16 %
+  const END_AR = { lime: 150 / 128, black: 159 / 128 }, END_BODY = 0.825, END_TOP = 0.155;   // спрайты end-*: тело ленты 82 % высоты, сверху 15,5 %   // рваный конец end-*: тело ленты — 82 % высоты спрайта, с 16 %
   const FACE_K = 0.3;   // торец в перспективе: эллипс 2R вдоль курса × 2R·k поперёк
   const CROSS_W = (w, Wd) => Math.round(w * (Wd < 768 ? 7 : 5.5));   // финальный крест tape-cross (квадрат)
   // стикеры на загибах: ось data-stickers (V1) = on (2 шт.) | max (4) | off; без оси — по режиму (2 — щедро, 3 — нет)
@@ -53,7 +56,9 @@
   /* ═════════════ 1. ПРЕПЯТСТВИЯ (координаты документа) ═════════════ */
   // блоки, под которые можно «нырнуть» (туннель), — от мелкого к крупному
   const UNITS = ['.ab-door', '#brand-stage', '#looks', '#drop', '#about', '#next', '#footer', '.hx-marquee'];
-  const HARD = 'a[href],button,input,select,textarea,label,summary,[role=button],[tabindex]:not([tabindex="-1"]),article.card,[data-product],.nx-bag';
+  // 3D-сцена рейла (S1) ловит перетаскивание, но это «картинка», не кнопка: ленте поверх неё можно (pointer-events:none)
+  const SOFT = '.rk-stage';
+  const HARD = 'a[href],button,input,select,textarea,label,summary,[role=button],[tabindex]:not([tabindex="-1"]),article.card,[data-product],.nx-bag,#looks .lk-print';   // полароиды «Образов» — не под ленту (в т.ч. reduced-motion)
   // зелёные объекты: 3D-G, маскоты, лаймовые плашки/ленты, 3D-знак, лого подвала, дверь со скотчем, граффити истории
   const GREEN = '#g3d,[data-mascot-slot],.btn--accent,.tape--lime,.tape--toon-lime,.tape-strip--lime,.k2-sign__view,.bs-svg,.fo-logo,.ab-door';
   const VIEW3D = '.k2-sign__view';   // 3D-знак: в кадре рисуется по центру — поля холста пустые
@@ -110,7 +115,7 @@
         rg.selectNodeContents(t);
         for (const r of rg.getClientRects()) add(obs, p, r, 'T');
       }
-      for (const el of root.querySelectorAll(HARD)) if (!el.closest(SKIP) && shown(el)) add(obs, el, el.getBoundingClientRect(), el.matches('article.card') ? 'C' : 'I');
+      for (const el of root.querySelectorAll(HARD)) if (!el.closest(SKIP) && !el.matches(SOFT) && shown(el)) add(obs, el, el.getBoundingClientRect(), el.matches('article.card') ? 'C' : 'I');
       for (const el of root.querySelectorAll(PINNED)) {
         // видимость самой картинки не важна (дверь T2 рисует её холстом) — важен показанный липкий кадр
         if (el.closest(SKIP) || el.closest(VIEW3D) || !el.getClientRects().length) continue;
@@ -178,7 +183,7 @@
         try {
           for (let yy = -fb.height; yy <= bb.height + fb.height; yy += 24) {
             const q = GV.door.pose(yy); if (!q) break;
-            const dw = GV.door.word || { x0: 216, x1: 1646, y0: 332, y1: 685 };   // рамка слова в кадре двери (door.js)
+            const dw = GV.door.word || { x0: 302, x1: 2304, y0: 466, y1: 963 };   // рамка слова в кадре двери (door.js)
             const x0 = q.tx + dw.x0 * q.k, x1 = q.tx + dw.x1 * q.k, y0 = q.ty + dw.y0 * q.k, y1 = q.ty + dw.y1 * q.k;
             if (x1 > 0 && x0 < fb.width) wordLoc.push({ x0: Math.max(0, x0), x1: Math.min(fb.width, x1), y0, y1, k: 'G', el: fr });
           }
@@ -207,11 +212,13 @@
   function plan(E) {
     const { Wd, vh, H, obs, units, pins, drop, xL, w, R0, c, sl, foot, xMin } = E;
     const band = w / 2 + Math.max(c, sl + 2), cr = R0 + c, xMax = xL;
+    const bandH = w / 2 + Math.max(c, Math.ceil(R0 * FACE_K) + 3);   // поперечный пробег: торец смотрит вниз — запас под эллипс
     const RH0 = 1.0, RH1 = 1.75;                                  // ритм поперечных пробегов, в экранах
     const step = Wd < 768 ? 8 : 12;
     const hit = (x0, y0, x1, y1) => { for (const o of obs) if (o.x0 < x1 && o.x1 > x0 && o.y0 < y1 && o.y1 > y0) return o; return null; };
     const firstBlock = (x, ya, yb) => { let m = null; for (const o of obs) if (o.x0 < x + band && o.x1 > x - band && o.y1 > ya && o.y0 < yb && (!m || o.y0 < m.y0)) m = o; return m; };
-    const corner = (x, y) => x >= xMin - 0.5 && x <= xMax + 0.5 && !hit(x - cr, y - cr, x + cr, y + cr);
+    const ccr = cr * 1.3;   // на развороте рулон по диагонали шире своей полосы (замер v4.1: вылет 11 px у маскота подписки)
+    const corner = (x, y) => x >= xMin - 0.5 && x <= xMax + 0.5 && !hit(x - ccr, y - ccr, x + ccr, y + ccr);
     const seams = []; for (const u of units) seams.push(u.y0, u.y1);
     const seamB = (y) => { let d = 1e9; for (const q of seams) d = Math.min(d, Math.abs(q - y)); return d < 160 ? 240 * (1 - d / 160) : 0; };
     const lanes = (ya, yb) => {   // центры полос, свободные на [ya, yb]: концы и середины свободных промежутков
@@ -236,13 +243,14 @@
       const under = [];
       for (const q of bl) { const l = under[under.length - 1]; if (l && q[0] <= l[1] + cr * 2) l[1] = Math.max(l[1], q[1]); else under.push(q.slice()); }   // короткие просветы — тоже под знаком
       p.under = under;
-      p.ok = under.reduce((m, q) => m + q[1] - q[0], 0) < p.fh * 0.62 && !under.some((q) => q[0] < 2 || q[1] > p.fh - 2);
+      p.ok = under.reduce((m, q) => m + q[1] - q[0], 0) < p.fh * 0.62 && !under.some((q) => q[0] < 2);
       if (!p.ok) obs.push({ x0: 0, x1: Wd, y0: p.bTop, y1: p.bBot, k: 'M', el: p.el });
     }
     // старт: поперёк верхнего поля каталога — от левого края колонки к полосе
     const yS = Math.round(drop.y0 + clamp(drop.padT * 0.42, R0 * 0.7 + c, 60));
-    const xS = Math.round(Math.max(xMin, drop.left + R0 * 0.9));
-    const okTop = drop.padT > w + 2 * c && !hit(xS - cr, yS - band, xL + band, yS + band) && corner(xS, yS);
+    // v4.1: лента входит из-за левого края экрана (а не начинается «в воздухе» над заголовком): начало — под кромкой
+    const xS = -Math.round(w * 2), xC = Math.round(Math.max(xMin, R0 + c));
+    const okTop = drop.padT > w + 2 * c && !hit(0, yS - bandH, xL + band, yS + bandH) && !hit(xC - cr, yS - cr, xC + cr, yS + cr);   // старт — без запаса на разворот
     const yEnd = Math.round(Math.min(foot.y1, H) - Math.max(cr, 40));
     let x = xL, y = yS, lastC = okTop ? yS : yS - vh;
     if (okTop) seg(xS, yS, xL, yS, 'tape');
@@ -256,7 +264,7 @@
         for (const x2 of cands) {
           if (tx == null && Math.abs(x2 - x) < (forced ? band * 2.5 : Wd * 0.28)) continue;
           if (tx == null && !forced && pin2 && Math.abs(x2 - pin2.x) > 1 && pin2.bTop - yc < vh * 1.2) continue;   // впереди кадр — не уходить с его полосы
-          if (!corner(x2, yc) || hit(Math.min(x, x2), yc - band, Math.max(x, x2), yc + band)) continue;
+          if (!corner(x2, yc) || hit(Math.min(x, x2), yc - bandH, Math.max(x, x2), yc + bandH)) continue;
           const b2 = firstBlock(x2, yc + 1, stop2), run2 = (b2 ? b2.y0 - cr : stop2) - yc;
           // без «буквы П»: после перехода — длинный пробег; короткий — только до карусели/кадра, под которыми туннель
           if (run2 < Math.min(vh * (forced ? 0.3 : 0.5), stop2 - yc - 1) && !(forced && b2 && b2.k === 'M' && run2 > R0 * 2)) continue;
@@ -508,7 +516,7 @@
   }
   // рваный конец: спрайт end-* (с контуром и загнутым краем); левый — зеркально
   function tornCap(parent, col, w, atEnd, x) {
-    const h = w / END_BODY, cw = h * END_AR;
+    const h = w / END_BODY, cw = h * END_AR[col];
     const e = el('i', 'rl-end rl-end--' + col + (atEnd ? '' : ' rl-end--l'), parent);
     e.style.cssText = `left:${(atEnd ? x - cw : x).toFixed(1)}px;top:${(-END_TOP * h).toFixed(1)}px;width:${cw.toFixed(1)}px;height:${h.toFixed(1)}px`;
     return cw;
@@ -530,7 +538,6 @@
       return inn;
     });
     const tape = segs.filter((g) => g.t === 'tape');
-    const capW = (w / END_BODY) * END_AR;
     segs.forEach((g, i) => {
       if (g.t !== 'tape') return;
       const prev = segs[i - 1], next = segs[i + 1];
@@ -550,7 +557,7 @@
         const win = el('div', 'rl-win', run), tp = el('div', 'rl-tape', win);
         const t0 = torn0 && k === 0, t1 = torn1 && k === n - 1;
         // под рваным концом тайл короче: торец рисует спрайт (его левая половина — тело ленты внахлёст на тайл)
-        const cut0 = t0 ? capW * 0.5 : 0, cut1 = t1 ? capW * 0.5 : 0;
+        const cw = (w / END_BODY) * END_AR[g.col], cut0 = t0 ? cw * 0.5 : 0, cut1 = t1 ? cw * 0.5 : 0;
         const tl = Math.max(1, ln - cut0 - cut1);
         tp.style.cssText = `top:${pad}px;left:${cut0.toFixed(1)}px;height:${w}px;width:${tl.toFixed(1)}px;background-size:${tile.toFixed(1)}px ${w}px;background-position:${(-((g.s0 - ext0 + d0 + cut0) % tile)).toFixed(1)}px 0`;
         if (t0) tornCap(tp, g.col, w, false, -cut0);
@@ -598,7 +605,7 @@
     if (lastTape) {
       const ex = lastTape.b.x, ey = lastTape.b.y, base = lastTape.hd;
       if (QUIET) {
-        const len = Math.round(w * 2.6), hw = Math.round(w * 0.95), cw = (hw / END_BODY) * END_AR;
+        const len = Math.round(w * 2.6), hw = Math.round(w * 0.95), cw = (hw / END_BODY) * END_AR.black;
         const x = el('div', 'rl-x rl-x--piece', st);
         x.style.cssText = `left:${(ex - len / 2).toFixed(1)}px;top:${(ey - hw / 2).toFixed(1)}px;width:${len}px;height:${hw}px;--r:${((base + Math.PI / 2 + 0.1) * 180 / Math.PI).toFixed(1)}deg`;
         const tp = el('i', 'rl-x-tp', x);
@@ -699,8 +706,8 @@
     if (q.ev === 'swap') {
       // лаймовый кончился: шпуля ложится на торец и тает → сверху падает чёрный рулон
       const e = q.e, k = T.swaps.findIndex((z) => Math.abs(z.s - s) < 1), was = T.rolls[Math.max(0, k)], nxt = T.rolls[Math.max(0, k) + 1] || was;
-      if (e < 0.48) { const t = e / 0.48; col = was.col; R2 = rr.R; tip = sstep(t * 1.15); alpha = 1 - sstep((t - 0.6) / 0.4); scale = 1 - 0.12 * sstep(t); }
-      else { const t = (e - 0.48) / 0.52; col = nxt.col; R2 = E.R0; lift = 1 - t; alpha = clamp(t * 3, 0, 1); scale = 1 + 0.55 * Math.pow(1 - t, 2); tip = 0; }
+      if (e < 0.48) { const t = e / 0.48; col = was.col; R2 = rr.R; tip = 0; alpha = 1 - sstep((t - 0.45) / 0.55); scale = 1 - 0.35 * sstep(t); }   // v4.1: не ложится на торец (круг 2R задевал кнопки рядом со стыком) — сжимается и тает
+      else { const t = (e - 0.48) / 0.52; col = nxt.col; R2 = E.R0; lift = 1 - t; alpha = clamp(t * 3, 0, 1); scale = 1 + 0.06 * Math.pow(1 - t, 2); tip = 0; }   // новый рулон проявляется на месте, без «падения» крупным планом
     }
     if (tip > 0 && finE > 0) R2 = rr.R;
     // туннель: рулон срезается по стыку и скрывается под блоком
@@ -709,7 +716,8 @@
     if (g && g.t === 'tunnel') {
       const dIn = h.y - g.a.y, dOut = g.b.y - h.y;
       if (dIn < E.R0 * 1.6) clip = `inset(0 0 ${clamp(half + dIn, 0, cs).toFixed(1)}px 0)`;
-      else if (dOut < E.R0 * 1.6) clip = `inset(${clamp(half + dOut, 0, cs).toFixed(1)}px 0 0 0)`;
+      // туннель в кадре-пине, уходящий под нижнюю кромку кадра, — выхода в кадре нет (лента продолжается ниже кадра)
+      else if (dOut < E.R0 * 1.6 && !(g.pin != null && g.b.y >= E.pins[g.pin].fh - 2)) clip = `inset(${clamp(half + dOut, 0, cs).toFixed(1)}px 0 0 0)`;
       else alpha = 0;
     } else {
       const nx = ST.segs[h.seg + 1], pv = ST.segs[h.seg - 1];
@@ -717,7 +725,7 @@
       if (pv && pv.t === 'tunnel' && h.y - pv.b.y < half) clip = `inset(${clamp(half - (h.y - pv.b.y), 0, cs).toFixed(1)}px 0 0 0)`;
     }
     // поперёк курса рулон ≈ w, вдоль — 2R; лёжа на торце — круг 2R: держим целиком в пределах страницы
-    { const ext = (tip > 0 ? Math.max(R2, E.w / 2 + E.sl) : R2 * Math.abs(Math.cos(h.hd)) + (E.w / 2 + E.sl) * Math.abs(Math.sin(h.hd))) * scale + 2, W0 = h.pin != null ? E.pins[h.pin].fw : E.Wd;
+    { const ext = (tip > 0 ? Math.max(R2, E.w / 2 + E.sl) : R2 * Math.abs(Math.cos(h.hd)) + (E.w / 2 + E.sl) * Math.abs(Math.sin(h.hd))) * scale + 3, W0 = h.pin != null ? E.pins[h.pin].fw : E.Wd;
       ST.lastR = R2; ST.lastScale = scale;
       if (h.x + ext > W0) h.x = W0 - ext; if (h.x - ext < 0) h.x = ext; }
     const roll = ST.roll, host = h.pin != null && ST.pins[h.pin] ? ST.pins[h.pin] : ST.stage;
@@ -738,7 +746,8 @@
     const E = ST.E, c = ST.css;
     const hd = Math.round(p.hd / (Math.PI / 2)) * 90, hr = hd * Math.PI / 180;
     // торец — к глазу: при вертикальном курсе — к центру экрана, при горизонтальном — вниз (глаз ниже рулона)
-    const side = Math.abs(Math.sin(hr)) > 0.5 ? (Math.sign((R.clientWidth / 2 - p.x) * -Math.sin(hr)) || 1) : (Math.cos(hr) > 0 ? 1 : -1);
+    const toC = Math.sign((R.clientWidth / 2 - p.x) * -Math.sin(hr)) || 1;
+    const side = Math.abs(Math.sin(hr)) > 0.5 ? (faceOut(E.Wd) ? -toC : toC) : (Math.cos(hr) > 0 ? 1 : -1);
     const kk = FACE_K + (1 - FACE_K) * clamp(p.tip, 0, 1);
     c.style.setProperty('--hd', hd + 'deg');
     c.style.setProperty('--rl', (Math.round(4 * p.R) / 2).toFixed(1) + 'px');   // шаг 0,5 px: размер меняется редко
@@ -766,9 +775,9 @@
     const fb = foot.getBoundingClientRect();
     const H = fb.bottom + sy;
     let xL = Math.round(right + (Wd - right) / 2);
-    xL = Math.min(xL, Wd - (Wd < 768 ? 6 : 10) - z.w / 2);
+    xL = faceOut(Wd) ? Math.round(Wd - 4 - z.w / 2) : Math.min(xL, Wd - 10 - z.w / 2);   // телефон: полоса у самого края (торец наружу, кромка — под 2–3 px за экраном)
     // торец в перспективе: насколько верх рулона (высота 2R) уезжает от центра глаза
-    const sl = Math.ceil(z.R0 * FACE_K) + 1;   // торец-эллипс выступает за ленту на R·k
+    const sl = faceOut(Wd) ? 0 : Math.ceil(z.R0 * FACE_K) + 1;   // торец-эллипс выступает за ленту на R·k (на телефоне — наружу)
     // бирка режимов в левом поле (fixed) — левее неё ленте нельзя; при ?clean=1 её нет
     const tag = D.querySelector('.mtag--full,.mtag--mini'), tagR = [...D.querySelectorAll('.mtag')].reduce((m, e) => (e.getClientRects().length && getComputedStyle(e).display !== 'none' ? Math.max(m, e.getBoundingClientRect().right) : m), 0);
     void tag;
@@ -856,6 +865,7 @@
 
   GV.roll = {
     v: 31, mode: MODE, tape: TAPE,
+    dbg: () => { const q = lookup(ST.T, ST.ys), h = headAt(q.s); const g = ST.segs[h.seg]; return { s: Math.round(q.s), ev: q.ev, seg: h.seg, t: g && g.t, pin: g && g.pin, ay: g && Math.round(g.a.y), by: g && Math.round(g.b.y), hx: Math.round(h.x), hy: Math.round(h.y), op: ST.roll.style.opacity, clip: ST.roll.style.clipPath }; },
     refresh: () => { measure(true); kick(true); },
     sync: () => { if (!ST.built) return false; ST.ys = target(); frame(ST.ys); return true; },   // для проверок: без сглаживания
     info: () => ({
@@ -878,7 +888,7 @@
       if (ST.roll && +ST.roll.style.opacity > 0.05) {
         const b = ST.roll.getBoundingClientRect(), E = ST.E, h = headAt(lookup(ST.T, ST.ys).s);
         // фактический след рулона: вдоль курса 2R, поперёк w + торец в перспективе
-        const sc = ST.lastScale || 1, along = (ST.lastR || E.R0) * sc, across = (E.w / 2 + E.sl) * sc;   // текущий радиус и масштаб приземления
+        const sc = ST.lastScale || 1, along = (ST.lastR || E.R0) * sc, across = (E.w / 2 + (Math.abs(Math.sin(h.hd)) < 0.5 ? Math.ceil(E.R0 * FACE_K) + 1 : E.sl)) * sc;   // текущий радиус и масштаб приземления
         const cx = (b.left + b.right) / 2, cy = (b.top + b.bottom) / 2, co = Math.abs(Math.cos(h.hd)), si = Math.abs(Math.sin(h.hd));
         const hx = along * co + across * si, hy = along * si + across * co;   // описанный прямоугольник повёрнутого следа
         const q = { k: 'roll', x0: cx - hx, x1: cx + hx, y0: cy - hy, y1: cy + hy };

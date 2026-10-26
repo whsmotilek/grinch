@@ -59,6 +59,10 @@
 .k2-sign[data-step="2"] .k2-sign__l1{transform:translateY(-.35em)}
 .k2-sign__view{position:relative;height:min(84svh,900px);min-height:320px}
 .k2-sign__cv,.k2-sign__still{position:absolute;inset:0;width:100%;height:100%;display:block}
+/* V3 v4.1 (обвязка): низ сцены тает в фон блока — столбик знака не обрывается серым прямоугольником на стыке
+   с подпиской, и нет полосы между фоном холста (#0a0a0a) и фоном страницы. Слой поверх холста, ничего не ловит */
+.k2-sign__view::after{content:"";position:absolute;left:0;right:0;bottom:0;height:22%;pointer-events:none;
+  background:linear-gradient(180deg,rgba(5,5,5,0),#050505 88%)}
 .k2-sign__still{object-fit:contain;opacity:0;transition:opacity .35s var(--ease-out);pointer-events:none}
 /* заглушка, пока сцена компилируется; уходит с первым кадром WebGL */
 .k2-sign[data-state="wait"] .k2-sign__still--a,.k2-sign[data-state="gl"]:not(.is-live) .k2-sign__still--a{opacity:1}

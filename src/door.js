@@ -1,7 +1,7 @@
 /* ================================================================
    GRINCHIN v4 · ДВЕРЬ НА ТЕЛЕФОНЕ (V3; движок T2 v3.1) → window.GV.door
-   Кадр door-cam.* 1920×1080 (диорама door-A3, растушёвка верха/низа запечена): слово GRINCHIN из скотча —
-   x 216–1646, y 332–685 (замер по лаймовым пикселям, без рулона и отражения).
+   Кадр door-cam.* 2688×1520 (диорама door-A3 из исходника 2k, растушёвка верха/низа запечена): слово GRINCHIN —
+   x 302–2304, y 466–963 (замер по лаймовым пикселям, без рулона и отражения).
    На телефоне-портрете кадр cover режет слово до «NCH». Решение — «камера» по прокрутке:
      1) с последней трети въезда и до ~45 % залипания — камера в масштабе cover идёт вдоль слова G → N
         (буквы проходят по одной-две, как будто читаешь дверь глазами);
@@ -10,7 +10,7 @@
      3) хвост ~8 % — покой, кадр отпускается и уезжает вверх как обычный блок.
    Залипание — 80svh сверх кадра (CSS --door-run), высота задана заранее → CLS 0.
    Два слоя (.ab-door-cam и заголовок .ab-door-cap), только transform; один rAF, только когда блок рядом с экраном (IntersectionObserver).
-   Картинка в камере — <canvas> 1920×1080 c door-cam.* (растушёвка верха/низа запечена в файл), а не <img>: у <img> в слое
+   Картинка в камере — <canvas> 2688×1520 c door-cam.* (растушёвка верха/низа запечена в файл), а не <img>: у <img> в слое
    с will-change Chrome перерастрирует тайлы при смене масштаба (GPU-задача 160–180 мс в начале прохода, замер T2),
    у canvas (bitmaprenderer) — готовая текстура, масштаб и сдвиг ничего не перерисовывают. Декод — fetch →
    createImageBitmap (вне главного потока), за полтора экрана до блока. Не вышло — обычный <img> (.cv-fail).
@@ -26,7 +26,10 @@
   var SHOT = H.dataset.shot === '1';
   var MQ = W.matchMedia('(max-width: 767px) and (orientation: portrait) and (prefers-reduced-motion: no-preference)');
 
-  var IW = 1920, IH = 1080, WX0 = 216, WX1 = 1646, WY0 = 332, WY1 = 685, WCX = 931, WCY = 508;
+  var IW = 2688, IH = 1520, WX0 = 302, WX1 = 2304, WY0 = 466, WY1 = 963, WCX = 1303, WCY = 715;
+  // v4.1: кадр из исходника 2k (hf/scenes/raw, 2688×1520) и потолок зума — не больше ZMAX физ. px экрана на пиксель кадра:
+  // в cover на DPR 3 кадр растягивался в 2,2 раза («мыло»); при потолке кадр чуть ниже экрана, края тают в фон
+  var ZMAX = 1.3;
   var PAD_PAN = 14, PAD_FIT = 14;                    // поля у краёв кадра: при проходе и в финале
   var CAP_IN = .12;                                  // в финале заголовок заходит на растаявший низ кадра на 12 % его высоты
   var clamp = function (v) { return v < 0 ? 0 : v > 1 ? 1 : v; };
@@ -39,10 +42,11 @@
   function measure() {
     var fw = frame.clientWidth, fh = frame.clientHeight;
     if (!fw || !fh) return null;
-    var kc = fh / IH;                                   // масштаб cover: при проходе картинка по высоте кадра
-    // Слой камеры — ровно 1920×1080 физ. пикселей (ширина 1920/DPR CSS px): растр = исходник 1:1, без лишних
+    var dpr0 = Math.max(1, Math.min(3, W.devicePixelRatio || 1));
+    var kc = Math.min(fh / IH, ZMAX / dpr0);            // масштаб прохода: cover, но не крупнее ZMAX физ. px на пиксель кадра
+    // Слой камеры — ровно 2688×1520 физ. пикселей (ширина 2688/DPR CSS px): растр = исходник 1:1, без лишних
     // мегапикселей. В cover при DPR 3 был бы 3168×2376 (×5 по площади) — это давало кадр 116–133 мс на входе.
-    // Резкость та же: исходник всё равно 1920 px, больше деталей в нём нет.
+    // Резкость та же: исходник всё равно 2688 px, больше деталей в нём нет.
     var dpr = Math.max(1, Math.min(3, W.devicePixelRatio || 1));
     cam.style.width = (IW / dpr) + 'px'; cam.style.height = (IH / dpr) + 'px';
     var base = 1 / dpr;
@@ -55,9 +59,11 @@
     var kf = Math.min(kc, (fw - 2 * PAD_FIT) / (WX1 - WX0));
     // финал — «постер»: дверь целиком + заголовок сразу под ней, группа по центру кадра (чуть выше — оптический центр)
     var capTop = cap.offsetTop, capH = cap.offsetHeight, ih = IH * kf;
-    var group = ih * (1 - CAP_IN) + capH, top = Math.max(0, (fh - group) * .46);
+    // группа ниже центра: после отпускания кадра до следующего блока не остаётся пустой полосы (аудит v4.1: ~250 px)
+    var group = ih * (1 - CAP_IN) + capH, top = Math.max(0, (fh - group) * .74);
     var ayF = top + WCY * kf, capF = top + ih * (1 - CAP_IN);
-    return { fw: fw, fh: fh, kc: kc, base: base, hh: hh, run: run, pA: pA, pB: pB, kf: kf, ayF: ayF, capDy: Math.min(0, capF - capTop) };
+    var ay0 = WCY * kc + Math.max(0, fh - IH * kc) / 2;   // при потолке зума кадр по центру по вертикали
+    return { fw: fw, fh: fh, kc: kc, base: base, hh: hh, run: run, pA: pA, pB: pB, kf: kf, ayF: ayF, ay0: ay0, capDy: Math.min(0, capF - capTop) };
   }
 
   // y = сколько пройдено от начала залипания (0 — кадр лёг под шапку; run — отпускается)
@@ -68,7 +74,7 @@
     var tf = io3(clamp((y - y1b) / (y2 - y1b)));
     var px = g.pA + (g.pB - g.pA) * tp;                 // точка картинки в центре кадра (проход)
     var Px = px + (WCX - px) * tf, Py = WCY;            // точка картинки, которую держим в «якоре»
-    var Ax = g.fw / 2, Ay = WCY * g.kc + (g.ayF - WCY * g.kc) * tf;
+    var Ax = g.fw / 2, Ay = g.ay0 + (g.ayF - g.ay0) * tf;
     var k = Math.exp(Math.log(g.kc) + (Math.log(g.kf) - Math.log(g.kc)) * tf);
     var tx = Ax - Px * k, ty = Ay - Py * k;
     return { tx: tx, ty: ty, s: k / g.base, k: k, cy: g.capDy * tf, tp: tp, tf: tf };

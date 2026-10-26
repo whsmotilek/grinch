@@ -1,5 +1,5 @@
 <!-- V3 · «Разобрали — вернём» (v4). Подписка без сети: Telegram / почта, поле-бирка, ошибки aria-live.
-     Маскот subscribe ([data-mascot-slot="subscribe"]: телефон и конверт) стоит у формы; после подписки — показывает
+     Маскот subscribe ([data-mascot-slot="subscribe"]: телефон и конверт) стоит у заголовка; после подписки — показывает
      «класс» (поза cart-add) и подпрыгивает. Успех: zip-пакет GRiNCHiN (вектор, end.js) + мультяшный крест из двух лент
      (tape-cross) «шлёпается» поверх, в угол — стикер. Пока блок hidden, картинки не грузятся (loading=lazy). -->
 <section id="next" aria-labelledby="next-title">
@@ -7,10 +7,10 @@
     <div class="nx-copy">
       <h2 id="next-title" class="nx-title">Разобрали&nbsp;— вернём.</h2>
       <p class="nx-sub">Дату перезапуска скажем тем, кто подписан.</p>
+      <div class="nx-mz" data-mascot-slot="subscribe" aria-hidden="true"></div>
     </div>
 
     <div class="nx-side">
-      <div class="nx-mz" data-mascot-slot="subscribe" aria-hidden="true"></div>
       <form class="nx-form" data-nx-form novalidate>
         <fieldset class="nx-switch">
           <legend class="vh">Куда написать</legend>

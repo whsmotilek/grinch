@@ -237,6 +237,14 @@ html[data-stickers="off"] #looks .lk-stk{display:none}
 html[data-shot="1"] #looks .lk-stk{animation:none}
 @media (prefers-reduced-motion:reduce){ #looks .lk-stk.is-landing{animation:none} }
 
+/* v4.1: подписи под отпечатками на одной высоте (аудит): ряд отпечатков выровнен по низу, подписи — общей строкой (subgrid) */
+@media (min-width:768px){
+  #looks .lk-rail{grid-template-rows:auto auto; row-gap:22px; align-items:end}
+  #looks .lk-look{display:grid; grid-row:span 2; grid-template-rows:subgrid; row-gap:22px}
+  #looks .lk-look[data-look]{padding-top:0}
+  #looks .lk-print{align-self:end}
+  #looks .lk-cap{align-self:start}
+}
 #looks .lk-cap{display:flex; flex-wrap:wrap; align-items:baseline; column-gap:14px; row-gap:4px; min-height:48px}
 #looks .lk-n{font:500 .875rem/1.4 var(--font-mono); letter-spacing:.02em; color:var(--c-white)}
 #looks .lk-cap a{font:600 .9375rem/1.4 var(--font-text); color:var(--c-white); text-decoration:underline;
@@ -253,10 +261,12 @@ html[data-shot="1"] #looks .lk-print{transition:none}
 
 @media (max-width:767px){
   #looks .lk-count{display:block}
-  #looks .lk-rail{display:flex; gap:22px; overflow-x:auto; overscroll-behavior-x:contain; scroll-snap-type:x mandatory;
+  /* overflow-y:hidden — иначе 3 px вертикального «переполнения» (наклон отпечатков, стикеры) делали ленту вертикальным
+     скроллером: свайп вниз, начатый на фото, прилипал к ней и страница не ехала (аудит v4.1) */
+  #looks .lk-rail{display:flex; gap:22px; overflow-x:auto; overflow-y:hidden; touch-action:pan-x pan-y; overscroll-behavior-x:contain; scroll-snap-type:x mandatory;
     scroll-padding-left:max(var(--gutter), env(safe-area-inset-left));
     margin:0 calc(-1 * max(var(--gutter-r), env(safe-area-inset-right))) 0 calc(-1 * max(var(--gutter), env(safe-area-inset-left)));
-    padding:34px max(var(--gutter-r), env(safe-area-inset-right)) 8px max(var(--gutter), env(safe-area-inset-left)); scrollbar-width:none}
+    padding:34px max(var(--gutter-r), env(safe-area-inset-right)) 28px max(var(--gutter), env(safe-area-inset-left)); scrollbar-width:none}
   #looks .lk-rail::-webkit-scrollbar{display:none}
   #looks .lk-look{flex:0 0 min(72vw, 320px); scroll-snap-align:start; scroll-snap-stop:always; justify-content:flex-start}
   #looks .lk-look[data-look]{padding-top:0}

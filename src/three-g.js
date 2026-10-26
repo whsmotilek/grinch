@@ -46,7 +46,7 @@
   const LOGO_BOX = [134.9, 302, 1783.8, 748.5];
   const URL3 = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.186.1/three.module.min.js';
   const URL3B = 'https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.min.js';   // запасной CDN: сбой сети не должен гасить 3D
-  const MC = { lime: '{{asset:img/3d/m-lime.jpg}}', tape: '{{asset:img/3d/m-tape.jpg}}', side: '{{asset:img/3d/m-side.jpg}}', black: '{{asset:img/3d/m-black.jpg}}', ink: '{{asset:img/v4/hero/m-ink.jpg}}', inkside: '{{asset:img/v4/hero/m-ink-side.jpg}}' };
+  const MC = { lime: '{{asset:img/3d/m-lime.jpg}}', tape: '{{asset:img/3d/m-tape.jpg}}', side: '{{asset:img/3d/m-side.jpg}}', black: '{{asset:img/3d/m-black.jpg}}', paint: '{{asset:img/v4/hero/m-paint.jpg}}', paintside: '{{asset:img/v4/hero/m-paint-side.jpg}}' };
 
   const Q = new URLSearchParams(location.search);
   const SHOT = R.dataset.shot === '1' || Q.get('shot') === '1';
@@ -61,8 +61,9 @@
   const now = () => performance.now();
   const idle = (f, to) => (W.requestIdleCallback ? W.requestIdleCallback(f, { timeout: to || 1500 }) : setTimeout(f, 60));
   const abs = (u) => { try { return new URL(u, location.href).href; } catch (e) { return u; } };
-  // v4 (V1): маскот в hero — он лаймовый объект кадра, G уходит в чёрный винил без лайма (ink) при любом значении оси g
-  const matOf = () => { if (R.dataset.heroimg === 'mascot') return 'ink'; const m = R.dataset.g; return m === 'lime' || m === 'black' || m === 'tape' ? m : 'tape'; };
+  // v4.1 (V1): маскот в hero — он лаймовый объект кадра, G — белый глянцевый винил, как стрелки разметки на асфальте сцены
+  // (paint) при любом значении оси g. Чёрный «ink» v4 сливался с ночным фоном — отклонён.
+  const matOf = () => { if (R.dataset.heroimg === 'mascot') return 'paint'; const m = R.dataset.g; return m === 'lime' || m === 'black' || m === 'tape' ? m : 'tape'; };
 
   /* ═════════════════════ АРТ: процедурные текстуры (воркер и главный поток) ═════════════════════
      Самодостаточная функция: в воркер уходит её исходник. Шрифтов нет — буквы знака нарисованы штрихами
@@ -195,6 +196,22 @@
       const lh2 = 46; let x = -196; while (x < 190) x += logo(g, x, -lh2 / 2 - 1, lh2, 'rgba(11,11,11,.88)') + 36;
       for (let k = 0; k < 14; k++) { g.strokeStyle = r() < 0.5 ? 'rgba(255,255,255,.35)' : 'rgba(0,40,0,.3)'; g.lineWidth = 1 + r(); const px = -200 + r() * 400; g.beginPath(); g.moveTo(px, -40); g.lineTo(px + (r() - 0.5) * 30, 38); g.stroke(); }
       g.restore();
+      // v4.1 (V1): изнанка не «пустая доска» — чёрный спрей поверх металла: стрелка в обход, каракули, второй стикер внизу
+      g.save(); g.lineCap = 'round'; g.lineJoin = 'round';
+      const spray = (pts, w, a) => { for (let k = 0; k < 3; k++) { g.strokeStyle = `rgba(14,14,14,${a * (k ? 0.18 : 0.85)})`; g.lineWidth = w * (1 + k * 0.9);
+        g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]); g.stroke(); } };
+      // стрелка «в обход» через всю изнанку
+      spray([[W_ * 0.12, H_ * 0.84], [W_ * 0.3, H_ * 0.78], [W_ * 0.42, H_ * 0.62], [W_ * 0.38, H_ * 0.5], [W_ * 0.52, H_ * 0.46], [W_ * 0.82, H_ * 0.3]], 18, 1);
+      spray([[W_ * 0.7, H_ * 0.24], [W_ * 0.84, H_ * 0.29], [W_ * 0.77, H_ * 0.42]], 18, 1);
+      // счёт-зачёркивание и каракули в углах
+      for (let k = 0; k < 4; k++) spray([[W_ * (0.62 + k * 0.045), H_ * 0.88], [W_ * (0.63 + k * 0.045), H_ * 0.78]], 7, 0.9);
+      spray([[W_ * 0.6, H_ * 0.8], [W_ * 0.82, H_ * 0.86]], 7, 0.9);
+      spray([[W_ * 0.1, H_ * 0.12], [W_ * 0.2, H_ * 0.08], [W_ * 0.16, H_ * 0.18], [W_ * 0.28, H_ * 0.14]], 6, 0.7);
+      // стикер внизу слева: белая плашка, логотип чёрным
+      g.translate(W_ * 0.27, H_ * 0.62); g.rotate(0.12);
+      g.fillStyle = 'rgba(0,0,0,.22)'; g.fillRect(-104, -30, 214, 66); g.fillStyle = '#f2f2ec'; g.fillRect(-108, -36, 214, 66);
+      const lh3 = 40; logo(g, -lh3 * LOGO_AR / 2, -lh3 / 2 - 3, lh3, '#0b0b0b');
+      g.restore();
       return c;
     }
     // фирменная лента: лайм, логотипы чёрным, продольные волокна и непрокрас
@@ -312,9 +329,9 @@
       async function mat(name) {
         if (mats[name]) return mats[name];
         let face, side;
-        if (name === 'ink') {   // v4: чёрный винил, торец графитовый — ни грамма лайма
-          face = new T.MeshMatcapMaterial({ matcap: await mc('ink') });
-          side = new T.MeshMatcapMaterial({ matcap: await mc('inkside') });
+        if (name === 'paint') {   // v4.1: белый винил-разметка, торец серый — ни грамма лайма
+          face = new T.MeshMatcapMaterial({ matcap: await mc('paint') });
+          side = new T.MeshMatcapMaterial({ matcap: await mc('paintside') });
         } else if (name === 'black') {
           face = new T.MeshMatcapMaterial({ matcap: await mc('black') });
           side = new T.MeshMatcapMaterial({ matcap: await mc('lime') });
@@ -364,19 +381,31 @@
       const sc = (c) => { if (big >= 1) return c; const d = cv2d((c.width * big) | 0, (c.height * big) | 0); d.getContext('2d').drawImage(c, 0, 0, d.width, d.height); return d; };
       const tL = ctex(sc(A.signFace(-1)), true), tR = ctex(sc(A.signFace(1)), true), tB = ctex(sc(A.signBack()), true), tG = ctex(sc(A.graffiti()), true);
       const faceM = new T.MeshStandardMaterial({ map: tL, roughness: 0.5, metalness: 0 });
-      const front = new T.Mesh(plate, faceM); front.position.z = 0.0135;
+      // v4.1 (V1): у знака есть толщина — в повороте ребром видна не «пустая серая доска», а металл с завальцованной кромкой:
+      // пластина 5 см (было 2,4), по обеим сторонам — выпуклая рамка-борт, как у настоящих дорожных знаков
+      const TH = 0.05;
+      const front = new T.Mesh(plate, faceM); front.position.z = TH / 2 + 0.0015;
       const grM = new T.MeshStandardMaterial({ map: tG, roughness: 0.62, alphaTest: 0.99 });
-      const gr = new T.Mesh(plate, grM); gr.position.z = 0.0145; gr.visible = false;
+      const gr = new T.Mesh(plate, grM); gr.position.z = TH / 2 + 0.0025; gr.visible = false;
       const backM = new T.MeshStandardMaterial({ map: tB, roughness: 0.42, metalness: 0.35 });
-      const bk = new T.Mesh(plate, backM); bk.rotation.y = Math.PI; bk.position.z = -0.0135;
-      const edgeG = new T.ExtrudeGeometry(sh, { depth: 0.024, bevelEnabled: false, curveSegments: 6 });
-      const edge = new T.Mesh(edgeG, new T.MeshStandardMaterial({ color: '#a2a6a9', metalness: 0.7, roughness: 0.35 })); edge.position.z = -0.012; edge.scale.set(0.998, 0.998, 1);
+      const bk = new T.Mesh(plate, backM); bk.rotation.y = Math.PI; bk.position.z = -TH / 2 - 0.0015;
+      const edgeG = new T.ExtrudeGeometry(sh, { depth: TH, bevelEnabled: false, curveSegments: 6 });
+      const rimM = new T.MeshStandardMaterial({ color: '#c3c7ca', metalness: 0.8, roughness: 0.28 });
+      const edge = new T.Mesh(edgeG, rimM); edge.position.z = -TH / 2; edge.scale.set(0.998, 0.998, 1);
+      const B = 0.045, IR = Math.max(0.02, RAD - B * 0.6), iw = PW - 2 * B, ih = PH - 2 * B, hole = new T.Path();
+      hole.moveTo(-iw / 2 + IR, -ih / 2); hole.lineTo(iw / 2 - IR, -ih / 2); hole.quadraticCurveTo(iw / 2, -ih / 2, iw / 2, -ih / 2 + IR);
+      hole.lineTo(iw / 2, ih / 2 - IR); hole.quadraticCurveTo(iw / 2, ih / 2, iw / 2 - IR, ih / 2); hole.lineTo(-iw / 2 + IR, ih / 2); hole.quadraticCurveTo(-iw / 2, ih / 2, -iw / 2, ih / 2 - IR);
+      hole.lineTo(-iw / 2, -ih / 2 + IR); hole.quadraticCurveTo(-iw / 2, -ih / 2, -iw / 2 + IR, -ih / 2);
+      const ring = sh.clone(); ring.holes = [hole];
+      const lipG = new T.ExtrudeGeometry(ring, { depth: 0.006, bevelEnabled: true, bevelThickness: 0.006, bevelSize: 0.006, bevelSegments: 2, curveSegments: 6 });
+      const lipF = new T.Mesh(lipG, rimM); lipF.position.z = TH / 2;
+      const lipB = new T.Mesh(lipG, rimM); lipB.rotation.y = Math.PI; lipB.position.z = -TH / 2;
       const steel = new T.MeshStandardMaterial({ color: '#8d9194', metalness: 0.75, roughness: 0.42 });
-      const post = new T.Mesh(new T.BoxGeometry(0.085, 6, 0.085), steel); post.position.set(0, -2.2, -0.068);
+      const post = new T.Mesh(new T.BoxGeometry(0.085, 6, 0.085), steel); post.position.set(0, -2.2, -TH / 2 - 0.068);
       const clampG = new T.BoxGeometry(0.2, 0.05, 0.12);
-      const cl1 = new T.Mesh(clampG, steel); cl1.position.set(0, PH * 0.34, -0.06);
-      const cl2 = new T.Mesh(clampG, steel); cl2.position.set(0, -PH * 0.34, -0.06);
-      const sign = new T.Group(); sign.add(edge, front, gr, bk, post, cl1, cl2); scene.add(sign);
+      const cl1 = new T.Mesh(clampG, steel); cl1.position.set(0, PH * 0.34, -TH / 2 - 0.06);
+      const cl2 = new T.Mesh(clampG, steel); cl2.position.set(0, -PH * 0.34, -TH / 2 - 0.06);
+      const sign = new T.Group(); sign.add(edge, lipF, lipB, front, gr, bk, post, cl1, cl2); scene.add(sign);
       // при compileAsync граффити должно быть видимым, иначе его программа соберётся на первом кадре оборота
       gr.visible = true;
       const cam = new T.PerspectiveCamera(28, 1, 0.1, 60);
@@ -676,7 +705,8 @@ self.onmessage = async (ev) => {
     // размер буфера — по раскладке (offset*), а не по rect: K4 масштабирует обёртку .hx-g при прокрутке
     S.hidden = getComputedStyle(host).visibility === 'hidden';   // K4 может спрятать обёртку — тогда не рендерим
     S.w = host.offsetWidth || r.width; S.h = host.offsetHeight || r.height; S.cx = r.left + r.width / 2; S.cy = r.top + sy + r.height / 2;
-    S.dpr = Math.min(W.devicePixelRatio || 1, 2);
+    // DPR ≤ 2, но маленькой G (телефон, режим маскота: ~130×130 CSS px) — до 3: буфер всё равно крошечный, а на DPR 3 без этого мыло
+    S.dpr = Math.min(W.devicePixelRatio || 1, S.w * S.h < 100000 ? 3 : 2);
     const hero = D.getElementById('hero');
     if (hero) { const hr = hero.getBoundingClientRect(); S.heroTop = hr.top + sy; S.heroH = Math.max(1, hr.height); }
     S.last = null; GV.gl.wake();
@@ -780,7 +810,7 @@ self.onmessage = async (ev) => {
     measure();
     S.overlay = R.hasAttribute('data-overlay');
     box.dataset.mat = matOf();
-    // v4: при data-heroimg="mascot" G не прячется, а рендерится материалом ink (см. matOf)
+    // v4.1: при data-heroimg="mascot" G не прячется, а рендерится белым материалом paint (см. matOf)
     if (wantGL()) {
       cv = D.createElement('canvas'); cv.className = 'g3d__cv'; cv.setAttribute('aria-hidden', 'true');
       box.appendChild(cv);

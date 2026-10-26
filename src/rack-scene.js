@@ -68,7 +68,7 @@
       renderer.setClearColor(0x000000, 0);
       renderer.outputColorSpace = T.SRGBColorSpace;
     }
-    const aniso = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+    const aniso = Math.min(4, renderer.capabilities.getMaxAnisotropy()), anisoHi = Math.min(8, renderer.capabilities.getMaxAnisotropy());
     let frames = 0, curW = 0, curH = 0;
 
     /* ── сцена, свет ──
@@ -83,9 +83,9 @@
     const LT = new T.Object3D(); LT.position.set(0, -0.6, 0.2); scene.add(LT);
     const dl = (c, i, x, y, z) => { const l = new T.DirectionalLight(c, i); l.position.set(x, y, z); l.target = LT; scene.add(l); return l; };
     const LI = {
-      key: dl(0xfff1e0, 1.35, -2.4, 2.6, 3.4),
-      rimL: dl(0xd8e6ff, 2.6, -3.0, 1.6, -2.4),
-      rimR: dl(0xffffff, 2.3, 3.1, 2.0, -2.2),
+      key: dl(0xfff1e0, 1.45, -2.4, 2.6, 3.4),
+      rimL: dl(0xd8e6ff, 2.1, -3.0, 1.6, -2.4),
+      rimR: dl(0xffffff, 1.9, 3.1, 2.0, -2.2),
       top: dl(0xffffff, 0.8, 0.2, 4.2, 0.4),
       fill: dl(0xffffff, 0.22, 2.6, -0.4, 2.8),
     };
@@ -95,12 +95,22 @@
     const curve = (pts, closed, k) => new T.CatmullRomCurve3(pts, !!closed, 'catmullrom', k == null ? 0.4 : k);
     const tube = (pts, r, closed, seg, rs, k) => new T.TubeGeometry(curve(pts, closed, k), seg || 48, r, rs || 10, !!closed);
     const MAT = {
-      chrome: new T.MeshStandardMaterial({ color: 0xf2f2f2, metalness: 1, roughness: 0.13 }),
+      chrome: new T.MeshStandardMaterial({ color: 0xeeeeee, metalness: 1, roughness: 0.24 }),   // мягкий блик: при 0,13 тонкая полоса отражения мерцала лесенкой
       steel: new T.MeshStandardMaterial({ color: 0xa9a9a9, metalness: 1, roughness: 0.28 }),
       blackm: new T.MeshStandardMaterial({ color: 0x1b1b1b, metalness: 0.7, roughness: 0.3 }),
       clip: new T.MeshStandardMaterial({ color: 0x121212, metalness: 0.15, roughness: 0.45 }),
       ink: new T.MeshBasicMaterial({ color: 0x000000, side: T.BackSide, toneMapped: false }),
     };
+    /* Труба — почти горизонтальная длинная кромка, яркий блик на силуэте против чёрного фона: даже 4×MSAA оставляет
+       видимые ступени. Силуэт сглаживается аналитически: прозрачность по N·V с шириной в 1,5 пикселя (fwidth). */
+    MAT.rail = MAT.chrome.clone();
+    MAT.rail.transparent = true; MAT.rail.depthWrite = true;
+    MAT.rail.onBeforeCompile = (sh) => {
+      sh.fragmentShader = sh.fragmentShader.replace('#include <opaque_fragment>', '#include <opaque_fragment>\n' +
+        'float rkNV = abs( dot( normalize( vNormal ), normalize( vViewPosition ) ) );\n' +
+        'gl_FragColor.a *= clamp( rkNV / max( fwidth( rkNV ) * 1.5, 1e-4 ), 0.0, 1.0 );');
+    };
+    MAT.rail.customProgramCacheKey = () => 'rkRail';
     const texOf = (bmp) => {
       if (!bmp) return null;
       const t = new T.Texture(bmp);
@@ -231,7 +241,7 @@
       const pts = [];
       for (let i = 0; i <= 160; i++) { const x = -7 + (14 * i) / 160; pts.push(V(x, 0, rp.A * Math.exp(-(x / rp.W) * (x / rp.W)))); }
       const g = new T.Group();
-      g.add(new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts), 320, 0.019, 18, false), MAT.chrome));
+      g.add(new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts), 640, 0.02, 40, false), MAT.rail));
       scene.add(g);
       return g;
     }
@@ -269,9 +279,17 @@
       return precompile();
     }
     // KHR_parallel_shader_compile нет (SwiftShader, часть мобильных) — compileAsync лишь пишет предупреждение; тогда компилируем сразу
+    // шейдеры собираются под тот же вывод, что и кадр (в MSAA-буфер: без тон-маппинга, линейный цвет) — иначе вторая сборка на первом кадре
     function precompile() {
-      if (renderer.compileAsync && renderer.extensions.has('KHR_parallel_shader_compile')) return renderer.compileAsync(scene, cam);
-      renderer.compile(scene, cam);
+      const rt = AA.mode === 'msaa' ? (AA.rt || (AA.rt = new T.WebGLRenderTarget(2, 2, { samples: 4, type: hf ? T.HalfFloatType : T.UnsignedByteType }))) : null;
+      const prev = renderer.getRenderTarget();
+      if (rt) renderer.setRenderTarget(rt);
+      let pr = null;
+      try {   // compileAsync запрашивает программы синхронно — цель возвращаем сразу, чтобы соседние сцены GV.gl не рисовали в наш буфер
+        if (renderer.compileAsync && renderer.extensions.has('KHR_parallel_shader_compile')) pr = renderer.compileAsync(scene, cam);
+        else renderer.compile(scene, cam);
+      } finally { renderer.setRenderTarget(prev); }
+      return pr;
     }
 
     /* ── загрузка: заглушка-фото (вырез «призрачного манекена») и GLB ── */
@@ -291,10 +309,12 @@
       const back = new T.Mesh(g, new T.MeshStandardMaterial({ map: bb ? texOf(bb) : ft, color: bb ? 0xffffff : 0x4a4a4a, alphaTest: 0.5, roughness: 0.85, metalness: 0, envMapIntensity: 0.6 }));
       back.rotation.y = Math.PI; grp.add(back);
       clearGar(it, 'stub');
+      tmTree(grp);
       it.stub = grp; it.gar.add(grp);
       return { w: +w.toFixed(3), h: m.h, drop: setDrop(it, m.top) };
     }
-    async function loadGLB(it, url, m) {
+    async function loadGLB(it, url, m, slot) {
+      slot = slot || 'lod';
       const [g, g2] = await Promise.all([gltf.loadAsync(url), m.url2 ? gltf.loadAsync(m.url2).catch(() => null) : null]);
       const mdl = g.scene;
       if (m.rotY) mdl.rotation.y = m.rotY;
@@ -316,8 +336,18 @@
         if (!o.isMesh) return;
         const ge = o.geometry; tris += (ge.index ? ge.index.count : ge.attributes.position.count) / 3;
         (Array.isArray(o.material) ? o.material : [o.material]).forEach((mt) => {
-          mt.envMapIntensity = m.env == null ? 0.75 : m.env;
-          ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap'].forEach((k) => { if (mt[k]) mt[k].anisotropy = aniso; });
+          // ткань, а не пластилин: рельеф карты нормалей Tripo приглушаем, металличность убираем, шероховатость не ниже 0,8
+          mt.envMapIntensity = m.env == null ? 0.6 : m.env;
+          if (mt.normalScale) mt.normalScale.setScalar(m.normal == null ? 0.5 : m.normal);
+          mt.metalness = 0;
+          if (!mt.userData.rkCloth) {
+            mt.userData.rkCloth = 1;
+            const pre = mt.onBeforeCompile;
+            mt.onBeforeCompile = (sh, r) => { if (pre) pre.call(mt, sh, r); sh.fragmentShader = sh.fragmentShader.replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = max( roughnessFactor, 0.8 );'); };
+            const pk = mt.customProgramCacheKey ? mt.customProgramCacheKey() : '';
+            mt.customProgramCacheKey = () => 'rkCloth' + pk;
+          }
+          ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap'].forEach((k) => { if (mt[k]) mt[k].anisotropy = slot === 'full' ? anisoHi : aniso; });
         });
       }));
       if (g2) {   // брюки комплекта — на той же вешалке, пояс под курткой, чуть позади
@@ -329,8 +359,24 @@
         w2.add(p2); wrap.add(w2);
         if (auto) { w2.scale.divideScalar(wrap.scale.x); w2.position.sub(wrap.position).divideScalar(wrap.scale.x); }
       }
-      clearGar(it, 'model'); clearGar(it, 'stub');
-      it.model = wrap; it.gar.add(wrap);
+      tmTree(wrap);
+      const old = it[slot]; it[slot] = wrap; wrap.userData.tris = Math.round(tris);
+      if (old) disposeTree(old);
+      return show(it, auto);
+    }
+    function disposeTree(o) {
+      if (o.parent) o.parent.remove(o);
+      o.traverse((m) => {
+        if (!m.isMesh) return;
+        m.geometry.dispose();
+        (Array.isArray(m.material) ? m.material : [m.material]).forEach((mt) => { for (const k in mt) if (mt[k] && mt[k].isTexture) mt[k].dispose(); mt.dispose(); });
+      });
+    }
+    // на вешалке — лучшая из загруженных версий: полная (2048, ~290 тыс. треуг.) для вещи в фокусе, иначе лёгкая
+    async function show(it, auto) {
+      const wrap = it.full || it.lod; if (!wrap) return null;
+      if (it.model !== wrap) { if (it.model) it.gar.remove(it.model); it.model = wrap; it.gar.add(wrap); }
+      clearGar(it, 'stub');
       fitClips(it);
       wrap.updateMatrixWorld(true);
       const fb = new T.Box3(), mw = new T.Matrix4().copy(wrap.matrixWorld).invert().premultiply(new T.Matrix4().compose(wrap.position, wrap.quaternion, wrap.scale));
@@ -338,12 +384,13 @@
       const fs = fb.getSize(new T.Vector3());
       const drop = setDrop(it, fb.max.y);
       await precompile();   // шейдер — сразу, без рывка на первом кадре
-      return { drop, top: +fb.max.y.toFixed(3), tris: Math.round(tris), auto, size: [fs.x, fs.y, fs.z].map((v) => +v.toFixed(3)) };
+      return { drop, top: +fb.max.y.toFixed(3), tris: wrap.userData.tris, auto: !!auto, full: wrap === it.full, size: [fs.x, fs.y, fs.z].map((v) => +v.toFixed(3)) };
     }
+    function dropFull(id) { const it = byId[id]; if (!it || !it.full) return false; const f = it.full; it.full = null; if (it.model === f) it.model = null; disposeTree(f); show(it); return true; }
     async function load(id, kind, src, meta) {
       const it = byId[id]; if (!it) throw new Error('нет вещи ' + id);
       const t0 = performance.now();
-      const r = kind === 'glb' ? await loadGLB(it, src, meta || it.meta) : await loadStub(it, src, meta || it.meta);
+      const r = kind === 'glb' || kind === 'full' ? await loadGLB(it, src, meta || it.meta, kind === 'full' ? 'full' : 'lod') : await loadStub(it, src, meta || it.meta);
       r.ms = Math.round(performance.now() - t0);
       return r;
     }
@@ -388,14 +435,60 @@
       }
     }
     function size(w, h) { w = Math.max(2, w | 0); h = Math.max(2, h | 0); if (w !== curW || h !== curH) { renderer.setSize(w, h, false); curW = w; curH = h; } }
+    /* Сглаживание. Общий контекст GV.gl на DPR ≥ 2 создан без antialias — тонкая хромированная труба и крючки шли «лесенкой».
+       Поэтому рейл рисуется в свой MSAA-буфер (WebGL2: 4 сэмпла, на больших буферах — 2; half-float, чтобы тон-маппинг
+       шёл после сглаживания), а на экран выводится одним квадом — с тон-маппингом Neutral и sRGB.
+       Контекст с antialias (свой рендерер прототипа на DPR 1) — рисуем напрямую. */
+    const AA = { mode: 'ctx', rt: null, v: new T.Vector2() };
+    try {
+      // свой буфер — всегда на WebGL2, даже если контекст со сглаживанием (DPR 1): сглаживание контекста идёт после
+      // нашего тон-маппинга только в своём буфере; плюс одинаковая картинка на любом DPR
+      if (renderer.capabilities.isWebGL2 && !o.noMSAA) AA.mode = 'msaa';
+    } catch (e) { /* noop */ }
+    const hf = renderer.extensions.has('EXT_color_buffer_float') || renderer.extensions.has('EXT_color_buffer_half_float');
+    /* Тон-маппинг — до сглаживания, в каждом сэмпле. Иначе блик хрома (HDR ≫ 1) усредняется с чёрным фоном,
+       после тон-маппинга край снова белый — и «лесенка» остаётся. three.js в буфер тон-маппинг не пишет, поэтому
+       в материалы рейла вшит тот же Neutral (формула three.js, экспозиция 1). */
+    const NEUTRAL = 'vec3 rkNeutral(vec3 c){float x=min(c.r,min(c.g,c.b));float o=x<0.08?x-6.25*x*x:0.04;c-=o;float p=max(c.r,max(c.g,c.b));' +
+      'if(p<0.76)return c;float d=0.24;float n=1.0-d*d/(p+d-0.76);c*=n/p;float g=1.0-1.0/(0.15*(p-n)+1.0);return mix(c,vec3(n),g);}\n';
+    function tmBake(mt) {
+      if (AA.mode !== 'msaa' || !mt || mt.toneMapped === false || mt.userData.rkTM) return;
+      mt.userData.rkTM = 1;
+      const pre = mt.onBeforeCompile, preKey = mt.customProgramCacheKey ? mt.customProgramCacheKey() : '';
+      mt.onBeforeCompile = (sh, r) => { if (pre) pre.call(mt, sh, r); sh.fragmentShader = NEUTRAL + sh.fragmentShader.replace('#include <tonemapping_fragment>', 'gl_FragColor.rgb = rkNeutral( gl_FragColor.rgb );'); };
+      mt.customProgramCacheKey = () => 'rkTM' + preKey;
+      mt.needsUpdate = true;
+    }
+    const tmTree = (o) => o.traverse((m) => { if (m.isMesh) (Array.isArray(m.material) ? m.material : [m.material]).forEach(tmBake); });
+    const outScene = new T.Scene(), outCam = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    const blit = new T.ShaderMaterial({
+      uniforms: { tMap: { value: null } }, depthTest: false, depthWrite: false, blending: T.NoBlending, toneMapped: false,
+      vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
+      fragmentShader: 'uniform sampler2D tMap; varying vec2 vUv; void main(){ gl_FragColor = texture2D(tMap, vUv);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}',
+    });
+    const quad = new T.Mesh(new T.PlaneGeometry(2, 2), blit); quad.frustumCulled = false; outScene.add(quad);
+    function msaa() {
+      const sz = renderer.getDrawingBufferSize(AA.v), w = sz.x | 0, h = sz.y | 0;
+      if (!AA.rt) AA.rt = new T.WebGLRenderTarget(w, h, { samples: w * h > 2.6e6 ? 2 : 4, type: hf ? T.HalfFloatType : T.UnsignedByteType, depthBuffer: true });
+      else if (AA.rt.width !== w || AA.rt.height !== h) { AA.rt.samples = w * h > 2.6e6 ? 2 : 4; AA.rt.setSize(w, h); }
+      const prev = renderer.getRenderTarget();
+      renderer.setRenderTarget(AA.rt); renderer.clear(true, true, false);
+      renderer.render(scene, cam);
+      renderer.setRenderTarget(prev);
+      blit.uniforms.tMap.value = AA.rt.texture;
+    }
     // общий рендерер (GV.gl) живёт без тон-маппинга — ставим свой на время кадра этой сцены и возвращаем
     const TMS = { tm: 0, te: 1 };
-    scene.onBeforeRender = (r) => { TMS.tm = r.toneMapping; TMS.te = r.toneMappingExposure; r.toneMapping = T.NeutralToneMapping; r.toneMappingExposure = 1.0; };
-    scene.onAfterRender = (r) => { r.toneMapping = TMS.tm; r.toneMappingExposure = TMS.te; };
+    const tmOn = (r) => { TMS.tm = r.toneMapping; TMS.te = r.toneMappingExposure; r.toneMapping = T.NeutralToneMapping; r.toneMappingExposure = 1.0; };
+    const tmOff = (r) => { r.toneMapping = TMS.tm; r.toneMappingExposure = TMS.te; };
+    const shown = AA.mode === 'msaa' ? outScene : scene, shownCam = AA.mode === 'msaa' ? outCam : cam;
+    if (AA.mode !== 'msaa') { shown.onBeforeRender = tmOn; shown.onAfterRender = tmOff; }
+    else Object.values(MAT).forEach(tmBake);
     function render(p, w, h) {
       if (!rail) return false;
       size(w, h); apply(p, w / h);
-      renderer.render(scene, cam);
+      if (AA.mode === 'msaa') msaa();
+      renderer.render(shown, shownCam);
       frames++;
       return true;
     }
@@ -403,15 +496,17 @@
     async function msg(m) {
       if (m.t === 'setup') { await setup(m.s); return { ok: 1 }; }
       if (m.t === 'load') return load(m.id, m.kind, m.src, m.meta);
+      if (m.t === 'drop') return dropFull(m.id);
       if (m.t === 'info') return info();
       return null;
     }
     function info() {
       const r = renderer.info.render;
       return { frames, calls: r.calls, tris: r.triangles, programs: (renderer.info.programs || []).length, geos: renderer.info.memory.geometries, texs: renderer.info.memory.textures, gpu,
-        loaded: items.map((it) => (it.model ? 'glb' : it.stub ? 'stub' : '-')) };
+        loaded: items.map((it) => (it.full ? 'full' : it.lod ? 'glb' : it.stub ? 'stub' : '-')), aa: AA.mode, rt: AA.rt ? [AA.rt.width, AA.rt.height, AA.rt.samples, AA.rt.texture.type] : null, maxSamples: renderer.getContext().getParameter(renderer.getContext().MAX_SAMPLES || 0x8D57), buf: [curW, curH] };
     }
-    return { scene, cam, apply: (p, a) => { if (rail) apply(p, a); }, render, setup, load, msg, info, gpu, canvas: renderer.domElement, frames: () => frames, renderer, LIGHTS: LI };
+    // для общего движка (ENGINE.render рисует s.scene/s.cam после apply): в режиме MSAA это квад вывода
+    return { scene: shown, cam: shownCam, apply: (p, a) => { if (rail) { apply(p, a); if (AA.mode === 'msaa') msaa(); } }, render, setup, load, msg, info, gpu, canvas: renderer.domElement, frames: () => frames, renderer, LIGHTS: LI };
   }
 
   G.GV_RACK_LOAD = RACK_LOAD;

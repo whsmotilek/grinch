@@ -17,20 +17,21 @@ if(q.get("shot")==="1")h.dataset.shot="1";
 if(q.get("skip")==="1")h.dataset.skip="1";
 if(q.get("clean")==="1")h.dataset.clean="1";
 h.classList.add("js");
-/* v4 (SPEC_V4 «Режимы v4»): heroimg — mascot|scene|look (было model|mascot|crop), mascot — grinchin|quiet|none (было kapushon|grinchin|uhmyl|none;
+/* v4.1: cards — photo (фото «на манекене», по умолчанию во всех пресетах) | a b c d (рисунки v3, запасные). Ось ведёт V2.
+   v4 (SPEC_V4 «Режимы v4»): heroimg — mascot|scene|look (было model|mascot|crop), mascot — grinchin|quiet|none (было kapushon|grinchin|uhmyl|none;
    quiet = только подвал, как читает mascot.js V3), mzfx — живость маскота calm|max (max = «анимации везде», режим 2);
    новые оси: ghost (V2: ghost-фото на карточке), rack (S1: дроп на вешалках), stickers (стикеры: on|max|off).
    Старые значения из URL/localStorage не проходят проверку ok() и сбрасываются к пресету; ключ хранилища сменён на :v4. */
-var A={g:["lime","tape","black"],hero:["asphalt","static"],heroimg:["mascot","scene","look"],cards:["a","b","c","d"],ghost:["on","off"],
+var A={g:["lime","tape","black"],hero:["asphalt","static"],heroimg:["mascot","scene","look"],cards:["photo","a","b","c","d"],ghost:["on","off"],
 size:["vector","hand"],rack:["on","drag","chain","off"],brand:["sign","story"],roll:["page","quiet","off"],tape:["lime","black"],marquee:["off","on"],
 stickers:["on","max","off"],mascot:["grinchin","quiet","none"],mzfx:["calm","max"],cart:["count","menu"]};
 var K=Object.keys(A);
 function pr(s){var r={},v=s.trim().split(/\s+/);K.forEach(function(k,i){r[k]=v[i]});return r}
 /*            g     hero    heroimg cards ghost size  rack brand roll  tape  marquee stickers mascot   mzfx  cart */
-var P={1:pr("tape  asphalt mascot  d     on    hand   on  sign  page  lime  off     on       grinchin calm  count"),
-2:pr("tape  asphalt mascot  d     on    hand   on  sign  page  lime  on      max      grinchin max   count"),
-3:pr("lime  static  scene   a     on    vector on  story quiet black off     off      quiet    calm  menu"),
-4:pr("black asphalt look    b     on    hand   on  story page  black on      on       grinchin calm  count")};
+var P={1:pr("tape  asphalt mascot  photo on    hand   on  sign  page  lime  off     on       grinchin calm  count"),
+2:pr("tape  asphalt mascot  photo on    hand   on  sign  page  lime  on      max      grinchin max   count"),
+3:pr("lime  static  scene   photo on    vector on  story quiet black off     off      quiet    calm  menu"),
+4:pr("black asphalt look    photo on    hand   on  story page  black on      on       grinchin calm  count")};
 var st={},m=1,o={},LIVE={};
 try{st=JSON.parse(localStorage.getItem(KEY))||{}}catch(e){}
 var um=q.get("m");
@@ -136,7 +137,7 @@ pl("{{asset:img/v4/hero/scene-1440.avif}} 1440w, {{asset:img/v4/hero/scene-2560.
   <div class="wrap">
     <div class="drop-head">
       <h2 id="drop-title" class="drop-title">Дроп&nbsp;01<sup aria-label="восемь вещей">08</sup></h2>
-      <p class="drop-note">предзаказ · отправка с&nbsp;01.12 · <span class="dn-hover">наведи&nbsp;— фото, 3D в&nbsp;карточке</span><span class="dn-touch">нажми и&nbsp;держи&nbsp;— фото, 3D в&nbsp;карточке</span></p>
+      <p class="drop-note">предзаказ · отправка с&nbsp;01.12 · <span class="dn-hover">наведи&nbsp;— спина, 3D в&nbsp;карточке</span><span class="dn-touch">свайп по&nbsp;фото&nbsp;— спина, 3D в&nbsp;карточке</span></p>
     </div>
     <div class="grid" data-grid></div>
   </div>
@@ -173,6 +174,10 @@ pl("{{asset:img/v4/hero/scene-1440.avif}} 1440w, {{asset:img/v4/hero/scene-2560.
         <a href="#about" data-nav="about" class="mi" style="--i:2"><span class="mi-t">О&nbsp;бренде</span></a>
         <button type="button" data-open="sizes" class="mi" style="--i:3"><span class="mi-t">Размеры</span></button>
         <button type="button" data-open="cart" class="mi mi--cart" style="--i:4"><span class="mi-t">Корзина <span class="mi-n">(<span data-cart-count>0</span>)</span></span></button>
+        <!-- V1 v4.1: маскот стоит на линии и выглядывает из-за правого края экрана (поза menu обрезана кромкой справа). Рисует V3 (GV.mascot.mount);
+             <img> — запасной вариант. Телефон/планшет: стоит на нижней линии пунктов (последний разделитель), справа от коротких слов;
+             desktop: стоит на верхней линии подвала меню у правого края. Скрыт при data-mascot="quiet|none". -->
+        <div class="menu-mascot" data-mascot-slot="menu" data-mascot-pose="menu" aria-hidden="true"><img class="menu-mascot-fb" src="{{asset:img/v4/hero/menu-600.webp}}" alt="" width="333" height="600" loading="lazy" decoding="async"></div>
       </nav>
       <div class="menu-side" style="--i:5">
         <a href="#next" data-nav="next" class="link menu-sub">Разобрали&nbsp;— вернём: подписка</a>
@@ -195,10 +200,6 @@ pl("{{asset:img/v4/hero/scene-1440.avif}} 1440w, {{asset:img/v4/hero/scene-2560.
         <p class="t-mono">ДРОП 01 · ПРЕДЗАКАЗ · ОТПРАВКА С&nbsp;01.12</p>
         <p class="menu-slogan" lang="en">IGNORE THE SIGNS</p>
       </div>
-      <!-- V1 v4: маскот машет из-за правого края (поза menu обрезана кромкой справа). Рисует V3 (GV.mascot.mount — коробка = ширина слота × пропорция позы);
-           <img> внутри — запасной вариант, если mascot.js не смонтировал. Размеры слота: desktop 120 px у правого края над рваной кромкой листа,
-           телефон 96 px / планшет 120 px — у правого края рядом с первыми пунктами (виден сразу). Скрыт при data-mascot="quiet|none". -->
-      <div class="menu-mascot" data-mascot-slot="menu" data-mascot-pose="menu" aria-hidden="true"><img class="menu-mascot-fb" src="{{asset:img/v4/hero/menu-600.webp}}" alt="" width="333" height="600" loading="lazy" decoding="async"></div>
     </div>
     <svg class="menu-edge" viewBox="0 0 1200 18" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M0 0H1200V6L1188 11 1171 5 1157 13 1139 7 1124 15 1103 6 1090 10 1071 4 1058 12 1036 8 1021 16 1004 6 989 11 968 5 951 13 936 7 917 14 902 5 884 10 866 6 851 15 830 7 816 12 797 4 780 13 763 8 744 15 729 6 711 11 692 5 676 14 657 8 641 12 622 4 607 13 588 7 572 16 553 6 538 10 519 5 503 14 484 8 466 12 451 4 433 13 414 7 398 15 379 6 362 11 345 5 328 14 309 8 293 12 274 4 258 13 241 7 222 16 207 6 190 11 171 5 156 13 137 8 121 14 102 5 87 10 68 4 51 13 33 7 17 12 0 6Z"/></svg>
   </div>

@@ -36,7 +36,10 @@
   if (GV.mode) { GV.mode.live("size"); GV.mode.live("cart"); GV.mode.live("ghost"); }
   // ось v4 ghost = on | off: ghost-фото на обложке карточки (живая — только CSS + ленивая подгрузка)
   function ghostOn() { return root.dataset.ghost !== "off"; }
-  function cardStyle() { return (GV.mode && GV.mode.get("cards")) || root.dataset.cards || "a"; }
+  function cardStyle() { return (GV.mode && GV.mode.get("cards")) || root.dataset.cards || "photo"; }
+  /* v4.1: ось cards = photo (по умолчанию) — обложка карточки сразу фото «на манекене» (единый свет/фон/масштаб,
+     v4/build/V2/_tools/normalize.py), наведение/свайп — спина; a|b|c|d — рисунки v3 (запас), наведение — фото спереди */
+  function photoMode() { return cardStyle() === "photo"; }
 
   /* ---------- утилиты ---------- */
   var nf = new Intl.NumberFormat("ru-RU");
@@ -251,7 +254,7 @@
   function cardHTML(p) {
     var st = statusOf(p), all = anyStock(p);
     return '<article class="card" data-id="' + p.id + '" data-state="' + (all ? p.state : "soldout") + '">' +
-      '<div class="card-media">' + sketchHTML(p) + ghostShell(p) + "</div>" +
+      '<div class="card-media">' + (photoMode() && PH[p.id] ? coverHTML(p) : sketchHTML(p)) + ghostShell(p) + "</div>" +
       (all && canHover ? quickHTML(p) : "") +
       '<div class="card-body">' +
       '<p class="card-num">' + num(p) + "</p>" +
@@ -264,6 +267,9 @@
   }
   /* ghost-слой: div (не picture — GV.art.render чистит прямых детей-<picture>), фото вставляется при «гидрации» —
      после загрузки страницы рядом с экраном или сразу при наведении/касании: первые обложки-рисунки не делят канал с фото */
+  function coverHTML(p) {
+    return '<div class="card-photo">' + pictureHTML(PH[p.id].front, CARD_SIZES, p.name + " — фото спереди", "", true) + "</div>";
+  }
   function ghostShell(p) {
     if (!PH[p.id]) return "";
     return '<div class="card-ghost" aria-hidden="true">' + (p.d3 ? '<span class="card-3d" data-card-3d title="Покрутить в 3D">3D</span>' : "") + "</div>" +
@@ -275,7 +281,8 @@
     var g = card && $(".card-ghost", card), p = card && byId[card.dataset.id];
     if (!g || g.dataset.h || !p || !PH[p.id] || !ghostOn()) return;
     g.dataset.h = "1";
-    g.insertAdjacentHTML("afterbegin", pictureHTML(PH[p.id].front, CARD_SIZES, "", "cg-pic", false));
+    var view = photoMode() ? (PH[p.id].back || PH[p.id].side) : PH[p.id].front;   // фото-режим: на наведение — спина
+    g.insertAdjacentHTML("afterbegin", pictureHTML(view, CARD_SIZES, "", "cg-pic", false));
     var img = $("img", g);
     var ok = function () {
       var dec = img.decode ? img.decode() : null;
@@ -301,7 +308,7 @@
   // обложка карточки: рисунок K3, если модуль подключён; иначе (или при ошибке) — эскиз
   function paintArt(card) {
     var p = byId[card.dataset.id], media = $(".card-media", card), A = GV.art;
-    if (!p || !media || !A || typeof A.render !== "function") return;
+    if (!p || !media || !A || typeof A.render !== "function" || (photoMode() && PH[p.id])) return;
     // эскизы-фолбэк убираем точечно: ghost-слой и точки (v4) остаются
     var drop = function () { $$(":scope > img.card-img, :scope > .art", media).forEach(function (n) { n.remove(); }); };
     try {
@@ -315,7 +322,12 @@
     var artPass = function () { if (GV.art) $$(".card", grid).forEach(paintArt); };
     if (d.readyState === "loading") d.addEventListener("DOMContentLoaded", artPass, { once: true }); else setTimeout(artPass, 0);
     ghostSchedule();
-    d.addEventListener("grinchin:mode", function (e) { if (e.detail && e.detail.axis === "ghost" && ghostOn()) $$(".card", grid).forEach(hydrate); });
+    d.addEventListener("grinchin:mode", function (e) {
+      if (!e.detail) return;
+      if (e.detail.axis === "ghost" && ghostOn()) $$(".card", grid).forEach(hydrate);
+      // фото ↔ рисунок: сетку пересобираем (обложка и слой наведения меняются местами)
+      if (e.detail.axis === "cards") { grid.innerHTML = P.map(cardHTML).join(""); artPass(); ghostSchedule(); }
+    });
   }
   /* наведение: фото грузится сразу, проявляется, когда декодировано (CSS: :hover + .is-ready) */
   if (grid && canHover) grid.addEventListener("pointerover", function (e) {
@@ -440,13 +452,15 @@
   function galleryOf(p) {
     var g = [], art = null;
     if (GV.art && typeof GV.art.gallery === "function") { try { art = (GV.art.gallery(p, cardStyle()) || [])[0]; } catch (e) { art = null; } }
-    g.push(art && art.html ? { type: "svg", html: art.html, alt: art.alt, tag: "рисунок" } : { type: "img", src: p.img[0], alt: p.name + " — эскиз", tag: "эскиз" });
-    var ph = PH[p.id];
+    var drawn = art && art.html ? { type: "svg", html: art.html, alt: art.alt, tag: "рисунок" } : { type: "img", src: p.img[0], alt: p.name + " — эскиз", tag: "эскиз" };
+    var ph = PH[p.id], photoFirst = photoMode() && ph;
+    if (!photoFirst) g.push(drawn);
     if (ph) [["front", "перед"], ["back", "спина"], ["side", "бок"]].forEach(function (v) {
       if (ph[v[0]]) g.push({ type: "photo", set: ph[v[0]], alt: p.name + " — " + v[1] + ", фото на невидимом манекене", tag: v[1] });
     });
     var lk = lookOf(p);
     if (lk && LOOKP[lk.n]) g.push({ type: "photo", set: LOOKP[lk.n], alt: lk.alt || (p.name + " — на модели"), tag: "образ ’" + lk.n, look: true });
+    if (photoFirst) g.push(drawn);          // фото-режим: рисунок — последним кадром (сохранён, но не главный)
     var seen = {};
     (p.photos || []).forEach(function (src, i) { if (!seen[src]) { seen[src] = 1; g.push({ type: "img", src: src, alt: p.name + " — фото " + (i + 1) }); } });
     return g;
@@ -471,10 +485,22 @@
       "</div>" +
       (has3d ? '<div class="ps-3d" id="ps-pane-3d" role="tabpanel" aria-labelledby="ps-tab-3d" hidden>' +
         '<div class="ps-3d-mount" data-rack-product="' + p.id + '"></div>' +
-        '<div class="ps-3d-ph" data-ps-3d-ph><div class="ps-3d-art">' + (gal[0].type === "svg" ? gal[0].html : "") + "</div>" +
-        '<p class="ps-3d-msg" data-ps-3d-msg>Вешаем на вешалку…</p></div>' +
-        '<p class="ps-3d-hint t-mono" aria-hidden="true">тяни, чтобы покрутить</p></div>' : "") +
+        '<div class="ps-3d-ph" data-ps-3d-ph><div class="ps-3d-art">' + ((gal.filter(function (s) { return s.type === "svg"; })[0] || {}).html || "") + "</div>" +
+        '<p class="ps-3d-msg" data-ps-3d-msg>Вешаем на вешалку…</p></div></div>' : "") +   // подсказку «крути» даёт сам S1
+      (n > 1 ? thumbsHTML(gal) : "") +
       "</div>";
+  }
+  /* v4.1: миниатюры (desktop) — вместо столбика из 5 кадров по 730 px: одна сцена + лента миниатюр */
+  function thumbsHTML(gal) {
+    return '<div class="ps-thumbs" role="group" aria-label="Кадры">' + gal.map(function (s, i) {
+      var img;
+      if (s.type === "photo") img = pictureHTML(s.set, "72px", "", "", true, 800, 1000);
+      else {
+        var m = /srcset="([^"]+)"/.exec(s.html || ""), src = m ? m[1].split(/,\s*/)[0].replace(/\s+\d+w$/, "") : (s.src || "");
+        img = '<img src="' + src + '" alt="" width="800" height="1000" loading="lazy" decoding="async">';
+      }
+      return '<button type="button" class="ps-th' + (i ? "" : " is-on") + (s.type === "photo" ? "" : " ps-th--art") + (s.look ? " ps-th--look" : "") + '" data-ps-th="' + i + '" aria-label="Кадр ' + (i + 1) + (s.tag ? ": " + esc(s.tag) : "") + '"' + (i ? "" : ' aria-current="true"') + ">" + img + "</button>";
+    }).join("") + "</div>";
   }
   function sizeTagHTML(p) {
     var sizes = sizesOf(p);
@@ -534,7 +560,7 @@
     var panel = $(".ps-panel");
     if (panel) panel.scrollTop = 0;
     var track = $(".ps-track", sheetBody), raf = 0, lastI = 0;
-    var dots = $$(".ps-dots i", sheetBody), numEl = $("[data-ps-i]", sheetBody);
+    var dots = $$(".ps-dots i", sheetBody), numEl = $("[data-ps-i]", sheetBody), ths = $$("[data-ps-th]", sheetBody);
     track.addEventListener("scroll", function () {
       if (raf) return;
       raf = requestAnimationFrame(function () {
@@ -543,6 +569,7 @@
         if (i === lastI) return;
         if (dots[lastI]) dots[lastI].classList.remove("is-on");
         if (dots[i]) dots[i].classList.add("is-on");
+        ths.forEach(function (b, k) { b.classList.toggle("is-on", k === i); if (k === i) b.setAttribute("aria-current", "true"); else b.removeAttribute("aria-current"); });
         lastI = i;
         if (numEl) numEl.textContent = i + 1;
         unzoom();
@@ -697,6 +724,11 @@
     sheetBody.addEventListener("click", function (e) {
       var tb = e.target.closest("[data-ps-tab]");
       if (tb) setTab(tb.dataset.psTab);
+      var th = e.target.closest("[data-ps-th]");
+      if (th) {
+        var tr = $(".ps-track", sheetBody); unzoom();
+        if (tr) tr.scrollTo({ left: Number(th.dataset.psTh) * tr.clientWidth, behavior: instant() ? "auto" : "smooth" });
+      }
     });
     sheetBody.addEventListener("keydown", function (e) {
       var tb = e.target.closest && e.target.closest("[data-ps-tab]");
@@ -811,7 +843,7 @@
         var p = byId[i.id], k = keyOf(i), lim = limitOf(i.id, i.size);
         return '<li class="cart-item" data-key="' + k + '">' +
           '<button type="button" class="ci-thumb" data-open-product="' + p.id + '" aria-label="Открыть: ' + esc(p.name) + '">' + thumbHTML(p) + "</button>" +
-          '<div class="ci-info"><p class="ci-name">' + esc(p.name) + '</p><p class="t-mono ci-meta"><span lang="en">size:</span> ' + i.size + "<br>предзаказ · с " + DROP.shipFrom + "</p></div>" +
+          '<div class="ci-info"><p class="ci-name">' + esc(p.name) + '</p><p class="t-mono ci-meta">размер: ' + i.size + "<br>предзаказ · с " + DROP.shipFrom + "</p></div>" +
           '<p class="ci-price">' + money(p.price * i.qty) + "</p>" +
           '<div class="ci-row"><div class="qty" role="group" aria-label="Количество: ' + esc(p.name) + '">' +
           '<button type="button" class="cell" data-qty="-1" data-key="' + k + '" aria-label="Меньше"' + (i.qty <= 1 ? " disabled" : "") + ">−</button>" +

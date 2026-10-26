@@ -56,7 +56,7 @@
         g = $('.hx-g', hero), media = $('.hx-media-wrap', hero), vh = innerHeight, last = -1;
     function apply(y) {
       var p = clamp(0, 1, y / (vh * .55)); if (p === last && y > vh) return; last = p;
-      title.style.transform = 'translateY(' + (30 * p).toFixed(3) + 'vh) rotateX(' + (74 * p).toFixed(2) + 'deg) scaleY(' + (1 + 1.9 * p).toFixed(4) + ')';
+      title.style.transform = 'translate(25%,50%) translateY(' + (30 * p).toFixed(3) + 'vh) rotateX(' + (74 * p).toFixed(2) + 'deg) scaleY(' + (1 + 1.9 * p).toFixed(4) + ') translate(-25%,-50%) scale(.5)';   // заголовок набран ×2 (motion.css)
       var o = (1 - clamp(0, 1, y / (vh * .09))).toFixed(3); fade.forEach(function (e) { e.style.opacity = o; });
       if (lane) lane.style.opacity = clamp(0, 1, (y - vh * .08) / (vh * .28)).toFixed(3);
       if (dash) dash.style.transform = 'translateY(' + (50 * clamp(0, 1, y / vh)).toFixed(2) + '%)';
@@ -83,6 +83,9 @@
       for (var i = units.length; i < need; i++) track.appendChild(unit.cloneNode(true));
       track.style.setProperty('--mq-shift', (-uw).toFixed(2) + 'px');
       track.style.setProperty('--mq-dur', (uw / MQ_SPEED).toFixed(2) + 's');
+      // v4.1: старт со сдвигом — в первом кадре звено начинается ровно у поля сайта (было «ORE THE SIGNS» с обрезанным словом у края)
+      var wr = $('.wrap'), g = wr ? parseFloat(getComputedStyle(wr).paddingLeft) || 16 : 16;
+      track.style.animationDelay = (-((uw - g) % uw) / MQ_SPEED).toFixed(3) + 's';
     }
     fit();
     if (D.fonts && D.fonts.ready) D.fonts.ready.then(fit);
@@ -161,7 +164,7 @@
         var cx = bb.x + bb.width / 2, cy = bb.y + sh * (j + .5), rot = (r() - .5) * 10;
         var el = D.createElement('i'); el.className = 'bs-st'; el.style.background = tones[(i + j) % 3]; box.appendChild(el);
         strips.push({ el: el, bb: bb, x: bb.x - 30, y: bb.y + j * sh - 3, w: bb.width + 60, h: sh + 6, cx: cx, cy: cy, rot: rot,
-          dx: (r() > .5 ? 1 : -1) * (900 + r() * 900), dy: (r() - .5) * 700, da: (r() - .5) * 90, k: strips.length });
+          dx: (r() > .5 ? 1 : -1) * (900 + r() * 900), dy: (r() - .5) * 700, da: (r() - .5) * 90, k: strips.length, d: r() * .05 });
       }
     });
     var caps = $$('.bs-caps li', host), L = null, last = {};
@@ -229,7 +232,8 @@
       // 4) буквы собираются из влетающих полос (координаты лого × масштаб → px)
       var f = seg(p, .86, .9), ls = L.ls;
       for (var i = 0; i < strips.length; i++) {
-        var Q = strips[i], t = E.o(seg(p, .55 + Q.k * .0045, .55 + Q.k * .0045 + .12));
+        // v4.1: полосы влетают вперемешку по всем буквам сразу (было — слева направо: в середине сборки «GRINCH» читалось как «GRINC4»)
+        var Q = strips[i], t = E.o(seg(p, .55 + Q.d, .55 + Q.d + .1));
         css(Q.el, 'transform', 'translate(' + px(Q.dx * (1 - t) * ls) + ',' + px(Q.dy * (1 - t) * ls) + ') rotate(' + (Q.rot + Q.da * (1 - t)).toFixed(2) + 'deg)');
         // до старта (t = 0) полоса лежит за пределами маски буквы (сдвиг ≥ 900 ед. при ширине буквы < 300) — невидима и так;
         // держим её «включённой» с начала, чтобы слои и маски были готовы заранее, а не в кадре, когда полосы пошли
@@ -243,7 +247,7 @@
       // .002 вместо 0: невидимо (меньше полутона), но слои растрятся заранее, а не в первом кадре финала
       var fo = Math.max(.002, f).toFixed(3); css(svgL, 'opacity', fo); css(svgF, 'opacity', fo); css(svgP, 'opacity', (1 - f).toFixed(3));
       // подписи
-      var ci = p < .3 ? 0 : p < .64 ? 1 : 2;
+      var ci = p < .3 ? 0 : p < .7 ? 1 : 2;   // «Ignore the signs.» — когда буквы уже собраны
       caps.forEach(function (c, j) { c.classList.toggle('is-on', j === ci); });
     }
     return { layout: layout, apply: apply, measure: measure };

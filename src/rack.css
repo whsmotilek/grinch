@@ -3,7 +3,9 @@
    интерфейс модуля чёрно-белый. Анимации — только transform/opacity. */
 .rk {
   --rk-h: min(100svh, 920px);
-  --rk-pad: 32px;
+  /* левый/правый край — как у .wrap сайта (поле var(--gutter), контейнер до --maxw по центру) */
+  --rk-pad: max(var(--gutter, 32px), calc((100vw - var(--maxw, 1680px) - var(--gutter, 32px) - var(--gutter-r, 32px)) / 2 + var(--gutter, 32px)));
+  --rk-pad-r: max(var(--gutter-r, 32px), calc((100vw - var(--maxw, 1680px) - var(--gutter, 32px) - var(--gutter-r, 32px)) / 2 + var(--gutter-r, 32px)));
   --rk-text: var(--text, #fff);
   --rk-text-2: var(--text-2, #b7b7b2);
   --rk-muted: var(--c-muted, #8a8a8a);
@@ -33,20 +35,26 @@
 .rk[data-gl="on"] .rk-cv { opacity: 1; }
 
 /* без WebGL — фото вещи (то же, что заглушка в 3D) */
-/* без WebGL (reduced-motion, слабое устройство, ?shot, ?nogl): ряд фото «призрачного манекена» на CSS-рейке.
-   Листание то же — ряд едет так, чтобы вещь в фокусе стояла по центру. */
-.rk-fb { position: absolute; inset: 9% 0 20%; display: none; pointer-events: none; overflow: hidden; --rk-fb-w: min(30vw, 300px); }
-/* рейка — сплошными полосами: градиент со скруглением и прозрачностью на программном растре стоил ~200 мс кадра */
-.rk-fb::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 6px; background: #8f8f8f; border-top: 2px solid #d6d6d6; border-bottom: 2px solid #4a4a4a; }
-.rk-fb-row { position: absolute; inset: 14px 0 0; will-change: transform; display: flex; align-items: flex-start; gap: calc(var(--rk-fb-w) * .12);
-  transform: translateX(calc(50% - var(--rk-fb-w) * (.5 + 1.12 * var(--rk-fb-i, 0)))); transition: transform .45s var(--ease-out, cubic-bezier(.16,1,.3,1)); width: 100%; }
-.rk-fb img { flex: none; width: var(--rk-fb-w); height: 100%; object-fit: contain; object-position: 50% 0; opacity: .38; transform: scale(.8); transform-origin: 50% 0;
-  transition: opacity .3s ease, transform .45s var(--ease-out, cubic-bezier(.16,1,.3,1)); will-change: transform, opacity; }
-.rk-fb img:not([src]) { visibility: hidden; }
-.rk-fb img.is-on { opacity: 1; transform: none; }
+/* Без WebGL (программный GL, слабое устройство, reduced-motion, ?shot, ?nogl): тот же рейл, но CSS —
+   сплошная труба, на ней вешалки (SVG) с бирками и фото «призрачного манекена» с альфой. Высота вещей — от высоты сцены
+   (container query), ряд едет так, чтобы вещь в фокусе стояла по центру. Без градиентов, фильтров и скруглений
+   на больших площадях: на программном растре они стоили сотни мс кадра. */
+.rk-fb { position: absolute; inset: 11% 0 21%; display: none; pointer-events: none; overflow: hidden; container-type: size; }
+.rk-fb-rail { position: absolute; left: 0; right: 0; top: 0; height: 12px; background: #a3a3a3; border-top: 3px solid #e4e4e4; border-bottom: 3px solid #3f3f3f; }
+.rk-fb-row { position: absolute; left: 0; top: 0; bottom: 0; display: flex; align-items: flex-start; gap: 3.5cqw; padding: 0 50cqw;
+  transform: translateX(var(--rk-fb-x, 0px)); transition: transform .5s var(--ease-out, cubic-bezier(.16,1,.3,1)); will-change: transform; }
+.rk-fb-it { position: relative; flex: none; margin: 0; width: min(calc((100cqh - 64px) * var(--rk-a, .6)), 74cqw); min-width: 90px; height: 100cqh;
+  opacity: .5; transform: scale(.84); transform-origin: 50% 6px; transition: opacity .3s ease, transform .5s var(--ease-out, cubic-bezier(.16,1,.3,1)); will-change: transform, opacity; }
+.rk-fb-it.is-on { opacity: 1; transform: none; }
+.rk-fb-hg { position: absolute; left: 50%; top: -8px; width: 92%; height: 70px; transform: translateX(-50%); overflow: visible; }
+.rk-fb-tag { position: absolute; left: calc(50% + 8px); top: 22px; padding: 3px 7px 2px; font: 700 11px/1 var(--font-display, Unbounded, sans-serif); color: #e6e6e2; background: #262626; border: 2px solid #000; }
+.rk-fb-it.is-on .rk-fb-tag { background: var(--c-green, #8ED308); color: #000; }
+.rk-fb-it img { position: absolute; left: 0; right: 0; top: 64px; width: 100%; height: calc(100% - 64px); object-fit: contain; object-position: 50% 0; }
+.rk-fb-it img:not([src]) { visibility: hidden; }
 .rk[data-gl="off"] .rk-fb { display: block; }
-.rk[data-ui="bare"] .rk-fb { inset: 4% 0 8%; --rk-fb-w: 100%; }
-.rk[data-ui="bare"] .rk-fb::before { display: none; }
+.rk[data-ui="bare"] .rk-fb { inset: 6% 0 8%; }
+.rk[data-ui="bare"] .rk-fb-rail { display: none; }
+@media (max-width: 767px) { .rk-fb { inset: 15% 0 3%; } .rk-fb-tag { font-size: 10px; } }
 
 .rk-hint {
   position: absolute; left: 50%; bottom: 112px; margin: 0; transform: translateX(-50%);
@@ -57,7 +65,7 @@
 .rk[data-concept="chain"] .rk-hint-chain { display: inline; }
 .rk.is-used .rk-hint, .rk[data-gl="off"] .rk-hint { opacity: 0; }
 
-.rk-top { position: absolute; top: 20px; left: var(--rk-pad); right: var(--rk-pad); display: flex; justify-content: space-between; align-items: center; gap: 16px; pointer-events: none; z-index: 2; }
+.rk-top { position: absolute; top: 20px; left: var(--rk-pad); right: var(--rk-pad-r); display: flex; justify-content: space-between; align-items: center; gap: 16px; pointer-events: none; z-index: 2; }
 .rk-kicker { margin: 0; font: 500 11px/1.2 var(--font-mono, "Martian Mono", monospace); letter-spacing: .14em; text-transform: uppercase; color: var(--rk-text-2); }
 .rk-switch { display: inline-flex; border: 1px solid #3a3a3a; border-radius: 999px; padding: 3px; pointer-events: auto; background: rgba(5,5,5,.6); }
 .rk-switch button {
@@ -90,7 +98,7 @@
 .rk-add:disabled { background: transparent; color: var(--rk-muted); border: 1px solid #3a3a3a; cursor: default; }
 
 /* индекс: 8 «ячеек вешалки» — видно, где ты и сколько всего */
-.rk-index { position: absolute; left: var(--rk-pad); right: var(--rk-pad); bottom: 22px; display: grid; grid-template-columns: repeat(var(--rk-n, 8), 1fr); gap: 4px; z-index: 2; }
+.rk-index { position: absolute; left: var(--rk-pad); right: var(--rk-pad-r); bottom: 22px; display: grid; grid-template-columns: repeat(var(--rk-n, 8), 1fr); gap: 4px; z-index: 2; }
 .rk-index button {
   appearance: none; background: transparent; border: 0; border-top: 2px solid #2b2b2b; color: var(--rk-muted); cursor: pointer;
   display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 10px 2px 4px; min-height: 52px; text-align: left; min-width: 0;
@@ -119,7 +127,7 @@
 
 /* ── телефон: сцена сверху, подпись и индекс — под ней (ничего не перекрывает вещь) ── */
 @media (max-width: 767px) {
-  .rk { --rk-pad: 16px; --rk-h: auto; }
+  .rk { --rk-pad: var(--gutter, 16px); --rk-pad-r: var(--gutter-r, 16px); --rk-h: auto; }
   .rk-pin { display: flex; flex-direction: column; }
   .rk[data-drive="drag"] .rk-pin { height: auto; }
   .rk-stage { position: relative; inset: auto; height: min(62svh, 560px); flex: none; }
@@ -141,7 +149,7 @@
   .rk-toast { top: 60px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .rk-fb-row, .rk-fb img,
+  .rk-fb-row, .rk-fb-it,
   .rk-cv, .rk-info > *, .rk-toast, .rk-hint { transition: none; }
 }
 

@@ -183,6 +183,9 @@ html[data-cart="count"][data-bag="full"] .hd-cart{display:grid;animation:gv-slap
 
 /* ---------- ДРОП 01: бумажный лист ---------- */
 #drop{position:relative;background:var(--c-paper);color:var(--c-black);padding:var(--sec-1) 0 var(--sec-2);--focus:var(--c-black)}
+/* v4.1 (V1): стык hero → каталог — бумага каталога рваным краем заходит на чёрное (как лист меню), а не обрывается по линейке */
+#drop::before{content:"";position:absolute;left:0;right:0;top:-15px;height:16px;background:var(--c-paper);pointer-events:none;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20600%2018%22%20preserveAspectRatio%3D%22none%22%3E%3Cpath%20d%3D%22M0%2018V6L0%2012%2012%205%2032%202%2043%203%2054%2012%2073%202%2091%208%20101%204%20117%205%20128%208%20139%203%20155%202%20174%204%20187%2011%20197%2011%20216%205%20226%208%20236%203%20248%2010%20264%206%20282%204%20301%2010%20319%206%20330%2011%20349%208%20364%204%20382%204%20401%202%20420%208%20437%203%20453%2012%20470%2011%20487%2012%20501%208%20523%206%20544%208%20555%2011%20569%203%20586%2012%20600%206V18Z%22/%3E%3C/svg%3E") 0 0/600px 100% repeat-x;mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20600%2018%22%20preserveAspectRatio%3D%22none%22%3E%3Cpath%20d%3D%22M0%2018V6L0%2012%2012%205%2032%202%2043%203%2054%2012%2073%202%2091%208%20101%204%20117%205%20128%208%20139%203%20155%202%20174%204%20187%2011%20197%2011%20216%205%20226%208%20236%203%20248%2010%20264%206%20282%204%20301%2010%20319%206%20330%2011%20349%208%20364%204%20382%204%20401%202%20420%208%20437%203%20453%2012%20470%2011%20487%2012%20501%208%20523%206%20544%208%20555%2011%20569%203%20586%2012%20600%206V18Z%22/%3E%3C/svg%3E") 0 0/600px 100% repeat-x}
 .drop-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;margin-bottom:32px}
 @media (min-width:1100px){.drop-head{margin-bottom:48px}}
 .drop-title{font:var(--t-d1);letter-spacing:-.05em;text-transform:uppercase}
@@ -351,20 +354,24 @@ html:not([data-mascot="quiet"]):not([data-mascot="none"]) .ov--menu .mi-o path{s
 .menu-mode-k{margin-left:auto;font:var(--t-mono);letter-spacing:.02em;color:var(--text-2);transition:color .2s}
 .menu-mode:hover .menu-mode-k{color:var(--c-white)}
 html[data-clean] .menu-mode{display:none}
-/* маскот меню (V1 v4): выглядывает из-за правого края и машет. Слот задаёт ширину, высоту даёт поза (333×600) */
-/* телефон/планшет: справа от первых пунктов (короткие слова, справа пусто) — виден целиком сразу при открытии, без прокрутки листа */
-.menu-mascot{position:absolute;right:0;top:72px;width:96px;margin:0;pointer-events:none;overflow:hidden}
-@media (min-width:768px) and (max-width:1099px){.menu-mascot{top:96px;width:120px}}
+/* маскот меню (V1 v4.1): стоит на линии и выглядывает из-за правого края экрана (поза обрезана кромкой справа). Ширину задаёт слот, высоту — поза.
+   Телефон/планшет: на нижней линии пунктов, а разделители пунктов кончаются до него (не режут фигуру); desktop — на верхней линии подвала меню. */
+.menu-main{position:relative;padding-right:70px}
+.menu-mascot{position:absolute;right:calc(-1 * var(--gutter,16px));bottom:0;width:70px;margin:0;pointer-events:none;overflow:hidden}
+@media (min-width:768px) and (max-width:1099px){.menu-main{padding-right:118px}.menu-mascot{width:112px}}
 .menu-mascot:empty,html:is([data-mascot="quiet"],[data-mascot="none"]) .menu-mascot{display:none}
+html:is([data-mascot="quiet"],[data-mascot="none"]) .menu-main{padding-right:0}
 .menu-mascot-fb{display:block;width:100%;height:auto;transform-origin:100% 100%}
 .ov--menu.is-open .menu-mascot-fb{animation:mm-peek .62s cubic-bezier(.2,1.25,.4,1) .22s both,mm-wave 1.1s ease-in-out .9s 1}
 @keyframes mm-peek{from{transform:translateX(105%) rotate(10deg)}to{transform:none}}
 @keyframes mm-wave{0%,100%{transform:none}25%{transform:rotate(-3deg)}55%{transform:rotate(2deg)}80%{transform:rotate(-1deg)}}
 @media (min-width:1100px){
-  /* desktop: у правого края над рваной кромкой, рядом со строкой подвала меню; правой колонке — место под ним */
-  .menu-mascot{position:absolute;right:0;bottom:18px;width:120px;margin:0}
-  html:not([data-mascot="quiet"]):not([data-mascot="none"]) .menu-side{padding-bottom:140px}
-  html:not([data-mascot="quiet"]):not([data-mascot="none"]) .menu-foot{padding-right:150px}
+  /* лист меню на desktop — на всю высоту под шапкой (раньше закрывал ~640 px, ниже просвечивал hero); подвал меню — внизу */
+  .menu-panel{bottom:0;padding-bottom:0;background:var(--c-black)}
+  .menu-edge{display:none}
+  .menu-in{min-height:100%;grid-template-rows:1fr auto}
+  .menu-main{position:static;padding-right:0}
+  .menu-mascot{right:0;bottom:calc(36px + 16px + 1.375rem + 1px);width:120px}   /* = низ листа → верхняя линия подвала меню (padding .menu-in 36 + padding-top подвала 16 + строка слогана) */
 }
 .menu-foot{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 24px;padding-top:16px;border-top:1px solid var(--c-line)}
 .menu-foot .t-mono{color:var(--text-2)}

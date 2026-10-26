@@ -19,14 +19,14 @@ html[data-roll="off"] #roll-stage{display:none}
 /* тайл: высота = ширина ленты; жёсткая мультяшная тень — смещённая копия без размытия */
 .rl-tape{position:absolute;left:0;background:var(--strip) 0 0 repeat-x;box-shadow:0 2px 0 rgb(0 0 0 / .32)}
 .rl--lime .rl-tape,.rl-css[data-col="lime"] .rl-css-tex{--strip:url("{{asset:img/v4/tape/tile-lime.webp}}")}
-.rl--black .rl-tape,.rl-css[data-col="black"] .rl-css-tex,.rl-x-tp{--strip:url("{{asset:img/v4/tape/tile-black.webp}}")}
+.rl--black .rl-tape,.rl-css[data-col="black"] .rl-css-tex,.rl-x-tp{--strip:url("{{asset:img/v4/tape/tile-black-o.webp}}")}
 /* тайл 128 px по высоте покрывает ленту до 128 физ. px (desktop 30 px × DPR 2 = 60) — @2x не нужен */
 }
 /* рваный конец: спрайт 150×128, тело ленты — его 82 % по высоте (размеры/сдвиг ставит roll.js), левый — зеркально */
 .rl-end{position:absolute;display:block;background:var(--end) 0 0/100% 100% no-repeat}
 .rl-end--l{transform:scaleX(-1)}
 .rl-end--lime{--end:url("{{asset:img/v4/tape/end-lime.webp}}")}
-.rl-end--black{--end:url("{{asset:img/v4/tape/end-black.webp}}")}
+.rl-end--black{--end:url("{{asset:img/v4/tape/end-black-o.webp}}")}
 
 /* загиб 45°: второй слой ленты в тени + чёткая складка (направление — к внешнему углу) */
 .rl-fold{position:absolute;visibility:hidden;background:var(--fold) 0 0/100% 100% no-repeat}
@@ -59,7 +59,7 @@ html[data-roll="off"] #roll-stage{display:none}
 /* торец: спрайт намотки (дырка прозрачная), сжат в эллипс и вращается — свой композитный слой; размер — R0 рулона */
 .rl-css-face{width:var(--r0,48px);height:var(--r0,48px);will-change:transform;
   background:url("{{asset:img/v4/tape/roll.webp}}") center/100% 100% no-repeat}
-.rl-css[data-col="black"] .rl-css-face{background-image:url("{{asset:img/v4/tape/roll-black.webp}}")}
+.rl-css[data-col="black"] .rl-css-face{background-image:url("{{asset:img/v4/tape/roll-black-o.webp}}")}
 /* лёг на торец: тело и его тень прячутся щелчком на середине (торец раскрывается в круг сам) */
 .rl-css[data-tip="1"] .rl-css-body{visibility:hidden}
 

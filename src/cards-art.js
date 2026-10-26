@@ -248,6 +248,8 @@ var RASTER = {
 
   function render(cardEl, product, style) {
     if (!cardEl) return false;
+    // v4.1: обложка «photo» — фото рисует shop.js, рисунок на карточку не кладём (в галерее он остаётся)
+    if ((style || root.getAttribute("data-cards")) === "photo" && window.GV_PHOTOS && window.GV_PHOTOS[cardEl.getAttribute("data-id")]) return false;
     var p = product || byId(cardEl.getAttribute("data-id"));
     var media = cardEl.querySelector(".card-media");
     if (!p || !media || !DATA[p.id]) return false;
@@ -266,6 +268,7 @@ var RASTER = {
   }
 
   function renderAll(force) {
+    if (root.getAttribute("data-cards") === "photo") return;
     var st = styleOf();
     [].forEach.call(document.querySelectorAll("article.card[data-id]"), function (c) {
       if (!force && c.getAttribute("data-art") === st && c.querySelector(".card-media > .art")) return;
@@ -291,7 +294,8 @@ var RASTER = {
     var p = typeof product === "string" ? byId(product) : product;
     if (!p) return "";
     // v4: есть фото «призрачный манекен» (GV_PHOTOS) — честная подпись о том, что это за кадры
-    if (window.GV_PHOTOS && window.GV_PHOTOS[p.id]) return "демо-кадры дропа · вещь на невидимом манекене";
+    // v4.1: служебную подпись про демо-кадры покупателю не показываем (аудит) — кадры подписаны ярлыками сами
+    if (window.GV_PHOTOS && window.GV_PHOTOS[p.id]) return "";
     return p.photos && p.photos.length ? "" : "рисунки · фото после съёмки дропа";
   }
 

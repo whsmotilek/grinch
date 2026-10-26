@@ -35,10 +35,12 @@ html[data-loader="off"] #loader,html[data-loader="done"] #loader{display:none}
 html[data-loader="short"] .ld-dot{display:none}
 @keyframes ld-pop{from{transform:scale(.2);opacity:0}to{transform:scale(1);opacity:1}}
 .ld-cap{position:absolute;left:0;right:0;bottom:max(28px,7vh);margin:0;text-align:center;opacity:0;
-  font:500 12px/1 var(--font-mono,ui-monospace,monospace);letter-spacing:.24em;text-transform:uppercase;color:#8a8a8a}
+  font:500 13px/1 var(--font-mono,ui-monospace,monospace);letter-spacing:.18em;text-transform:uppercase;color:#d6d6d0}
 /* маскот: прижат к левому краю (поза обрезана вертикальной кромкой слева), до старта — за краем */
 #loader .ld-mascot{position:absolute;left:0;bottom:0;height:min(40svh,360px);aspect-ratio:1122/2029;transform:translateX(-104%);transform-origin:0 100%;will-change:transform}
 #loader .ld-mascot img{display:block;width:100%;height:100%}
+/* DPR ≥ 1,25: поверх инлайновой позы 460 px — 900 px отдельным файлом (≈49 КБ), проявляется, как только пришла: без мыла на ретине */
+#loader .ld-mz-hi{position:absolute;inset:0;opacity:0}#loader .ld-mz-hi.is-on{opacity:1}
 html:is([data-mascot="quiet"],[data-mascot="none"]) #loader .ld-mascot,html[data-loader="short"] #loader .ld-mascot{display:none}
 #loader[data-mz] .ld-letters,#loader[data-mz] .ld-dot{color:#f2f2ec}#loader[data-mz] .ld-horn{stroke:#f2f2ec}
 @media (max-width:767px){.ld-pos{width:84vw}#loader .ld-mascot{height:min(27svh,230px)}
@@ -54,7 +56,7 @@ html:is([data-mascot="quiet"],[data-mascot="none"]) #loader .ld-mascot,html[data
     </svg>
     <div class="ld-letters"><!--@svg:logo-letters--></div>
   </div></div>
-  <div class="ld-mascot" data-mascot-slot="preloader" data-mascot-manual data-pose="preloader"><img src="{{img:img/v4/hero/peek-460.webp}}" alt="" width="254" height="460" decoding="sync"></div>
+  <div class="ld-mascot" data-mascot-slot="preloader" data-mascot-manual data-pose="preloader"><img src="{{img:img/v4/hero/peek-460.webp}}" alt="" width="254" height="460" decoding="sync"><img class="ld-mz-hi" alt="" width="498" height="900" decoding="async" data-src="{{asset:img/v4/hero/peek-900.webp}}" onload="this.classList.add('is-on')"></div>
   <p class="ld-cap">ignore the signs</p>
 </div>
 <!-- формы: одна структура команд (M + 57×C + Z) у flat/body/smile → морф интерполяцией чисел; half/arr — для истории STOP→ST’ART (motion.js).
@@ -85,13 +87,14 @@ function rgb(c){c=String(c).trim();if(c[0]==='#'){var x=c.slice(1);if(x.length==
 function mix(a,b,t,al){return 'rgba('+a.map(function(v,i){return Math.round(v+(b[i]-v)*t);}).join(',')+','+(al==null?1:al)+')';}
 /* один зелёный на экран: если из-за края выглядывает маскот (лаймовый), знак и буквы рисуются белым — лайм у маскота и его рулона */
 var MZ=!short&&!!mz&&getComputedStyle(mz).display!=='none';if(MZ)ld.setAttribute('data-mz','1');
+if(MZ&&(W.devicePixelRatio||1)>1.24){var hi=mz.querySelector('.ld-mz-hi');if(hi){hi.setAttribute('fetchpriority','high');hi.src=hi.getAttribute('data-src');}}
 var GR=MZ?[242,242,236]:rgb(getComputedStyle(h).getPropertyValue('--c-green')||'#8ED308'),WH=[255,255,255];
 var E={p1io:function(t){return t<.5?2*t*t:1-2*(1-t)*(1-t);},p2io:function(t){return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;},
   p3io:function(t){return t<.5?8*t*t*t*t:1-Math.pow(-2*t+2,4)/2;},p2o:function(t){return 1-Math.pow(1-t,3);},p2i:function(t){return t*t*t;},
   si:function(t){return 1-Math.cos(t*Math.PI/2);},so:function(t){return Math.sin(t*Math.PI/2);},sio:function(t){return -(Math.cos(Math.PI*t)-1)/2;},lin:function(t){return t;}};
 var T=[],C=[];function tr(at,du,e,fn){T.push({at:at,du:du,e:e,fn:fn,d:0});}function call(at,fn){C.push({at:at,fn:fn,d:0});}
 /* тайминг: полный ≈ 2,3 с (ready ≈ 2,0 с), повтор ≈ 0,75 с */
-var t0=.18,tM=.58,tH=.95,tB=1.36,tL=short?.04:1.2,tF=short?.3:1.8,fd=short?.42:.5;
+var t0=.18,tM=.58,tH=.95,tB=1.36,tL=short?.04:1.2,tF=short?.3:1.84,fd=short?.42:.5;   /* v4.1: раскрытие на 60 мс позже (место маскоту после вдоха), конец ≈ 2,4 с */
 /* куда садится знак: контент-бокс svg лого в шапке (viewBox вписан с xMidYMid) — посадка пиксель в пиксель */
 var flip=null;function target(){if(flip)return flip;var a=mk.getBoundingClientRect(),l=D.querySelector('#logo svg'),b=l&&l.getBoundingClientRect(),ok=b&&b.width>4&&b.height>2;
   var x=0,y=0,s=.2,c=GR;
@@ -105,7 +108,7 @@ function hole(p){var f=target();if(!CLIP){cover.style.transform='translateY('+(1
   var rx=Math.max(.01,f.R*p),ry=rx*.8,x=f.bx-rx,y=f.by;
   cover.style.clipPath='path(evenodd,"M0 0H'+f.vw+'V'+f.vh+'H0Z M'+x.toFixed(1)+' '+y.toFixed(1)+'a'+rx.toFixed(1)+' '+ry.toFixed(1)+' 0 1 0 '+(2*rx).toFixed(1)+' 0a'+rx.toFixed(1)+' '+ry.toFixed(1)+' 0 1 0 '+(-2*rx).toFixed(1)+' 0Z")';}
 if(!short){
-  tr(.3,.5,E.so,function(p){cap.style.opacity=(.85*p).toFixed(3);});
+  tr(.3,.5,E.so,function(p){cap.style.opacity=p.toFixed(3);});
   tr(t0,.25,E.si,function(p){dot.style.animation='none';dot.style.opacity=1-p;dot.style.transform='scale('+(1-.5*p)+')';});
   tr(t0,.5,E.p3io,function(p){line.style.opacity=1;line.style.transform='scaleX('+(.005+.995*p)+')';});
   tr(tM,.42,E.p2io,function(p){line.setAttribute('d',toBody(p));});
@@ -116,9 +119,10 @@ if(!short){
   /* маскот: выглядывает из-за левого края (0,32 → 0,9 с, с перелётом), трясёт рулоном на «вдохе», прячется перед раскрытием */
   if(MZ){var mzX=-104,mzR=0,mzS=function(){mz.style.transform='translateX('+mzX.toFixed(2)+'%) rotate('+mzR.toFixed(2)+'deg)';};
     var back=function(t){var c=1.9;return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2);};
-    tr(.32,.58,function(t){return t;},function(p){mzX=-104+104*back(p);mzS();});
-    tr(1.18,.62,E.lin,function(p){mzR=p<1?-3.2*Math.sin(p*Math.PI*3)*(1-p):0;mzS();});
-    tr(tF-.12,.34,E.p2i,function(p){mzX=-106*p;mzS();});}
+    /* v4.1: сначала логотип (линия → улыбка → вдох), маскот выглядывает ПОСЛЕ вдоха — не перебивает главный момент; уходит, пока лого летит в шапку */
+    tr(tB+.02,.36,function(t){return t;},function(p){mzX=-104+104*back(p);mzS();});
+    tr(tB+.36,.3,E.lin,function(p){mzR=p<1?-3.2*Math.sin(p*Math.PI*2)*(1-p):0;mzS();});
+    tr(tF-.04,.24,E.p2i,function(p){mzX=-106*p;mzS();});}   /* уходит в начале раскрытия: не встречается с маскотом hero и подписью */
   /* «вдох» v1: готовая улыбка чуть приподнимается от клюва и опускается */
   tr(tB,.4,E.lin,function(p){smile.style.transform=p<1?'scale('+(1+.022*Math.sin(Math.PI*p)).toFixed(4)+')':'';});
 }else{
@@ -135,12 +139,12 @@ call(tF-.02,function(){if(skipping)return;var w=[];
   if(D.fonts&&D.fonts.status!=='loaded')w.push(D.fonts.ready);
   if(!w.length)return;paused=true;var go=function(){paused=false;last=0;};
   Promise.race([Promise.all(w),new Promise(function(r){setTimeout(r,500);})]).then(go,go);});
-tr(tF-.25,.22,E.so,function(p){grain.style.opacity=(.055*(1-p)).toFixed(4);if(!short)cap.style.opacity=(.85*(1-p)).toFixed(3);});
+tr(tF-.25,.22,E.so,function(p){grain.style.opacity=(.055*(1-p)).toFixed(4);if(!short)cap.style.opacity=(1-p).toFixed(3);});
 /* посадка: знак — в лого шапки (FLIP), цвет — в цвет лого; сайт раскрывается эллипсом из клюва */
 tr(tF,fd,E.p3io,function(p){var f=target();mk.style.transform='translate('+(f.x*p).toFixed(2)+'px,'+(f.y*p).toFixed(2)+'px) scale('+(1+(f.s-1)*p).toFixed(5)+')';
   var c=mix(GR,f.c,p);lt.style.color=c;line.style.fill=c;line.style.stroke=mix(GR,f.c,p,1-p);});
 call(tF+.02,function(){h.setAttribute('data-hero-in','1');fire('grinchin:loader-progress',{t:+(tF/END).toFixed(3),phase:'reveal'});});
-tr(tF+.04,fd+.02,E.p2i,hole);
+tr(tF+.04,fd+.02,E.p2o,hole);   /* v4.1: эллипс раскрывается с быстрым стартом (было p2i: долго висел маленький бледный круг под лого) */
 /* ready — когда раскрыт центр кадра: K2 рождает знак синхронно */
 call(tF+(short?.12:.2),sendReady);
 /* лого в шапке проявляется ровно в кадр посадки — подмена незаметна */

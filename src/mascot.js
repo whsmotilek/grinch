@@ -38,14 +38,15 @@
     subscribe: [0.7508, "{{asset:img/v4/mascot/subscribe-360.webp}}", "{{asset:img/v4/mascot/subscribe-720.webp}}", "{{asset:img/v4/mascot/subscribe-1200.webp}}"],
     idle: [0.5567, "{{asset:img/v4/mascot/idle-360.webp}}", "{{asset:img/v4/mascot/idle-720.webp}}", "{{asset:img/v4/mascot/idle-1200.webp}}"]
   };
-  // видео (кадр 720×720; preloader/footer пережаты в 480 — пропорции те же): bb — рамка фигуры на постере/последнем
-  // кадре в координатах 720, по ней видео совмещается с коробкой; end — поза = последний кадр (для «без движения»);
+  // видео: fw×fh — кадр (footer_swing v4.1 — вырезан по фигуре в РОДНОМ разрешении 368×636, без даунскейла: на DPR 2–3
+  // 480-й кадр давал мыло); bb — рамка фигуры на постере/последнем кадре в координатах кадра, по ней видео совмещается
+  // с коробкой; end — поза = последний кадр (для «без движения»);
   // seat — линия сиденья от верха рамки (подвал)
   var ANIM = {
     preloader_peek: { webm: "{{asset:img/v4/mascot/anim/preloader_peek.webm}}", mov: "{{asset:img/v4/mascot/anim/preloader_peek.mov}}",
-      poster: "{{asset:img/v4/mascot/anim/preloader_peek-poster.webp}}", bb: [0, 49, 320, 671], loop: true, end: "preloader" },
+      poster: "{{asset:img/v4/mascot/anim/preloader_peek-poster.webp}}", fw: 720, fh: 720, bb: [0, 49, 320, 671], loop: true, end: "preloader" },
     footer_swing: { webm: "{{asset:img/v4/mascot/anim/footer_swing.webm}}", mov: "{{asset:img/v4/mascot/anim/footer_swing.mov}}",
-      poster: "{{asset:img/v4/mascot/anim/footer_swing-poster.webp}}", bb: [190, 60, 528, 658], loop: true, end: null, seat: 0.694 }
+      poster: "{{asset:img/v4/mascot/anim/footer_swing-poster.webp}}", fw: 368, fh: 636, bb: [14, 14, 352, 612], loop: true, end: null, seat: 0.694 }
   };
   var ST = {
     crossout: "{{asset:img/v4/mascot/st-crossout.webp}}", kapushon: "{{asset:img/v4/mascot/st-kapushon.webp}}", "new": "{{asset:img/v4/mascot/st-new.webp}}",
@@ -123,7 +124,8 @@
     if (A) {
       var bw = A.bb[2] - A.bb[0], bh = A.bb[3] - A.bb[1];
       box.style.aspectRatio = bw + " / " + bh;
-      box.style.setProperty("--mz-vw", (720 / bw * 100).toFixed(3) + "%");
+      box.style.setProperty("--mz-vw", (A.fw / bw * 100).toFixed(3) + "%");
+      box.style.setProperty("--mz-var", (A.fw / A.fh).toFixed(4));
       box.style.setProperty("--mz-vx", (-A.bb[0] / bw * 100).toFixed(3) + "%");
       box.style.setProperty("--mz-vy", (-A.bb[1] / bh * 100).toFixed(3) + "%");   // top в % — от высоты коробки
       el.style.setProperty("--mz-ar", (bw / bh).toFixed(4));
@@ -173,6 +175,8 @@
   };
   Mascot.prototype.near = function (on) {
     this.vis = on;
+    // слот мог монтироваться скрытым (меню, 404, корзина) — sizes по реальной ширине, чтобы на DPR 2–3 не брать мелкий кадр
+    if (on && this.img && this.img.srcset) { var w = Math.round(this.el.getBoundingClientRect().width); if (w > 20) this.img.sizes = Math.min(1000, w) + "px"; }
     if (!this.anim || !this.live || this.done) return;
     if (on) { this.loadVid(); if (this.vid && this.vid.paused) this._play(); }
     else if (this.vid && !this.vid.paused) this.vid.pause();

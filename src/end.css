@@ -3,7 +3,7 @@
    Один зелёный на экран: в подписке — кнопка (после успеха — лаймовая лента на пакете), в подвале — логотип. */
 
 /* ============ #next ============ */
-#next{position:relative;isolation:isolate;background:var(--c-black);color:var(--c-white);padding:72px 0 80px}
+#next{position:relative;isolation:isolate;background:#050505;color:var(--c-white);padding:48px 0 64px}   /* фон = «О бренде»: без полосы на стыке */
 .nx-grid{display:grid;gap:36px}
 .nx-copy{container-type:inline-size;min-width:0}
 .nx-title{font:var(--t-h1,900 clamp(2.1rem,1.2rem + 2.3vw,3.5rem)/1.02 var(--font-display));letter-spacing:-.035em;
@@ -30,7 +30,7 @@
 .nx-k{font:var(--t-mono,500 .75rem/1.3 var(--font-mono));letter-spacing:.02em;color:color-mix(in srgb,var(--c-white) 72%,transparent)}
 .nx-input{width:100%;min-width:0;min-height:44px;margin:0;padding:0;border:0;border-radius:0;background:transparent;
   font:var(--t-d2,800 clamp(1.5rem,1.1rem + 1.4vw,2.25rem)/1.1 var(--font-display));letter-spacing:-.035em;color:var(--c-white);caret-color:var(--c-green)}
-.nx-input::placeholder{color:color-mix(in srgb,var(--c-white) 58%,transparent);opacity:1}
+.nx-input::placeholder{color:color-mix(in srgb,var(--c-white) 58%,transparent);opacity:1;font:400 1.0625rem/1.2 var(--font-text);letter-spacing:0}   /* подсказка — обычным текстом, вводимое — крупно */
 .nx-input:focus,.nx-input:focus-visible{outline:none}
 .nx-tag:focus-within{outline-color:var(--c-white)}
 .nx-tag:has(.nx-input[aria-invalid="true"]){border-color:var(--c-error)}
@@ -58,11 +58,16 @@
 /* крест из двух мультяшных лент (tape-cross) и стикер «класс» — «шлёпаются» на пакет (end.js) */
 .nx-x{position:absolute;left:50%;top:52%;width:56%;height:auto;transform:translate(-50%,-50%) rotate(-3deg);pointer-events:none}
 .nx-st{position:absolute;right:3%;bottom:4%;width:17%;height:auto;transform:rotate(9deg);pointer-events:none}
-/* маскот подписки стоит на верхней кромке поля-бирки справа (над переключателем); после подписки — на пакете */
-.nx-side{position:relative}
-.nx-mz{position:absolute;z-index:2;right:2px;top:60px;width:clamp(78px,10vw,150px);transform:translateY(-100%);pointer-events:none}
-.nx-side:has(.nx-done:not([hidden])) .nx-mz{top:0;right:4%}
-@media (max-width:599px){.nx-sub{max-width:min(34ch,calc(100% - 96px))}}
+/* маскот подписки (v4.1): не прилеплен к углу формы, а стоит у текста — на телефоне справа от заголовка (заголовку
+   оставлено место), на desktop — под подписью в колонке текста, ступнями на линии формы */
+.nx-copy{position:relative}
+.nx-mz{position:absolute;z-index:2;right:0;top:-6px;width:clamp(74px,21vw,96px);pointer-events:none}
+.nx-copy:has(.nx-mz:not([hidden])){padding-right:clamp(84px,24vw,110px)}
+@media (min-width:1100px){
+  .nx-copy:has(.nx-mz:not([hidden])){padding-right:0;display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:24px;align-items:end}
+  .nx-copy:has(.nx-mz:not([hidden])) .nx-title,.nx-copy:has(.nx-mz:not([hidden])) .nx-sub{grid-column:1}
+  .nx-mz{position:relative;right:auto;top:auto;grid-column:2;grid-row:1/span 2;width:150px;align-self:end;margin-bottom:-12px}
+}
 .nx-done-t{font:var(--t-d2,800 clamp(1.5rem,1.1rem + 1.4vw,2.25rem)/1.1 var(--font-display));letter-spacing:-.035em;color:var(--c-white)}
 .nx-done-t:focus{outline:none}
 .nx-done-s{margin-top:8px;font:var(--t-body,400 1rem/1.5 var(--font-text));color:var(--text-2)}
@@ -72,7 +77,7 @@
   .nx-submit{min-height:0}
 }
 @media (min-width:1100px){
-  #next{padding:120px 0}
+  #next{padding:72px 0 88px}
   .nx-grid{grid-template-columns:minmax(0,1fr) minmax(420px,560px);column-gap:clamp(48px,6vw,120px);align-items:start}
 }
 
@@ -106,8 +111,8 @@ button.fo-row:hover,.fo-acc>summary:hover{text-decoration:underline;text-underli
 
 /* логотип на мятой бумаге: форма — вектор нового лого (маска), цвет — бренд, заломы — ТОТ ЖЕ лист, что и фон
    (end.js совмещает --cx/--cy/--cw/--ch с фоном подвала). Размер задаёт невидимый inline-вектор (пропорции нового лого) */
-/* место над логотипом под маскота: высота фигуры над линией сиденья = ширина / пропорция × сиденье (видео: .565 и .694) */
-.fo-logo-box{position:relative;--fo-mz-w:clamp(84px,15vw,200px);margin-top:calc(var(--fo-mz-w) / .565 * .694 + 24px)}
+/* ширина ≤ 176: фигура в видео — 338 px родных, на DPR 2 это ~1:1 (крупнее — мыло); место над логотипом под маскота: высота фигуры над линией сиденья = ширина / пропорция × сиденье (видео: .565 и .694) */
+.fo-logo-box{position:relative;--fo-mz-w:clamp(84px,15vw,176px);margin-top:calc(var(--fo-mz-w) / .565 * .694 + 24px)}
 html[data-mascot="none"] .fo-logo-box{margin-top:clamp(40px,6vw,72px)}
 .fo-logo{position:relative;width:100%;background-color:var(--c-green);
   background-position:var(--cx,50%) var(--cy,50%);background-size:var(--cw,cover) var(--ch,);background-repeat:no-repeat;
@@ -144,11 +149,11 @@ html[data-stickers="max"] .fo-st{display:block}
   padding:max(8px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(20px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
 @media (min-width:768px){.e404{padding-inline:32px}}
 @media (min-width:1100px){.e404{padding-inline:48px}}
-.e404-art{position:absolute;z-index:-1;left:50%;top:50%;width:max(100vw,100dvh * 16 / 9);aspect-ratio:16/9;transform:translate(-50%,-50%);pointer-events:none}
+.e404-art{position:absolute;z-index:-1;left:50%;top:50%;width:max(100vw,100dvh * 16 / 9);aspect-ratio:16/9;transform:translate(calc(-50% + 7vw),-50%);pointer-events:none} /* сдвиг вправо: левая треть картинки — чёрная, заголовок не ложится на знак диорамы */
 .e404-bg,.e404-bg img{position:absolute;inset:0;width:100%;height:100%;display:block}
 .e404-mz{position:absolute;left:72.5%;bottom:24.5%;width:15.5%}
 @media (max-aspect-ratio:4/5){
-  .e404-art{width:max(100vw,100dvh * 9 / 16);aspect-ratio:9/16;top:auto;bottom:0;transform:translateX(-50%)}
+  .e404-art{width:max(100vw,100dvh * 9 / 16 * 1.28);aspect-ratio:9/16;top:auto;bottom:0;transform:translateX(-50%)}   /* ×1,28: диорама поднимается к тексту, пустоты нет */
   .e404-mz{left:max(13%,calc(50% - 50vw + 12px));bottom:21%;width:28%}
 }
 .e404-logo{justify-self:start;display:grid;place-items:center;min-height:var(--header-h,60px);min-width:44px;padding:0;border:0;background:none;color:var(--c-white);cursor:pointer}

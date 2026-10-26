@@ -41,6 +41,18 @@
     'tee-blank': { part: 'top', h: 0.72, top: 0.03 },
     'longsleeve-blank': { part: 'top', h: 0.74, top: 0.03 },
   };
+  // пропорции фото «призрачного манекена» (ширина/высота) — для раскладки ряда-фолбэка до загрузки картинок
+  const FB_A = { 'jeans-restart': 0.49, 'jeans-scribble': 0.66, 'jeans-redline': 0.5, 'tee-blank': 0.93, 'longsleeve-blank': 0.82, 'hoodie-crack': 0.76, 'jacket-biker': 0.78, 'suit-detour': 0.42 };
+  // вешалка для CSS-фолбэка: крючок, плечики; у брючной — перекладина с двумя зажимами
+  function hangerSVG(part) {
+    const hook = '<path d="M50 3c-5 0-8 3-8 7s3 6 8 7v9" fill="none" stroke="#cfcfcf" stroke-width="2.6" stroke-linecap="round"/>';
+    const body = part === 'bottom'
+      ? '<path d="M50 26 22 44h56z" fill="none" stroke="#1c1c1c" stroke-width="3" stroke-linejoin="round"/><path d="M18 46h64" stroke="#d4d4d4" stroke-width="3.4" stroke-linecap="round"/><rect x="26" y="46" width="7" height="12" fill="#111"/><rect x="67" y="46" width="7" height="12" fill="#111"/>'
+      : '<path d="M50 26 8 54c-3 2-2 5 2 5h80c4 0 5-3 2-5z" fill="none" stroke="#1c1c1c" stroke-width="3.2" stroke-linejoin="round"/>';
+    return '<svg class="rk-fb-hg" viewBox="0 0 100 64" preserveAspectRatio="xMidYMin meet" aria-hidden="true">' + hook + body + '</svg>';
+  }
+  const ORDER = ['jeans-restart', 'jeans-scribble', 'jeans-redline', 'tee-blank', 'longsleeve-blank', 'hoodie-crack', 'jacket-biker', 'suit-detour'];
+  const rank = (id) => { const k = ORDER.indexOf(id); return k < 0 ? 99 : k; };
   const OFF = { top: -0.168, set: -0.168, bottom: -0.216 };   // = rack-scene.js
   const RAIL = { A: 0.6, W: 0.72 };                            // выгиб трубы: z = A·exp(−(x/W)²)
   const railZ = (x) => RAIL.A * Math.exp(-(x / RAIL.W) * (x / RAIL.W));
@@ -248,10 +260,22 @@ self.onmessage = async (ev) => {
         hubMsg({ t: 'load', id: t.id, kind: t.kind, src: t.src, meta: t.meta }).then((r) => {
           L.done[key] = r; L.busy = false;
           HUB.insts.forEach((i) => i._loaded(t.id, t.kind, r));
+          if (t.kind === 'full') hubFullGC();
           hubPump();
         }, (e) => { L.fail[key] = String((e && e.message) || e); L.busy = false; console.warn('[rack] не загрузилось', key, L.fail[key]); hubPump(); });
         return;
       }
+    }
+  }
+  // полные модели держим только у тех вещей, что нужны какому-то экземпляру (фокус, на десктопе — соседи); остальные выгружаем
+  function hubFullGC() {
+    if (HUB.st !== 'ok') return;
+    const keep = new Set(); HUB.insts.forEach((i) => i._keep().forEach((id) => keep.add(id)));
+    for (const key of Object.keys(HUB.load.done)) {
+      if (!key.endsWith(':full')) continue;
+      const id = key.slice(0, -5); if (keep.has(id)) continue;
+      delete HUB.load.done[key];
+      hubMsg({ t: 'drop', id }).then(() => HUB.insts.forEach((i) => i._loaded(id, 'drop', null)), () => {});
     }
   }
   // один цикл на модуль: крутится, пока кому-то есть что двигать
@@ -270,8 +294,9 @@ self.onmessage = async (ev) => {
     opts.models = Object.assign({}, ASSETS.models, opts.models || {});
     opts.stubs = Object.assign({}, ASSETS.stubs, opts.stubs || {});
     const BARE = opts.ui === 'bare';   // вкладка «3D» в карточке: только сцена, подпись даёт карточка
-    const PR = opts.products, N = PR.length;
-    const items = PR.map((p, i) => Object.assign({ id: p.id, n: p.n || i + 1, i }, KIND[p.id] || { part: /джинс|брюк|штан/i.test(p.type) ? 'bottom' : 'top', h: 0.8, top: 0.05 }));
+    // порядок на рейле (отзыв v4.1): джинсы → футболки → верх → костюм целиком; номер на скотче — место на рейле
+    const PR = opts.products.slice().sort((a, b) => rank(a.id) - rank(b.id)), N = PR.length;
+    const items = PR.map((p, i) => Object.assign({ id: p.id, n: i + 1, i }, KIND[p.id] || { part: /джинс|брюк|штан/i.test(p.type) ? 'bottom' : 'top', h: 0.8, top: 0.05 }));
     const startIdx = Math.max(0, PR.findIndex((p) => p.id === opts.start));
     const RM = () => RMQ.matches;
     const LOGO = (GV.gl && GV.gl.LOGO) ? { paths: GV.gl.LOGO, box: GV.gl.LOGO_BOX } : W.GV_RACK_LOGO || null;
@@ -289,7 +314,7 @@ self.onmessage = async (ev) => {
 <div class="rk-pin">
   <div class="rk-stage" tabindex="0" role="region" aria-roledescription="карусель" aria-label="${opts.title}: ${N} вещей. Стрелки влево и вправо — листать.">
     <canvas class="rk-cv" aria-hidden="true"></canvas>
-    <div class="rk-fb" aria-hidden="true"><div class="rk-fb-row">${PR.map((p, i) => (opts.stubs[p.id] && opts.stubs[p.id][0] && (!BARE || i === startIdx)) ? `<img data-i="${i}" data-src="${opts.stubs[p.id][0]}" alt="" decoding="async">` : '').join('')}</div></div>
+    <div class="rk-fb" aria-hidden="true"><div class="rk-fb-rail"></div><div class="rk-fb-row">${PR.map((p, i) => (opts.stubs[p.id] && opts.stubs[p.id][0] && (!BARE || i === startIdx)) ? `<figure class="rk-fb-it" data-i="${i}" style="--rk-a:${FB_A[p.id] || 0.6}">${hangerSVG(items[i].part)}<span class="rk-fb-tag">${pad(i + 1)}</span><img data-i="${i}" data-src="${opts.stubs[p.id][0]}" alt="" decoding="async"></figure>` : '').join('')}</div></div>
     <p class="rk-hint" aria-hidden="true"><span class="rk-hint-rail">${opts.drive === 'scroll' ? 'листай ↓ или тяни ← →' : 'тяни ← →'}</span><span class="rk-hint-chain">крути ← →</span></p>
     <button class="rk-arr rk-prev" type="button" aria-label="Предыдущая вещь"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
     <button class="rk-arr rk-next" type="button" aria-label="Следующая вещь"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
@@ -347,9 +372,7 @@ self.onmessage = async (ev) => {
         info.dataset.id = p.id;
         idx.forEach((b, k) => { b.classList.toggle('is-on', k === i); b.setAttribute('aria-current', k === i ? 'true' : 'false'); });
         // без WebGL: ряд фото на CSS-рейке, вещь в фокусе по центру
-        fbRow.querySelectorAll('img').forEach((im) => im.classList.toggle('is-on', +im.dataset.i === i));
-        fbRow.style.setProperty('--rk-fb-i', BARE ? 0 : i);
-        fbLoad();
+        fbFocus(i);
         info.classList.remove('is-out');
       };
       S.shown = i;
@@ -391,7 +414,9 @@ self.onmessage = async (ev) => {
 
     /* ── физика ── */
     const SP = () => (NARROW.matches ? 0.6 : 0.66), GAP = () => (NARROW.matches ? 0.34 : 0.2);   // на телефоне соседи только выглядывают
-    function railX(i, r) { const d = i - r, ad = Math.abs(d); return d * SP() + Math.sign(d) * GAP() * sm(Math.min(ad, 1)); }
+    // рейл замкнут в кольцо: за последней вещью снова идут первые — на краях листания нет пустой половины кадра
+    const wrapD = (i, r) => { const d = i - r; return d - N * Math.round(d / N); };
+    function railX(i, r) { const d = wrapD(i, r), ad = Math.abs(d); return d * SP() + Math.sign(d) * GAP() * sm(Math.min(ad, 1)); }
     function autoOn() { return !RM() && S.visible && !D.hidden && opts.auto !== false; }
     function stepRail(dt) {
       let busy = false;
@@ -403,7 +428,9 @@ self.onmessage = async (ev) => {
       const acc = clamp((S.rv - S.accPrev) / Math.max(dt, 1e-3), -60, 60); S.accPrev = S.rv;
       if (Math.abs(S.rt - S.r) > 5e-4 || Math.abs(S.rv) > 5e-4 || S.drag) busy = true;
       const f = clamp(Math.round(S.r), 0, N - 1);
-      if (f !== S.focus) { S.focus = f; renderInfo(f); pump(); }
+      if (f !== S.focus) { S.focus = f; S.focusAt = now(); renderInfo(f); pump(); }
+      if (S.drag || Math.abs(S.rv) > 0.08 || Math.abs(S.rt - S.r) > 0.08) { if (S.fullT) { clearTimeout(S.fullT); S.fullT = 0; } }
+      else if (S.fullWant !== S.focus && !S.fullT) settle();
       const auto = autoOn();
       for (let i = 0; i < N; i++) {
         const q = S.sw[i], d = Math.abs(i - S.r);
@@ -413,7 +440,9 @@ self.onmessage = async (ev) => {
           const breeze = auto ? 0.014 * Math.sin(S.t * 0.9 + i * 1.7) * (d < 0.5 ? 0.3 : 1) : 0;
           const a = -19.6 * (q.a - breeze) - 3.2 * q.v - clamp(acc, -14, 14) * SP() * 0.32;
           q.v += a * dt; q.a = clamp(q.a + q.v * dt, -0.2, 0.2);
-          if (i === f && auto && !S.drag && Math.abs(S.rv) < 0.6) q.spin += 0.42 * dt;   // фокус медленно крутится
+          // фокус медленно крутится — но сначала 1,6 с стоит лицом: вещь не появляется в кадре боком
+          if (i === f && auto && S.onScreen && !S.drag && Math.abs(S.rv) < 0.6 && now() - (S.focusAt || 0) > 1600 && now() - (S.onScreenAt || 0) > 1600) q.spin += 0.42 * dt;
+          else if (i === f && !S.onScreen) q.spin = damp(q.spin, Math.round(q.spin / TAU) * TAU, 3, dt);   // вне экрана — вернуть лицом
           else if (i !== f) q.spin = damp(q.spin, Math.round(q.spin / TAU) * TAU, 2.2, dt);
           if (Math.abs(q.a) > 2e-4 || Math.abs(q.v) > 2e-4) busy = true;
         }
@@ -435,6 +464,7 @@ self.onmessage = async (ev) => {
       const auto = autoOn();
       S.rig.forEach((g, k) => {
         if (g.idx < 0) return;
+        if (k === S.act && g.st === 'hang' && S.fullWant !== S.focus && !S.fullT) settle();
         if (g.st === 'up') {
           g.dyv += 7 * dt; g.dy += g.dyv * dt; g.yaw += g.yv * dt;
           if (g.dy > 3.4) { g.idx = -1; g.st = 'off'; } else busy = true;
@@ -445,6 +475,7 @@ self.onmessage = async (ev) => {
           g.dyv += a * dt; g.dy += g.dyv * dt;
           if (!g.hit && g.dy < 0.02) { g.hit = true; g.szv += 0.12; g.sxv -= 0.07; }
           if (Math.abs(g.dy) < 4e-4 && Math.abs(g.dyv) < 4e-3) { g.dy = 0; g.dyv = 0; g.st = 'hang'; }
+          if (k === S.act && g.dy < 0.05 && S.fullWant !== S.focus && !S.fullT) settle();
           busy = true;
         }
         const drag = S.drag && k === S.act;
@@ -475,14 +506,14 @@ self.onmessage = async (ev) => {
       } else {
         const lim = C.halfW + 0.5;
         for (let i = 0; i < N; i++) {
-          const k = i * 9, x = railX(i, S.r), d = i - S.r, q = S.sw[i], fw = 1 - Math.min(1, Math.abs(d));
+          const k = i * 9, x = railX(i, S.r), d = wrapD(i, S.r), q = S.sw[i], fw = 1 - Math.min(1, Math.abs(d));
           const z = railZ(x);
           const face = Math.atan2(-x, C.z - z) * 0.9;
           const fan = -Math.sign(d) * 0.4 * sm(Math.min(Math.abs(d), 1));
           POSE.it[k] = x; POSE.it[k + 1] = 0; POSE.it[k + 2] = z;
           POSE.it[k + 3] = face + fan * (1 - fw) + q.spin;
           POSE.it[k + 4] = q.a; POSE.it[k + 5] = 0;
-          POSE.it[k + 6] = Math.abs(x) < lim ? 1 : 0;
+          POSE.it[k + 6] = Math.abs(x) < lim && Math.abs(d) < N / 2 - 0.45 ? 1 : 0;   // на стыке кольца вещь прячется, а не перепрыгивает на глазах
           POSE.it[k + 7] = fw;
           POSE.it[k + 8] = -Math.atan(railDZ(x));
         }
@@ -501,7 +532,7 @@ self.onmessage = async (ev) => {
       // замер и адаптивный DPR: если кадр стабильно дольше 22 мс — снижаем буфер ступенькой
       const F = S.fps; F.n++;
       if (!F.t0) F.t0 = t;
-      else if (t - F.t0 > 1000) { F.v = (F.n * 1000) / (t - F.t0); F.n = 0; F.t0 = t; if (F.v < 45 && S.dprK > 0.7 && !Q.has('nodpr')) { if (++F.slow >= 2) { S.dprK = Math.max(0.7, S.dprK - 0.15); F.slow = 0; } } else F.slow = 0; if (!dbg.hidden) debug(); }
+      else if (t - F.t0 > 1000) { F.v = (F.n * 1000) / (t - F.t0); F.n = 0; F.t0 = t; if (F.v < 40 && S.dprK > 0.85 && !Q.has('nodpr')) { if (++F.slow >= 3) { S.dprK = Math.max(0.85, S.dprK - 0.15); F.slow = 0; } } else F.slow = 0; if (!dbg.hidden) debug(); }
       if (!busy) { S.fps.t0 = 0; S.fps.n = 0; }
       return busy;
     }
@@ -645,6 +676,13 @@ self.onmessage = async (ev) => {
     // фото ряда-фолбэка: только когда WebGL нет, вещь в фокусе ±1, и по одной за кадр простоя — без пачки декодов
     // Декод заранее (img.decode() — вне главного потока) и по одной картинке в простое, начиная с вещи в фокусе:
     // к моменту, когда блок въезжает в экран, картинки готовы и растр не упирается в декод пачкой.
+    // ряд-фолбэк: вещь в фокусе — по центру (по реальной раскладке, ширины вещей заданы CSS)
+    function fbFocus(i) {
+      const its = fbRow.querySelectorAll('.rk-fb-it');
+      let on = null; its.forEach((f) => { const k = +f.dataset.i === i; f.classList.toggle('is-on', k); if (k) on = f; });
+      if (on) { const box = fbRow.parentNode.clientWidth; fbRow.style.setProperty('--rk-fb-x', (box / 2 - (on.offsetLeft + on.offsetWidth / 2)).toFixed(1) + 'px'); }
+      fbLoad();
+    }
     function fbLoad() {
       if (el.dataset.gl !== 'off' || S.fbBusy) return;
       const next = [...fbRow.querySelectorAll('img:not([src])')].sort((a, b) => Math.abs(a.dataset.i - S.focus) - Math.abs(b.dataset.i - S.focus))[0];
@@ -662,6 +700,7 @@ self.onmessage = async (ev) => {
       // пятно света: 64 px, растянутое композитором (см. rack.css)
       stage.style.setProperty('--rk-sx', ((rc.width * 0.84) / 64).toFixed(2));
       stage.style.setProperty('--rk-sy', ((rc.height * 0.92) / 64).toFixed(2));
+      if (el.dataset.gl === 'off') fbFocus(S.focus);
       S.w = Math.max(2, rc.width); S.h = Math.max(2, rc.height); S.dpr = Math.min(W.devicePixelRatio || 1, 2);
       camFit(); wake(); pump();
     }
@@ -669,12 +708,16 @@ self.onmessage = async (ev) => {
     if (ro) ro.observe(stage); else W.addEventListener('resize', measure);
     const io = W.IntersectionObserver ? new IntersectionObserver((es) => {
       const e = es[es.length - 1];
+      if (e.isIntersecting && !S.visible) S.visAt = now();
       S.visible = e.isIntersecting;
       if (S.visible) { start(); wake(); }
     }, { rootMargin: '200px 0px' }) : null;
     if (io) io.observe(stage); else { S.visible = true; }
-    if (GV.gl && typeof GV.gl.onOff === 'function') GV.gl.onOff(() => { if (HUB.kind === 'shared' || HUB.st === 'idle') { el.dataset.gl = 'off'; S.why = 'gl: ' + (GV.gl.why || 'off'); fbLoad(); } });
-    else if (Q.has('nogl')) { el.dataset.gl = 'off'; fbLoad(); }
+    // «на экране» — сцена реально в кадре хотя бы на треть (для авто-вращения: до входа вещь стоит лицом)
+    const io2 = W.IntersectionObserver ? new IntersectionObserver((es) => { const e = es[es.length - 1]; if (e.isIntersecting && !S.onScreen) S.onScreenAt = now(); S.onScreen = e.isIntersecting; wake(); }, { threshold: 0.35 }) : null;
+    if (io2) io2.observe(stage); else S.onScreen = true;
+    if (GV.gl && typeof GV.gl.onOff === 'function') GV.gl.onOff(() => { if (HUB.kind === 'shared' || HUB.st === 'idle') { el.dataset.gl = 'off'; S.why = 'gl: ' + (GV.gl.why || 'off'); fbFocus(S.focus); } });
+    else if (Q.has('nogl')) { el.dataset.gl = 'off'; requestAnimationFrame(() => fbFocus(S.focus)); }
     D.addEventListener('visibilitychange', () => { if (!D.hidden) wake(); });
     // карточка/корзина/меню поверх страницы — блок на странице замирает (вкладка «3D» в карточке при этом живёт)
     function onOverlay(e) { if (BARE) return; S.paused = !!(e.detail && e.detail.open); if (!S.paused) wake(); }
@@ -685,7 +728,7 @@ self.onmessage = async (ev) => {
     /* ── движок и ленивая загрузка ── */
     function onHub(st) {
       if (st === 'ok') { S.ready = true; el.dataset.gl = 'on'; camFit(); pose(); wake(); hubPump(); }
-      else if (st === 'off') { S.ready = false; el.dataset.gl = 'off'; S.why = HUB.why; fbLoad(); }
+      else if (st === 'off') { S.ready = false; el.dataset.gl = 'off'; S.why = HUB.why; fbFocus(S.focus); }
     }
     function start() {
       if (S.started) return; S.started = true;
@@ -696,24 +739,39 @@ self.onmessage = async (ev) => {
     // приоритет: сначала то, что в кадре (фото-заглушка мгновенно, затем GLB), потом соседи; дальние — не грузим вовсе
     function tasks() {
       const f = S.focus, narrow = NARROW.matches, chain = S.concept === 'chain';
-      const order = items.map((it) => it.i).sort((a, b) => Math.abs(a - f) - Math.abs(b - f) || b - a);
+      const dist = (i) => (chain ? Math.abs(i - f) : Math.abs(wrapD(i, f)));
+      const order = items.map((it) => it.i).sort((a, b) => dist(a) - dist(b) || b - a);
       const reachStub = chain ? 1 : narrow ? 2 : 3, reachGlb = chain ? (opts.ui === 'bare' ? 0 : 1) : narrow ? 1 : 2;
       const out = [], T = (i, kind) => {
         const it = items[i], md = opts.models[it.id];
         out.push({ id: it.id, kind, src: kind === 'glb' ? md && md.url : opts.stubs[it.id], meta: Object.assign({ h: it.h, top: it.top }, kind === 'glb' ? md : null) });
       };
-      for (const i of order) { const d = Math.abs(i - f); if (d <= reachStub) T(i, 'stub'); if (d === 0) T(i, 'glb'); }
-      for (const i of order) { const d = Math.abs(i - f); if (d > 0 && d <= reachGlb) T(i, 'glb'); }
+      for (const i of order) { const d = dist(i); if (d <= reachStub) T(i, 'stub'); if (d === 0) T(i, 'glb'); }
+      for (const i of order) { const d = dist(i); if (d > 0 && d <= reachGlb) T(i, 'glb'); }
+      // полное качество (2048, ~290 тыс. треуг.) — только вещи в фокусе и только когда она остановилась
+      if (S.fullWant === f && md(f) && md(f).full) out.push({ id: items[f].id, kind: 'full', src: md(f).full, meta: Object.assign({ h: items[f].h, top: items[f].top }, md(f), { url2: md(f).full2 }) });
       return out;
+    }
+    const md = (i) => opts.models[items[i].id];
+    // какие полные модели держать: фокус; на десктопе — ещё соседей, если уже загружены (память телефона бережём)
+    function fullKeep() {
+      if (S.dead) return [];
+      const f = S.focus, keep = [items[f].id];
+      if (!NARROW.matches && !BARE && S.concept === 'rail') keep.push(items[(f + N - 1) % N].id, items[(f + 1) % N].id);
+      return keep;
+    }
+    function settle() {   // фокус остановился → догружаем полное качество, лишнее выгружаем
+      clearTimeout(S.fullT);
+      S.fullT = setTimeout(() => { S.fullT = 0; S.fullWant = S.focus; hubFullGC(); pump(); }, BARE ? 60 : 450);
     }
     function pump() { S.active = now(); hubPump(); }
     function onLoaded(id, kind, r) {
       const it = items.find((x) => x.id === id);
-      if (it && r && r.drop != null) { it.drop = r.drop; if (kind === 'glb' && r.size) it.bot = r.size[1] - r.top; }
-      if (kind === 'glb') el.dispatchEvent(new CustomEvent('grinchin:rack-model', { bubbles: true, detail: Object.assign({ id }, r) }));
+      if (it && r && r.drop != null) { it.drop = r.drop; if ((kind === 'glb' || kind === 'full') && r.size) it.bot = r.size[1] - r.top; }
+      if (kind === 'glb' || kind === 'full') el.dispatchEvent(new CustomEvent('grinchin:rack-model', { bubbles: true, detail: Object.assign({ id }, r) }));
       if (S.ready) { camFit(); pose(); } wake();
     }
-    const api = { _hub: onHub, _tasks: tasks, _loaded: onLoaded, _live: () => S.visible && !S.dead && !S.paused, _active: () => S.active || 0 };
+    const api = { _hub: onHub, _tasks: tasks, _loaded: onLoaded, _keep: fullKeep, _live: () => S.visible && !S.dead && !S.paused, _active: () => S.active || 0 };
 
     function debug() {
       hubStats().then((v) => {
@@ -747,8 +805,8 @@ self.onmessage = async (ev) => {
       },
       // движок общий и остаётся жить (его держит сайт / другие экземпляры); экземпляр только отписывается
       destroy: () => {
-        S.dead = true; LOOP.fns.delete(frame); HUB.insts.delete(api);
-        if (ro) ro.disconnect(); if (io) io.disconnect(); W.removeEventListener('scroll', onScroll); D.removeEventListener('grinchin:overlay', onOverlay);
+        S.dead = true; LOOP.fns.delete(frame); HUB.insts.delete(api); clearTimeout(S.fullT); hubFullGC();
+        if (ro) ro.disconnect(); if (io) io.disconnect(); if (io2) io2.disconnect(); W.removeEventListener('scroll', onScroll); D.removeEventListener('grinchin:overlay', onOverlay);
         el.innerHTML = ''; el.classList.remove('rk'); if (GV.rack.inst === inst) GV.rack.inst = null;
       },
     };
@@ -761,14 +819,15 @@ self.onmessage = async (ev) => {
   const ASSETS = { models: {}, stubs: {} };
   (() => {
     const M = {
-      'jeans-restart': ['{{asset:img/v4/3d/jeans-restart.glb}}'],
-      'suit-detour': ['{{asset:img/v4/3d/suit-detour-top.glb}}', '{{asset:img/v4/3d/suit-detour-pants.glb}}'],
-      'jeans-scribble': ['{{asset:img/v4/3d/jeans-scribble.glb}}'],
-      'hoodie-crack': ['{{asset:img/v4/3d/hoodie-crack.glb}}'],
-      'jacket-biker': ['{{asset:img/v4/3d/jacket-biker.glb}}'],
-      'jeans-redline': ['{{asset:img/v4/3d/jeans-redline.glb}}'],
-      'tee-blank': ['{{asset:img/v4/3d/tee-blank.glb}}'],
-      'longsleeve-blank': ['{{asset:img/v4/3d/longsleeve-blank.glb}}'],
+      // [лёгкая, лёгкая-2, полная, полная-2]: лёгкие — tools/lod.sh (~73 тыс. треуг., 1024), полные — модели G1 как есть (2048)
+      'jeans-restart': ['{{asset:img/v4/3d/jeans-restart.glb}}', null, '{{asset:img/v4/3d/full/jeans-restart.glb}}'],
+      'suit-detour': ['{{asset:img/v4/3d/suit-detour-top.glb}}', '{{asset:img/v4/3d/suit-detour-pants.glb}}', '{{asset:img/v4/3d/full/suit-detour-top.glb}}', '{{asset:img/v4/3d/full/suit-detour-pants.glb}}'],
+      'jeans-scribble': ['{{asset:img/v4/3d/jeans-scribble.glb}}', null, '{{asset:img/v4/3d/full/jeans-scribble.glb}}'],
+      'hoodie-crack': ['{{asset:img/v4/3d/hoodie-crack.glb}}', null, '{{asset:img/v4/3d/full/hoodie-crack.glb}}'],
+      'jacket-biker': ['{{asset:img/v4/3d/jacket-biker.glb}}', null, '{{asset:img/v4/3d/full/jacket-biker.glb}}'],
+      'jeans-redline': ['{{asset:img/v4/3d/jeans-redline.glb}}', null, '{{asset:img/v4/3d/full/jeans-redline.glb}}'],
+      'tee-blank': ['{{asset:img/v4/3d/tee-blank.glb}}', null, '{{asset:img/v4/3d/full/tee-blank.glb}}'],
+      'longsleeve-blank': ['{{asset:img/v4/3d/longsleeve-blank.glb}}', null, '{{asset:img/v4/3d/full/longsleeve-blank.glb}}'],
     };
     const S = {
       'jeans-restart': ['{{asset:img/v4/3d/stubs/jeans-restart.webp}}'],
@@ -781,7 +840,8 @@ self.onmessage = async (ev) => {
       'longsleeve-blank': ['{{asset:img/v4/3d/stubs/longsleeve-blank.webp}}'],
     };
     const abs = (u) => { try { return new URL(u, location.href).href; } catch (e) { return u; } };   // воркер живёт на blob: — нужны абсолютные адреса
-    for (const id in M) { const u = A(M[id][0]); if (u) ASSETS.models[id] = { url: abs(u), url2: M[id][1] && A(M[id][1]) ? abs(A(M[id][1])) : undefined }; }
+    const U = (x) => (x && A(x) ? abs(A(x)) : undefined);
+    for (const id in M) { const u = U(M[id][0]); if (u) ASSETS.models[id] = { url: u, url2: U(M[id][1]), full: U(M[id][2]), full2: U(M[id][3]) }; }
     for (const id in S) { const u = A(S[id][0]); if (u) ASSETS.stubs[id] = [abs(u), S[id][1] && A(S[id][1]) ? abs(A(S[id][1])) : null]; }
   })();
 
@@ -795,7 +855,7 @@ self.onmessage = async (ev) => {
     const ax = D.documentElement.dataset.rack || 'on';
     if (ax === 'off') { el.hidden = true; return; }
     el.hidden = false;
-    mount(el, { concept: ax === 'chain' ? 'chain' : 'rail', drive: ax === 'drag' || ax === 'chain' ? 'drag' : 'scroll', start: el.dataset.start || 'hoodie-crack' });
+    mount(el, { concept: ax === 'chain' ? 'chain' : 'rail', drive: ax === 'drag' || ax === 'chain' ? 'drag' : 'scroll', start: el.dataset.start || 'jeans-restart', auto: !Q.has('still') });
   }
   GV.rack = { v: 2, mount, mountProduct, KIND, inst: null, engine: () => ({ kind: HUB.kind, state: HUB.st, why: HUB.why, gpu: HUB.gpu }) };
   if (D.readyState === 'loading') D.addEventListener('DOMContentLoaded', auto); else auto();

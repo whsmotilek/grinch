@@ -74,6 +74,16 @@ html[data-light="warm"] .h5-glow{background:radial-gradient(closest-side,rgba(va
 .h5-ches{position:absolute;inset:0;z-index:2;pointer-events:none;visibility:hidden}
 .h5-ches.is-on{visibility:visible}
 .h5-eyes{position:absolute;left:var(--h5-ex);top:var(--h5-ey);width:var(--h5-ew);height:var(--h5-eh);opacity:0;transform-origin:50% 55%;will-change:transform,opacity}
+/* v52 ВЕКИ («моргнул и исчез»): на каждый глаз — рамка по его контуру (статичный clip-path, точки из кадра — hero5-data lids),
+   внутри — поворот по наклону верхнего края глаза (статично) и два слоя: верхнее веко (тьма с выгнутой вниз дугой) и едва заметная
+   нижняя кромка. Движется только transform: translateY (кромка — чуть scaleY). Картинка глаза при этом неподвижна. */
+.h5-lids{position:absolute;inset:0}
+.h5-lid{position:absolute;overflow:hidden}
+.h5-lid-r{position:absolute;left:-30%;right:-30%;top:-60%;bottom:-60%}
+.h5-lid-u,.h5-lid-l{position:absolute;left:0;right:0;background:#0b0b0b;will-change:transform}
+/* верхнее веко высокое (над глазом всегда есть запас тьмы): низ — на середине глаза, дуга глубиной ≈ 40 % высоты глаза */
+.h5-lid-u{top:-100%;height:150%;border-radius:0 0 50% 50%/0 0 12% 12%;transform:translate3d(0,-17%,0);box-shadow:0 2px 5px rgba(11,11,11,.9)}
+.h5-lid-l{top:74%;height:40%;border-radius:50% 50% 0 0/30% 30% 0 0;transform-origin:50% 0;transform:translate3d(0,8%,0)}
 .h5-smile{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;opacity:0;will-change:transform,opacity}
 .h5-smile path{fill:var(--lt-pale)}
 /* ?out=line: линия-разделитель на всю ширину (2 px), едет transform, гаснет opacity */

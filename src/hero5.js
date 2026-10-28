@@ -62,7 +62,7 @@
   /* заставка: свет (lightAt/lightOn/dark — ниже) и «чеширские» глаза; stickTop — для перевода фронта света в координаты экрана */
   GV.hero5.lightAt = function (pat, t, run) { return lightAt(pat, t, run); }; GV.hero5.lightOn = function () { lightOn(); };
   GV.hero5.dark = function () { dark(); }; GV.hero5.stickTop = function () { return stickTop(); };
-  GV.hero5.eyes = function (o) { loadEyes(); ches.classList.toggle('is-on', o > .001); eyes.style.opacity = o > .001 ? o.toFixed(3) : '0'; eyes.style.transform = ''; sv.style.opacity = '0'; line.style.opacity = '0'; };
+  GV.hero5.eyes = function (o) { loadEyes(); ches.classList.toggle('is-on', o > .001); eyes.style.opacity = o > .001 ? o.toFixed(3) : '0'; eyes.style.transform = ''; sv.style.opacity = '0'; line.style.opacity = '0'; if (typeof lidsSet === 'function') lidsSet(0); };
   /* ворота заставки (loader.html gate): кадр hero нужного размера декодирован + слой «чеширских» глаз (он виден в темноте до вспышек) */
   // v51: + слой конуса (вспышки) — декодирован заранее, иначе первая вспышка платит декодом (длинный кадр)
   function decoded(im) { if (!im) return Promise.resolve(false);
@@ -165,13 +165,15 @@
     G = { sw: sw, sh: sh, cx: cx, cy: cy, mw: mw }; return G;
   }
   var OUT = {
-    /* 1 «Моргнул и исчез» (по умолчанию): в темноте проступают глаза и улыбка; глаза медленно моргают (.46–.55) и закрываются
-       (.64–.76) — веки = scaleY слоя глаз; улыбка тает последней (.78–.96); снизу поднимается каталог */
+    /* 1 «Моргнул и исчез» (по умолчанию, v52): в темноте проступают глаза и улыбка (.24–.38); на .44 — одно быстрое обычное
+       моргание (закрыл-открыл 180 мс, по времени), пауза; .6–.8 — медленное окончательное закрытие по прокрутке; затем тает
+       улыбка (.8–.96); снизу поднимается каталог. Картинка глаз неподвижна — опускаются веки (lids) */
     blink: function (q) {
-      var a = sm(.24, .38, q), lid = 1 - .92 * Math.max(bump(.46, .56, q), sm(.64, .76, q));
-      eyes.style.opacity = (.95 * a * (1 - sm(.7, .8, q))).toFixed(3);
-      eyes.style.transform = lid < .999 ? 'scale(1,' + Math.max(.04, lid).toFixed(3) + ')' : '';
-      sv.style.opacity = (a * (1 - sm(.78, .96, q))).toFixed(3); sv.style.transform = ''; line.style.opacity = '0';
+      var a = sm(.24, .38, q); lidsBuild();
+      eyes.style.opacity = (.95 * a * (1 - sm(.8, .84, q))).toFixed(3); eyes.style.transform = '';
+      if (q >= .44 && !blinked) { blinked = true; blinkOnce(); } else if (q < .3) blinked = false;
+      lidsSet(sm(.6, .8, q));
+      sv.style.opacity = (a * (1 - sm(.8, .96, q))).toFixed(3); sv.style.transform = ''; line.style.opacity = '0';
     },
     /* 3 «Улыбка → разделитель» (?out=line): глаза гаснут, улыбка распрямляется (scale по рту: вширь на всю сцену, по высоте → 0)
        и сменяется тонкой светлой линией; линия опускается к низу сцены и становится границей — после отпускания каталог
@@ -185,6 +187,35 @@
       line.style.transform = 'translate3d(0,' + (g.cy + (g.sh - 2 - g.cy) * io(sm(.66, 1, q))).toFixed(1) + 'px,0)';
     }
   };
+  /* веки: рамка на каждый глаз по контуру из кадра (доли кадра) — в слое глаз (.h5-ches-f = рамка кадра) */
+  var lidsEl = hero.querySelector('.h5-lids'), lidsKey = '', LIDS = [], blinked = false;
+  var LID_OPEN = -17, LID_SHUT = 28;   // translateY верхнего века, % его высоты (≈ 3,3 высоты глаза): открыт — дуга над глазом, закрыт — углы дуги ниже глаза
+  function lidsBuild() {
+    var k = key(), d = DATA[k]; if (lidsKey === k || !lidsEl || !d || !d.lids || !d.eyes) return; lidsKey = k; lidsEl.innerHTML = ''; LIDS = []; lidV = -1;
+    var E = d.eyes;   // слой глаз (.h5-eyes) — рамка E в долях кадра; веки — в той же рамке кадра (.h5-ches-f)
+    d.lids.forEach(function (L) {
+      var top = L[4].filter(function (p) { return p[1] < .45; }), a = 0;
+      if (top.length > 1) { var p0 = top.reduce(function (m, p) { return p[0] < m[0] ? p : m; }), p1 = top.reduce(function (m, p) { return p[0] > m[0] ? p : m; });
+        a = Math.atan2((p1[1] - p0[1]) * L[3] * d.h, (p1[0] - p0[0]) * L[2] * d.w) * 180 / Math.PI; }
+      var c = D.createElement('div'); c.className = 'h5-lid';
+      c.style.cssText = 'left:' + (L[0] * 100).toFixed(3) + '%;top:' + (L[1] * 100).toFixed(3) + '%;width:' + (L[2] * 100).toFixed(3) + '%;height:' + (L[3] * 100).toFixed(3) + '%;' +
+        '-webkit-clip-path:polygon(' + L[4].map(function (p) { return (p[0] * 100).toFixed(1) + '% ' + (p[1] * 100).toFixed(1) + '%'; }).join(',') + ');' +
+        'clip-path:polygon(' + L[4].map(function (p) { return (p[0] * 100).toFixed(1) + '% ' + (p[1] * 100).toFixed(1) + '%'; }).join(',') + ')';
+      c.innerHTML = '<div class="h5-lid-r" style="transform:rotate(' + a.toFixed(2) + 'deg)"><div class="h5-lid-u"></div><div class="h5-lid-l"></div></div>';
+      lidsEl.appendChild(c); LIDS.push([c.querySelector('.h5-lid-u'), c.querySelector('.h5-lid-l')]);
+    });
+  }
+  function lidT(v) { return 'translate3d(0,' + (LID_OPEN + (LID_SHUT - LID_OPEN) * v).toFixed(2) + '%,0)'; }
+  function rimT(v) { return 'translate3d(0,' + (8 - 26 * v).toFixed(2) + '%,0) scale(1,' + (1 + .25 * v).toFixed(3) + ')'; }
+  var lidV = -1;
+  function lidsSet(v) { if (v === lidV) return; lidV = v; LIDS.forEach(function (l) { l[0].style.transform = v > 0 ? lidT(v) : ''; l[1].style.transform = v > 0 ? rimT(v) : ''; }); }
+  function blinkOnce() {   // обычное моргание: закрыл-открыл ≈ 180 мс (композитор)
+    if (!LIDS.length || !LIDS[0][0].animate) return;
+    LIDS.forEach(function (l) {
+      l[0].animate([{ transform: lidT(0) }, { transform: lidT(1), offset: .45 }, { transform: lidT(1), offset: .55 }, { transform: lidT(0) }], { duration: 180, easing: 'ease-in-out' });
+      l[1].animate([{ transform: rimT(0) }, { transform: rimT(.6), offset: .5 }, { transform: rimT(0) }], { duration: 180, easing: 'ease-in-out' });
+    });
+  }
   var outPx = 1, eyesKey = '';
   function loadEyes() { var k = key(); if (eyesKey === k || !eyes) return; eyesKey = k; eyes.src = eyes.getAttribute('data-' + k) || ''; }
   var lastQ = -1, lastR = -1;
@@ -194,7 +225,7 @@
     if (u >= 1) lightOn(); else lightAt('full', u * DUR.full, false);
     var ui = 1 - sm(.02, .12, q); uis.forEach(function (e) { e.style.opacity = ui < 1 ? ui.toFixed(3) : ''; e.style.visibility = ui <= 0 ? 'hidden' : ''; });
     var on = q > .2 && !!geo(); ches.classList.toggle('is-on', on);
-    if (!on) { eyes.style.opacity = sv.style.opacity = line.style.opacity = '0'; eyes.style.transform = sv.style.transform = ''; return; }
+    if (!on) { eyes.style.opacity = sv.style.opacity = line.style.opacity = '0'; eyes.style.transform = sv.style.transform = ''; lidsSet(0); if (q < .3) blinked = false; return; }
     loadEyes(); OUT[OUTV](q, r);
   }
 
@@ -242,7 +273,8 @@
     var lm = H.getAttribute('data-loader');
     if (lm === 'off' || lm === 'done') { live = true; kick(); }
     // маскот-слой — после первого кадра раскрытия (не спорит с LCP-картинкой)
-    ready().then(function () { setTimeout(loadEyes, lm === 'off' ? 300 : 0); setTimeout(loadMz, lm === 'off' ? 300 : 3200); });
+    ready().then(function () { setTimeout(loadEyes, lm === 'off' ? 300 : 0); setTimeout(loadMz, lm === 'off' ? 300 : 3200);
+      setTimeout(lidsBuild, lm === 'off' ? 600 : 3600); });   // веки — заранее, не в момент выхода (иначе кадр ~230 мс на телефоне)
   }
   if (H.getAttribute('data-ready') === '1') onReady(); else D.addEventListener('grinchin:ready', onReady, { once: true });
   D.addEventListener('grinchin:loader-progress', function (e) { if (e.detail && e.detail.phase === 'done' && !live) GV.hero5.release(); });

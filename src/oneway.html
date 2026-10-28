@@ -1,0 +1,22 @@
+<!-- v5 (C1) · ЗНАК ONE WAY or ANOTHER / история STOP → ST’ART — самостоятельный блок (раньше жил внутри #about под дверью).
+     Сцена #brand-stage по оси data-brand:
+       sign  — 3D-знак ONE WAY or ANOTHER (рисует scenes.js/K2 в .bs-sign — sticky 100svh внутри высокого #brand-stage);
+       story — история STOP → ST’ART v1, собирается в НОВЫЙ логотип (рисует motion.js в .bs-story).
+     От двери не зависит: подпись знака (кикер «ONE WAY or ANOTHER» + две строки) — своя, в scenes.js. -->
+<section id="oneway" class="ow" aria-labelledby="oneway-title">
+  <h2 id="oneway-title" class="vh" lang="en">One way or another</h2>
+  <div id="brand-stage" class="bs">
+    <div class="bs-sign" data-g-dock="sign"></div>
+    <div class="bs-story" data-story>
+      <div class="bs-frame">
+        <div class="bs-street" aria-hidden="true"></div>
+        <svg class="bs-svg" aria-hidden="true" focusable="false"></svg>
+        <ol class="bs-caps">
+          <li>Знаки решают за&nbsp;тебя.</li>
+          <li>Стоп — это тоже старт.</li>
+          <li lang="en">Ignore the signs.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>

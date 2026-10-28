@@ -1,6 +1,7 @@
-<!-- K4/V3 · О БРЕНДЕ v4. Дверь-диорама со скотчем + сцена #brand-stage по оси data-brand:
-     sign  — 3D-знак ONE WAY or ANOTHER (рисует K2 в .bs-sign — sticky 100svh внутри высокого #brand-stage);
-     story — починенная история STOP → ST’ART v1, собирается в НОВЫЙ логотип (рисует motion.js в .bs-story). -->
+<!-- K4/V3 · О БРЕНДЕ v4 — ДВЕРЬ. v5 (C1, 28.10.2026): блок ОТКЛЮЧЁН — дверь переезжает в hero (гараж).
+     Файл сохранён целиком; знак ONE WAY / история (#brand-stage) вынесены в oneway.html и живут без двери.
+     Вернуть дверь: в index.html у маркера about.html убрать «OFF v5 C1 »
+     (+ так же door.js, если нужна геометрия GV.door для ленты roll.js). -->
 <section id="about" class="ab" aria-labelledby="about-title">
   <!-- Дверь (v4 · V3; телефон — v4.2 · M3). Desktop/планшет/ландшафт — диорама door-A3 16:9 по ширине, заголовок
        на растаявшем асфальте под кадром, лёгкий «наезд» по прокрутке (как было — не трогаем).
@@ -24,18 +25,4 @@
   <script>/* M3 v4.2: вариант двери на телефоне (?mdoor=diorama) — до загрузки картинки (img lazy), без мигания и сдвига */
   (function(){var d=document.currentScript.previousElementSibling,v="poster";try{v=new URLSearchParams(location.search).get("mdoor")||v}catch(e){}
   if(v!=="diorama")v="poster";d.setAttribute("data-mdoor",v);if(v==="diorama")d.querySelectorAll(".ab-src-m").forEach(function(s){s.srcset=s.getAttribute("data-alt")})})();</script>
-  <div id="brand-stage" class="bs">
-    <div class="bs-sign" data-g-dock="sign"></div>
-    <div class="bs-story" data-story>
-      <div class="bs-frame">
-        <div class="bs-street" aria-hidden="true"></div>
-        <svg class="bs-svg" aria-hidden="true" focusable="false"></svg>
-        <ol class="bs-caps">
-          <li>Знаки решают за&nbsp;тебя.</li>
-          <li>Стоп — это тоже старт.</li>
-          <li lang="en">Ignore the signs.</li>
-        </ol>
-      </div>
-    </div>
-  </div>
 </section>

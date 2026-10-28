@@ -1,0 +1,46 @@
+<!-- H5 · v5 HERO «маскот у гаража» (PLAN_V5, решения 28.10). Сцена на весь первый экран, без заголовка (слоган — в блоке #tape).
+     Кадры: d — альбомное окно, m — портретное (max-aspect-ratio:1/1). Готовит v5/hero5/tools/make_hero.py: img/v5/hero/*,
+     hero5-data.json (контур рта — читает заставка), hero5-vars.css (геометрия кадра: пропорция, фокус, фонарь, рамка маскота).
+     Кадр вписан «cover по фокусу» (телефон: не уже 1/1,35 кадра, остаток — низом в темноту), <img> = ровно размер кадра на экране:
+     координаты рта = рамка <img> × доли из данных — совпадают на любой ширине, при ресайзе и повороте.
+     Живое без видео (iOS так же): слой маскота «дышит» (scale от низа), тёплый свет фонаря мерцает (opacity),
+     параллакс курсора/прокрутки — только transform; вне экрана, reduced-motion, ?shot=1 — всё стоит.
+     Выход из hero (липкая сцена + ход 95svh): фонарь мигает и гаснет, сцена — в темноту, остаются блики глаз и улыбка («Чеширский кот»),
+     улыбка вытягивается в лаймовую ленту IGNORE THE SIGNS по линии ленты блока #tape и уходит в него. Петля сюжета:
+     заставка — улыбка лого → улыбка маскота; выход из hero — улыбка маскота → скотч.
+     Старый hero v4 (3D-G, видео маскота у знака, «асфальт», бегущая лента) — hero.html, не подключён (index.html: OFF v5 H5). -->
+<section id="hero" class="h5" aria-labelledby="h5-title">
+ <h1 id="h5-title" class="vh">GRINCHIN — Дроп 01: одежда для тех, кто не идёт по заданному маршруту</h1>
+ <div class="h5-stick">
+ <div class="h5-cam" aria-hidden="true">
+  <div class="h5-frame">
+   <picture class="h5-pic">
+    <source type="image/avif" media="(max-aspect-ratio: 1/1)" srcset="{{asset:img/v5/hero/m-720.avif}} 720w, {{asset:img/v5/hero/m-1080.avif}} 1080w" sizes="min(150vw, max(100vw, calc((100vh - 52px) * .8)))">
+    <source type="image/webp" media="(max-aspect-ratio: 1/1)" srcset="{{asset:img/v5/hero/m-720.webp}} 720w, {{asset:img/v5/hero/m-1080.webp}} 1080w" sizes="min(150vw, max(100vw, calc((100vh - 52px) * .8)))">
+    <source type="image/avif" srcset="{{asset:img/v5/hero/d-1440.avif}} 1440w, {{asset:img/v5/hero/d-1920.avif}} 1920w, {{asset:img/v5/hero/d-2560.avif}} 2560w" sizes="max(100vw, calc((100vh - 60px) * 1.78))">
+    <img class="h5-img" src="{{asset:img/v5/hero/d-1440.webp}}" srcset="{{asset:img/v5/hero/d-1440.webp}} 1440w, {{asset:img/v5/hero/d-1920.webp}} 1920w, {{asset:img/v5/hero/d-2560.webp}} 2560w"
+         sizes="max(100vw, calc((100vh - 60px) * 1.78))" alt="" width="2560" height="1440" fetchpriority="high" decoding="async" draggable="false">
+   </picture>
+   <span class="h5-glow"></span>
+   <span class="h5-flash"></span>
+   <!-- маскот отдельным слоем (вырезан из того же кадра, альфа чуть шире фигуры): «дыхание» и свой параллакс; грузится после раскрытия -->
+   <div class="h5-mz"><div class="h5-mz-b"><img class="h5-mz-i" alt="" decoding="async" draggable="false"
+        data-d="{{asset:img/v5/hero/mz-d-s.webp}}|{{asset:img/v5/hero/mz-d-l.webp}}" data-m="{{asset:img/v5/hero/mz-m-s.webp}}|{{asset:img/v5/hero/mz-m-l.webp}}"></div></div>
+  </div>
+ </div>
+ <span class="h5-shade" aria-hidden="true"></span>
+ <span class="h5-dim" aria-hidden="true"></span>
+ <!-- переход hero → #tape: глаза и улыбка остаются в темноте, улыбка становится лентой (hero5.js) -->
+ <div class="h5-ches" aria-hidden="true">
+  <div class="h5-ches-f"><img class="h5-eyes" alt="" decoding="async" draggable="false" data-d="{{asset:img/v5/hero/eyes-d.webp}}" data-m="{{asset:img/v5/hero/eyes-m.webp}}"></div>
+  <svg class="h5-smile"><path d=""/></svg>
+  <div class="h5-band-t"><span>Ignore the signs&nbsp;✱&nbsp;Ignore the signs&nbsp;✱&nbsp;Ignore the signs&nbsp;✱&nbsp;Ignore the signs</span></div>
+ </div>
+ <p class="h5-tag h5-ui" aria-hidden="true">дроп 01 — 08 вещей<br>предзаказ · с&nbsp;01.12</p>
+ <div class="h5-foot h5-ui" data-mtag-avoid>
+  <a class="btn h5-cta" href="#drop" data-nav="drop">Смотреть дроп <span aria-hidden="true">↓</span></a>
+ </div>
+ </div>
+</section>
+<script type="application/json" id="h5-data"><!--@html:hero5-data.json--></script>
+<!--@js:hero5.js-->

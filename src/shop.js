@@ -445,7 +445,10 @@
   /* ---------- карточка товара (шит) ---------- */
   var sheetBody = $("[data-ps-body]");
   var cur = { id: null, size: null };
-  function lookOf(p) { return LOOKS.filter(function (l) { return (l.items || []).indexOf(p.id) > -1; })[0]; }
+  // v5 (C1): блок «Образы» отключён в index.html → кадр «образ на модели» и ссылка «Из образа» в карточке не показываются.
+  // Вернут блок (#looks на странице) — вернутся сами.
+  var LOOKS_ON = !!d.getElementById("looks");
+  function lookOf(p) { return LOOKS_ON ? LOOKS.filter(function (l) { return (l.items || []).indexOf(p.id) > -1; })[0] : null; }
   /* галерея v4: рисунок (K3, первый кадр GV.art.gallery) → ghost перед → спина → бок → образ на модели (если вещь в образе).
      Деталь-лупа K3 в v4 не показываем: её место заняли фото. */
   var GAL_SIZES = "(max-width: 767px) 100vw, (max-width: 1119px) 52vw, 590px";
@@ -1038,6 +1041,8 @@
   /* ---------- меню: текущий раздел обведён от руки (тем же штрихом, что выбранный размер) ---------- */
   var MENU_O = "M14 34C10 18 52 6 104 7C160 8 194 18 193 31C192 46 150 55 98 55C44 55 8 47 9 33C10 22 40 14 76 11";
   var menuEl = d.getElementById("site-menu"), here = null;
+  // разделы меню, которые подсвечиваются при прокрутке (v5: «Образы»/«О бренде» убраны → рейл и знак ONE WAY)
+  var NAV_IDS = ["drop", "rack", "oneway", "looks", "about", "next"];
   if (menuEl) $$(".mi .mi-t", menuEl).forEach(function (a) {
     a.insertAdjacentHTML("beforeend", '<svg class="mi-o" viewBox="0 0 200 60" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="' + MENU_O + '" pathLength="1"/></svg>');
   });
@@ -1045,9 +1050,9 @@
     var vis = {};
     var io = new IntersectionObserver(function (es) {
       es.forEach(function (x) { vis[x.target.id] = x.isIntersecting; });
-      here = ["drop", "looks", "about", "next"].filter(function (id) { return vis[id]; })[0] || null;
+      here = NAV_IDS.filter(function (id) { return vis[id]; })[0] || null;
     }, { rootMargin: "-40% 0px -55% 0px" });
-    ["drop", "looks", "about", "next"].forEach(function (id) { var s = d.getElementById(id); if (s) io.observe(s); });
+    NAV_IDS.forEach(function (id) { var s = d.getElementById(id); if (s) io.observe(s); });
   }
   function markCurrent() {
     if (!menuEl) return;
@@ -1131,10 +1136,14 @@
     }
     scrollRaf = requestAnimationFrame(step);
   };
+  // v5 (C1): старые якоря отключённых блоков ведут на соседей, а не в «Тупик.» (#looks → дроп, #about → знак ONE WAY)
+  var ALIAS = { looks: "drop", about: "oneway" };
+  function alias(id) { return !d.getElementById(id) && ALIAS[id] && d.getElementById(ALIAS[id]) ? ALIAS[id] : id; }
   // верх элемента без transform-ов (reveal-анимации соседей сдвигают блоки translateY во время перехода)
   function layoutTop(el) { var y = 0; while (el) { y += el.offsetTop; el = el.offsetParent; } return y; }
   GV.navigate = function (target, opts) {
     opts = opts || {};
+    target = alias(target);
     var t = d.getElementById(target);
     if (!t) return GV.open("404");
     var go = function () {
@@ -1224,12 +1233,12 @@
       return;
     }
     var h = (location.hash || "").slice(1);
-    if (h && !d.getElementById(h)) GV.open("404");
+    if (h && !d.getElementById(h)) { if (alias(h) !== h) GV.navigate(h); else GV.open("404"); }
   }
   // ручная правка адреса на несуществующий #раздел — тоже «Тупик.»
   window.addEventListener("hashchange", function () {
     var h = (location.hash || "").slice(1);
-    if (h && !d.getElementById(h) && !stack.length) GV.open("404");
+    if (h && !d.getElementById(h) && !stack.length) { if (alias(h) !== h) GV.navigate(h); else GV.open("404"); }
   });
   // shot: после разбора всей страницы — иначе соседние модули (GV.art, GV.rack) ещё не объявлены
   if (isShot) { if (d.readyState === "loading") d.addEventListener("DOMContentLoaded", function () { setTimeout(applyOpen, 0); }, { once: true }); else setTimeout(applyOpen, 0); }

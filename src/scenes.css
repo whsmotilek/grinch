@@ -49,7 +49,9 @@
   padding:var(--header-h) var(--gutter,clamp(16px,4vw,64px)) 0}   /* поле = общее поле страницы (base.css), T4 */
 .k2-sign__cap{position:relative;display:grid;align-content:center;min-height:12em}
 .k2-sign__kicker{margin:0 0 1.2em;font:500 var(--fs-xs)/1 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--text-2)}
-.k2-sign__kicker i{font-style:normal;color:var(--c-green)}
+.k2-sign__kicker i{font-style:normal;color:var(--c-green);transition:color .3s var(--ease-out)}
+/* «один зелёный на экран»: когда на знаке проявился лаймовый OR ANOTHER (шаг 2), «or» в подписи гаснет до белого */
+.k2-sign[data-step="2"] .k2-sign__kicker i{color:var(--text)}
 .k2-sign__l{grid-area:2/1;align-self:start;margin:0;color:var(--text);font:800 clamp(1.75rem,3.6vw,3.25rem)/1.05 var(--font-display);letter-spacing:-.01em;text-wrap:balance;
   transition:opacity .34s var(--ease-out) .2s,transform .42s var(--ease-out) .2s}
 /* смена шага — по очереди, а не наплывом: старая строка уходит за 0,18 с вверх, новая входит снизу после паузы.
@@ -75,7 +77,9 @@
   .k2-sign__cap{min-height:0;margin-bottom:8px}
   /* v4.2 (M3): строкой выше — заголовок двери «One way or another.»; повтор кикером через 80 px на телефоне лишний */
   .ab-door ~ #brand-stage .k2-sign__kicker{display:none}
-  .k2-sign__pin{padding-top:28px}
+  .ab-door ~ #brand-stage .k2-sign__pin{padding-top:28px}
+  /* v5 (C1): двери нет — знак открывает свой блок после рейла: кикер «ONE WAY or ANOTHER» даёт контекст, отступ сверху — как у секций */
+  .k2-sign__pin{padding-top:var(--sec-1,72px)}
   .k2-sign__l{font-size:clamp(1.5rem,7vw,2rem)}
   .k2-sign__view{height:auto;min-height:0;aspect-ratio:1/1.08;margin:0 calc(-1 * var(--gutter,16px));cursor:pointer}
 }

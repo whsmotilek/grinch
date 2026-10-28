@@ -50,7 +50,7 @@
 
   /* ================= 1. HERO: фолбэк «разметки» ================= */
   function heroAsphalt() {
-    var hero = $('#hero'); if (!hero || axis('hero', 'asphalt') !== 'asphalt' || calm()) return;
+    var hero = $('#hero'); if (!hero || !$('#hero-title') || axis('hero', 'asphalt') !== 'asphalt' || calm()) return;   // v5 H5: hero5 без заголовка — фолбэк не нужен
     if (W.CSS && CSS.supports && CSS.supports('animation-timeline: scroll()')) return;   // работает CSS
     var title = $('#hero-title'), fade = $$('.hx-sub, .hx-cta', hero), lane = $('.hx-lane', hero), dash = $('.hx-lane i', hero),
         g = $('.hx-g', hero), media = $('.hx-media-wrap', hero), vh = innerHeight, last = -1;

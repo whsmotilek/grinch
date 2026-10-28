@@ -21,24 +21,28 @@ h.classList.add("js");
    v4 (SPEC_V4 «Режимы v4»): heroimg — mascot|scene|look (было model|mascot|crop), mascot — grinchin|quiet|none (было kapushon|grinchin|uhmyl|none;
    quiet = только подвал, как читает mascot.js V3), mzfx — живость маскота calm|max (max = «анимации везде», режим 2);
    новые оси: ghost (V2: ghost-фото на карточке), rack (S1: дроп на вешалках), stickers (стикеры: on|max|off).
-   Старые значения из URL/localStorage не проходят проверку ok() и сбрасываются к пресету; ключ хранилища сменён на :v4. */
-var A={g:["lime","tape","black"],hero:["asphalt","static"],heroimg:["mascot","scene","look"],cards:["photo","a","b","c","d"],ghost:["on","off"],
-size:["vector","hand"],rack:["on","drag","chain","off"],brand:["sign","story"],roll:["page","quiet","off"],tape:["lime","black"],marquee:["off","on"],
+   Старые значения из URL/localStorage не проходят проверку ok() и сбрасываются к пресету; ключ хранилища сменён на :v4.
+   v5 (C1, 28.10.2026): убраны оси roll и tape (лента-маршрут отключена), у rack — значение chain («Цепь» живёт только
+   во вкладке «3D» карточки). Оси, которых больше нет, и их значения из URL/localStorage молча отбрасываются (norm).
+   v5 (H5, 28.10.2026): hero — сцена «маскот у гаража» (hero5.html), старый hero v4 отключён → убраны его оси g (3D-G), hero (asphalt),
+   heroimg (mascot|scene|look) и marquee (бегущая лента из скотча: скотч теперь только в блоке #tape). */
+var A={cards:["photo","a","b","c","d"],ghost:["on","off"],
+size:["vector","hand"],rack:["on","drag","off"],brand:["sign","story"],
 stickers:["on","max","off"],mascot:["grinchin","quiet","none"],mzfx:["calm","max"],cart:["count","menu"]};
 var K=Object.keys(A);
 function pr(s){var r={},v=s.trim().split(/\s+/);K.forEach(function(k,i){r[k]=v[i]});return r}
-/*            g     hero    heroimg cards ghost size  rack brand roll  tape  marquee stickers mascot   mzfx  cart */
-var P={1:pr("tape  asphalt mascot  photo on    hand   on  sign  page  lime  off     on       grinchin calm  count"),
-2:pr("tape  asphalt mascot  photo on    hand   on  sign  page  lime  on      max      grinchin max   count"),
-3:pr("lime  static  scene   photo on    vector on  story quiet black off     off      quiet    calm  menu"),
-4:pr("black asphalt look    photo on    hand   on  story page  black on      on       grinchin calm  count")};
+/*           cards ghost size   rack brand stickers mascot   mzfx  cart */
+var P={1:pr("photo on    hand   on   sign  on       grinchin calm  count"),
+2:pr("photo on    hand   on   sign  max      grinchin max   count"),
+3:pr("photo on    vector on   story off      quiet    calm  menu"),
+4:pr("photo on    hand   on   story on       grinchin calm  count")};
 var st={},m=1,o={},LIVE={};
 try{st=JSON.parse(localStorage.getItem(KEY))||{}}catch(e){}
 var um=q.get("m");
 if(um&&P[um])m=+um;else{if(P[st.m])m=+st.m;if(st.o&&typeof st.o==="object")o=st.o}
 K.forEach(function(k){var v=q.get(k);if(v)o[k]=v});
 function ok(k,v){return A[k]&&A[k].indexOf(v)>-1}
-function norm(){K.forEach(function(k){if(!ok(k,o[k])||o[k]===P[m][k])delete o[k]})}
+function norm(){Object.keys(o).forEach(function(k){if(!A[k])delete o[k]});K.forEach(function(k){if(!ok(k,o[k])||o[k]===P[m][k])delete o[k]})}
 function cur(k){return o[k]||P[m][k]}
 function paint(){K.forEach(function(k){h.setAttribute("data-"+k,cur(k))});h.dataset.m=String(m);
 if(Object.keys(o).length)h.dataset.mx="1";else delete h.dataset.mx}
@@ -69,13 +73,13 @@ reset:function(){return GV.mode.preset(m)}};
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>
-/* V1 v4: картинка первого экрана — preload сразу из <head> (иначе запрос уходит, только когда парсер дойдёт до hero, после ~0,7 МБ инлайна).
-   Отдельным скриптом ПОСЛЕ meta viewport: до неё media (min-width:768px) на телефоне ещё истинно (вьюпорт 980) — качалась бы картинка desktop. */
+/* H5 v5: кадр hero — preload сразу из <head> (иначе запрос уходит, только когда парсер дойдёт до hero, после ~0,7 МБ инлайна).
+   ПОСЛЕ meta viewport: до неё вьюпорт телефона 980 px — media считалось бы неверно. Условие кадра — как у <source> в hero5.html:
+   портретное окно (max-aspect-ratio:1/1) → m, альбомное → d. Старый preload v4 (scene/look) — в истории hero.html. */
 try{var pl=function(set,sz,media){var l=document.createElement("link");l.rel="preload";l.as="image";l.type="image/avif";l.setAttribute("imagesrcset",set);
-l.setAttribute("imagesizes",sz);if(media)l.media=media;l.setAttribute("fetchpriority","high");document.head.appendChild(l)};
-if(window.GV.mode.get("heroimg")==="look")pl("{{asset:img/v4/hero/look-640.avif}} 640w, {{asset:img/v4/hero/look-1200.avif}} 1200w","(max-width: 767px) 80vw, 50vw");
-else{pl("{{asset:img/v4/hero/scene-m-720.avif}} 720w","100vw","(max-width: 767px)");
-pl("{{asset:img/v4/hero/scene-1440.avif}} 1440w, {{asset:img/v4/hero/scene-2560.avif}} 2560w","100vw","(min-width: 768px)")}}catch(e){}
+l.setAttribute("imagesizes",sz);l.media=media;l.setAttribute("fetchpriority","high");document.head.appendChild(l)};
+pl("{{asset:img/v5/hero/m-720.avif}} 720w, {{asset:img/v5/hero/m-1080.avif}} 1080w","min(150vw, max(100vw, calc((100vh - 52px) * .8)))","(max-aspect-ratio: 1/1)");
+pl("{{asset:img/v5/hero/d-1440.avif}} 1440w, {{asset:img/v5/hero/d-1920.avif}} 1920w, {{asset:img/v5/hero/d-2560.avif}} 2560w","max(100vw, calc((100vh - 60px) * 1.78))","(min-aspect-ratio: 10001/10000)")}catch(e){}
 </script>
 <title>GRINCHIN — IGNORE THE SIGNS · Дроп 01</title>
 <meta name="description" content="GRINCHIN — IGNORE THE SIGNS. Дроп 01: восемь вещей — джинсы, костюм, худи, косуха, футболка, лонгслив. Предзаказ, отправка с 01.12.">
@@ -99,12 +103,15 @@ pl("{{asset:img/v4/hero/scene-1440.avif}} 1440w, {{asset:img/v4/hero/scene-2560.
 <!--@css:base.css-->
 <!--@css:content.css-->
 <!--@css:motion.css-->
+<!--@css:hero5-vars.css--><!-- H5 v5: геометрия кадров hero (генерирует v5/hero5/tools/make_hero.py) -->
+<!--@css:hero5.css--><!-- H5 v5: hero «маскот у гаража» -->
 <!--@css:cards-art.css-->
 <!--@css:scenes.css-->
-<!--@css:roll.css-->
+<!--OFF v5 C1 @css:roll.css--><!-- лента-маршрут отключена (C1); вернуть — убрать «OFF v5 C1 » из маркера слева -->
 <!--@css:mascot.css-->
 <!--@css:end.css-->
 <!--@css:rack.css-->
+<!--@css:tapeblock.css--><!-- T1 v5: блок скотча IGNORE THE SIGNS (#tape) -->
 <!--@css:modes.css-->
 <!--@css:account.css--><!-- A2 v4.2: личный кабинет (шит, кнопка в шапке, сердечко) -->
 <!--@css:m-top.css--><!-- M2 v4.2: телефон, верх страницы (≤767 px) -->
@@ -133,8 +140,13 @@ pl("{{asset:img/v4/hero/scene-1440.avif}} 1440w, {{asset:img/v4/hero/scene-2560.
 </header>
 
 <main id="main">
-<!-- ============ HERO (K4) ============ -->
-<!--@html:hero.html-->
+<!-- ============ HERO (H5 v5): «маскот у гаража», hero5.* ============
+     Старый hero v4 (3D-G, видео маскота у знака, асфальт, бегущая лента) отключён; вернуть — маркер ниже вместо hero5 + оси g/hero/heroimg/marquee в head -->
+<!--OFF v5 H5 @html:hero.html-->
+<!--@html:hero5.html-->
+
+<!-- ============ IGNORE THE SIGNS (T1 v5): единственный блок со скотчем, tapeblock.* ============ -->
+<!--@html:tapeblock.html-->
 
 <!-- ============ ДРОП 01 ============ -->
 <section id="drop" aria-labelledby="drop-title">
@@ -147,14 +159,18 @@ pl("{{asset:img/v4/hero/scene-1440.avif}} 1440w, {{asset:img/v4/hero/scene-2560.
   </div>
 </section>
 
-<!-- ============ ДРОП НА ВЕШАЛКАХ (S1): рейл с 8 вещами в 3D, rack.js; ось data-rack: on|drag|chain|off ============ -->
+<!-- ============ ДРОП НА ВЕШАЛКАХ (S1): рейл с 8 вещами в 3D, rack.js; ось data-rack: on|drag|off (v5: только рейл) ============ -->
 <section id="rack" aria-label="Дроп на вешалках" data-rack-mount></section>
 
-<!-- ============ ОБРАЗЫ (K3) ============ -->
-<!--@html:looks.html-->
+<!-- ============ ОБРАЗЫ (K3) — v5 C1: отключено (может вернуться). Вернуть — убрать «OFF v5 C1 » из маркера ниже;
+     кадр «образ на модели» в карточке вернётся сам (shop.js смотрит, есть ли #looks), пункт меню — добавить руками ============ -->
+<!--OFF v5 C1 @html:looks.html-->
 
-<!-- ============ О БРЕНДЕ (K4 + K2: #brand-stage) ============ -->
-<!--@html:about.html-->
+<!-- ============ О БРЕНДЕ: дверь — v5 C1: отключено (дверь уезжает в hero). Вернуть — убрать «OFF v5 C1 » из маркера ниже ============ -->
+<!--OFF v5 C1 @html:about.html-->
+
+<!-- ============ ЗНАК ONE WAY or ANOTHER / история (K2 + K4: #brand-stage) — v5: отдельный блок без двери ============ -->
+<!--@html:oneway.html-->
 
 <!-- ============ РАЗОБРАЛИ — ВЕРНЁМ (K5) ============ -->
 <!--@html:next.html-->
@@ -163,8 +179,7 @@ pl("{{asset:img/v4/hero/scene-1440.avif}} 1440w, {{asset:img/v4/hero/scene-2560.
 <!-- ============ ПОДВАЛ (K5) ============ -->
 <!--@html:footer.html-->
 
-<!-- рулон-маршрут (оси data-roll, data-tape; T1): слой во всю высоту страницы, roll.js -->
-<div id="roll-stage" aria-hidden="true"></div>
+<!-- рулон-маршрут (T1 v3.1 / V3 v4) — v5 C1: отключён. Вернуть: div#roll-stage (aria-hidden) здесь + маркеры roll.css и roll.js -->
 
 <!-- ============ ОВЕРЛЕИ ============ -->
 <!-- меню: чёрный лист съезжает из-под шапки (desktop — по содержимому, mobile — на весь экран) -->
@@ -174,8 +189,8 @@ pl("{{asset:img/v4/hero/scene-1440.avif}} 1440w, {{asset:img/v4/hero/scene-2560.
     <div class="wrap menu-in">
       <nav class="menu-main" aria-label="Разделы">
         <a href="#drop" data-nav="drop" class="mi" style="--i:0"><span class="mi-t">Дроп&nbsp;01<sup>08</sup></span></a>
-        <a href="#looks" data-nav="looks" class="mi" style="--i:1"><span class="mi-t">Образы</span></a>
-        <a href="#about" data-nav="about" class="mi" style="--i:2"><span class="mi-t">О&nbsp;бренде</span></a>
+        <a href="#rack" data-nav="rack" class="mi" style="--i:1"><span class="mi-t">На&nbsp;вешалках</span></a>
+        <a href="#oneway" data-nav="oneway" class="mi" style="--i:2"><span class="mi-t" lang="en">One&nbsp;way</span></a>
         <button type="button" data-open="sizes" class="mi" style="--i:3"><span class="mi-t">Размеры</span></button>
         <button type="button" data-open="cart" class="mi mi--cart" style="--i:4"><span class="mi-t">Корзина <span class="mi-n">(<span data-cart-count>0</span>)</span></span></button>
         <!-- V1 v4.1: маскот стоит на линии и выглядывает из-за правого края экрана (поза menu обрезана кромкой справа). Рисует V3 (GV.mascot.mount);
@@ -278,12 +293,13 @@ pl("{{asset:img/v4/hero/scene-1440.avif}} 1440w, {{asset:img/v4/hero/scene-2560.
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.0/Draggable.min.js"></script>
 <!--@js:cards-art.js-->
 <!--@js:motion.js-->
-<!--@js:door.js--><!-- T2 v3.1: дверь на телефоне (камера вдоль GRINCHIN → отъезд), блок .ab-door в about.html -->
+<!--OFF v5 C1 @js:door.js--><!-- дверь (GV.door) отключена вместе с about.html; вернуть — убрать «OFF v5 C1 » -->
 <!--@js:three-g.js-->
 <!--@js:rack-scene.js--><!-- S1: 3D-часть «Дроп на вешалках» (исходник уходит в воркер GV.gl) -->
 <!--@js:rack.js-->
 <!--@js:scenes.js-->
-<!--@js:roll.js-->
+<!--OFF v5 C1 @js:roll.js--><!-- лента-маршрут (GV.roll) отключена; вернуть — убрать «OFF v5 C1 » + div#roll-stage + roll.css -->
+<!--@js:tapeblock.js--><!-- T1 v5: блок скотча (GV.tapeblock) -->
 <!--@js:mascot.js-->
 <!--@js:end.js-->
 <!--@js:modes.js-->

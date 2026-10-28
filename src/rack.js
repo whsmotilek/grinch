@@ -5,6 +5,8 @@
              в фокусе стоит на выгибе (ближе всех) и медленно вращается, соседи покачиваются от разгона.
    · chain — «Цепь»: одна вещь на цепи с карабином, обмотанным лаймовым скотчем; драг раскручивает её
              (вертлюг с трением), смена вещи — старая уезжает вверх, новая спускается и пружинит.
+             v5 (C1): в блоке страницы — только «Рейл», переключателя «Рейл · Цепь» нет (opts.switch, по умолчанию false);
+             «Цепь» живёт только во вкладке «3D» карточки товара (mountProduct, ui=bare).
    Здесь — данные, раскладка, вся физика (поза считается тут, воркер только рисует), жесты, подписи, очередь загрузки.
    3D — rack-scene.js (в Web Worker, один WebGL-контекст; в сайте — общий GV.gl, см. README).
    API: GV.rack.mount(el, opts) → экземпляр {go, next, prev, focus, concept, stats, bench, destroy}. */
@@ -81,27 +83,41 @@
     g.lineJoin = 'round'; g.lineWidth = lw; g.strokeStyle = '#000'; path(); g.stroke();
     return c;
   }
+  /* v5 (H5): бирки — нейтральные картонные, НЕ скотч (скотч на сайте — только в блоке #tape): прямоугольник со срезанными углами
+     у шейки и пробитой дыркой, ровный край, без блика; контур тонкий. Форма — та же альфа-маска (alphaTest), логика рейла не меняется. */
+  const PAPER = '#f2f2ec', GRAPH = '#262626';
+  function tagCard(w, h, fill, ink, draw, flip) {
+    const c = canvas(w, h), g = c.getContext('2d'), lw = Math.max(2, Math.round(h * 0.05)), p = lw / 2, ch = h * 0.3;
+    const path = () => { g.save(); if (flip) { g.translate(w, 0); g.scale(-1, 1); }
+      g.beginPath(); g.moveTo(p + ch, p); g.lineTo(w - p, p); g.lineTo(w - p, h - p); g.lineTo(p + ch, h - p); g.lineTo(p, h - p - ch); g.lineTo(p, p + ch); g.closePath();
+      g.moveTo(p + ch * .95 + h * .09, h / 2); g.arc(p + ch * .95, h / 2, h * .09, 0, Math.PI * 2, true);   // дырка (обратный обход — вырез)
+      g.restore(); };
+    path(); g.fillStyle = fill; g.fill('evenodd');
+    if (draw) { g.save(); path(); g.clip('evenodd'); draw(g, ink); g.restore(); }
+    g.lineJoin = 'round'; g.lineWidth = lw; g.strokeStyle = '#000'; path(); g.stroke();
+    return c;
+  }
   async function makeTex(items, logo) {
     try { await Promise.race([D.fonts && D.fonts.load('800 60px Unbounded'), new Promise((r) => setTimeout(r, 1500))]); } catch (e) { /* noop */ }
     const font = (px) => '800 ' + px + 'px Unbounded, "Arial Black", system-ui, sans-serif';
-    const num = (n) => (g, ink) => { g.fillStyle = ink; g.font = font(62); g.textBaseline = 'middle'; g.fillText(String(n).padStart(2, '0'), 30, 104 / 2 + 3); };
+    const num = (n) => (g, ink) => { g.fillStyle = ink; g.font = font(58); g.textBaseline = 'middle'; g.fillText(String(n).padStart(2, '0'), 70, 104 / 2 + 3); };
     const bmp = (c) => createImageBitmap(c, { imageOrientation: 'flipY', premultiplyAlpha: 'none' });
     // по одной бирке в простое: 16 холстов с текстом разом — это ~200 мс главного потока при CPU ×4
     const idleP = () => new Promise((r) => (W.requestIdleCallback ? W.requestIdleCallback(() => r(), { timeout: 400 }) : setTimeout(r, 30)));
     const tags = [];
     for (let i = 0; i < items.length; i++) {
       await idleP();
-      tags.push({ on: await bmp(tape(256, 104, LIME, '#000', 11 + i * 7, num(items[i].n))), off: await bmp(tape(256, 104, '#262626', '#d8d8d4', 11 + i * 7, num(items[i].n))) });
+      tags.push({ on: await bmp(tagCard(256, 104, PAPER, '#0b0b0b', num(items[i].n))), off: await bmp(tagCard(256, 104, GRAPH, '#d8d8d4', num(items[i].n))) });
     }
     await idleP();
     const bc = canvas(128, 32), bg = bc.getContext('2d');
-    bg.fillStyle = LIME; bg.fillRect(0, 0, 128, 32);
-    bg.fillStyle = 'rgba(255,255,255,.45)'; bg.fillRect(70, 0, 10, 32);
-    bg.fillStyle = 'rgba(0,0,0,.16)'; bg.fillRect(0, 0, 22, 32); bg.fillRect(110, 0, 18, 32);
-    const car = tape(512, 176, LIME, '#000', 5, (g, ink) => {
-      if (!logo) { g.fillStyle = ink; g.font = font(70); g.textBaseline = 'middle'; g.fillText('GRiNCHiN', 40, 92); return; }
+    // кольцо на шейке крючка / обмотка карабина: графитовый шнур (было — лаймовый скотч с бликом)
+    bg.fillStyle = '#2b2b2b'; bg.fillRect(0, 0, 128, 32);
+    bg.fillStyle = 'rgba(255,255,255,.08)'; bg.fillRect(0, 9, 128, 3);
+    const car = tagCard(512, 176, PAPER, '#0b0b0b', (g, ink) => {
+      if (!logo) { g.fillStyle = ink; g.font = font(60); g.textBaseline = 'middle'; g.fillText('GRiNCHiN', 30, 92); return; }
       const B = logo.box, hh = 108, s = hh / (B[3] - B[1]);
-      g.save(); g.translate(62, (176 - hh) / 2 + 4); g.scale(s, s); g.translate(-B[0], -B[1]); g.fillStyle = ink;
+      g.save(); g.translate(30, (176 - hh) / 2 + 4); g.scale(s, s); g.translate(-B[0], -B[1]); g.fillStyle = ink;
       logo.paths.forEach((d) => g.fill(new Path2D(d))); g.restore();
     }, true);
     const bandB = await bmp(bc); await idleP();
@@ -295,7 +311,7 @@ self.onmessage = async (ev) => {
 
   /* ═════════ экземпляр ═════════ */
   function mount(el, opts) {
-    opts = Object.assign({ concept: 'rail', drive: 'drag', ui: 'full', start: null, products: W.GV_PRODUCTS || [], drop: W.GV_DROP || {}, title: 'Дроп на вешалках' }, opts || {});
+    opts = Object.assign({ concept: 'rail', drive: 'drag', ui: 'full', switch: false, start: null, products: W.GV_PRODUCTS || [], drop: W.GV_DROP || {}, title: 'Дроп на вешалках' }, opts || {});
     opts.models = Object.assign({}, ASSETS.models, opts.models || {});
     opts.stubs = Object.assign({}, ASSETS.stubs, opts.stubs || {});
     const BARE = opts.ui === 'bare';   // вкладка «3D» в карточке: только сцена, подпись даёт карточка
@@ -327,9 +343,9 @@ self.onmessage = async (ev) => {
   </div>
   <header class="rk-top">
     <p class="rk-kicker">${opts.drop.name || 'Дроп'} · ${N} вещей</p>
-    <div class="rk-switch" role="group" aria-label="Как показывать">
+    ${opts.switch ? `<div class="rk-switch" role="group" aria-label="Как показывать">
       <button type="button" data-c="rail">Рейл</button><button type="button" data-c="chain">Цепь</button>
-    </div>
+    </div>` : ''}
   </header>
   <section class="rk-info" aria-live="polite" aria-atomic="true">
     <p class="rk-num"><b class="rk-n"></b><span class="rk-of"> / ${pad(N)}</span> · <span class="rk-type"></span></p>
@@ -901,13 +917,14 @@ self.onmessage = async (ev) => {
   function mountProduct(el, id, o) {
     return mount(el, Object.assign({ concept: 'chain', drive: 'drag', ui: 'bare', start: id, title: '3D' }, o || {}));
   }
-  // блок «Дроп на вешалках» в ленте сайта: <section id="rack" data-rack-mount>. Ось режимов data-rack: off | drag | scroll(on)
+  // блок «Дроп на вешалках» в ленте сайта: <section id="rack" data-rack-mount>. Ось режимов data-rack: on (от прокрутки) | drag | off.
+  // v5: только рейл; значения chain у оси больше нет (старое из localStorage сбрасывается инлайн-скриптом index.html)
   function auto() {
     const el = D.querySelector('[data-rack-mount]'); if (!el || el.classList.contains('rk')) return;
     const ax = D.documentElement.dataset.rack || 'on';
     if (ax === 'off') { el.hidden = true; return; }
     el.hidden = false;
-    mount(el, { concept: ax === 'chain' ? 'chain' : 'rail', drive: ax === 'drag' || ax === 'chain' ? 'drag' : 'scroll', start: el.dataset.start || 'jeans-restart', auto: !Q.has('still') });
+    mount(el, { concept: 'rail', drive: ax === 'drag' ? 'drag' : 'scroll', start: el.dataset.start || 'jeans-restart', auto: !Q.has('still') });
   }
   GV.rack = { v: 2, mount, mountProduct, KIND, inst: null, engine: () => ({ kind: HUB.kind, state: HUB.st, why: HUB.why, gpu: HUB.gpu }) };
   if (D.readyState === 'loading') D.addEventListener('DOMContentLoaded', auto); else auto();

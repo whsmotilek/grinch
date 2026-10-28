@@ -1,0 +1,79 @@
+/* GRINCHIN v5 · T1 · Блок скотча «IGNORE THE SIGNS» (#tape). Разметка — tapeblock.html, сцена и тайминг — tapeblock.js.
+   Высота секции = сцена (100svh) + ход 130svh; сцена липкая. Всё, что двигается, — только transform/opacity:
+   раскрытие ленты — два встречных translate (окно едет, лента внутри стоит), рулон — слои SVG (scale/rotate).
+   Без градиентов и размытых теней (программный растр, CPU×4): тени — жёсткие смещённые копии.
+   Статика (reduced-motion, ?shot=1, нет JS): секция = один экран, финальная композиция. */
+#tape.tb{position:relative;background:#0b0b0b;color:var(--c-white);height:230vh;height:230svh;overflow-x:clip;
+  --th:120px;--ins:calc(var(--header-h) + 24px)}
+#tape .tb-stage{position:sticky;top:0;height:100vh;height:100svh;min-height:520px;overflow:hidden;contain:layout paint}
+@media (max-width:767px){#tape.tb{height:225vh;height:225svh}}
+/* статичная финальная композиция: решается в CSS (не JS) — высота известна до первой отрисовки, CLS 0 */
+@media (prefers-reduced-motion:reduce){#tape.tb{height:auto}#tape .tb-stage{position:relative}}
+html[data-shot="1"] #tape.tb,html:not(.js) #tape.tb{height:auto}
+html[data-shot="1"] #tape .tb-stage,html:not(.js) #tape .tb-stage{position:relative}
+
+/* ---------- мир сцены (строит JS); пока не разложен — скрыт (секция ниже первого экрана) ---------- */
+.tb-world{position:absolute;inset:0;visibility:hidden;transform-origin:50% 55%}
+#tape.is-ready .tb-world{visibility:visible}
+.tb-world .tb-a{position:absolute;left:0;top:0}
+
+/* знак-стикер: SVG с белой вырубкой; центр — в точке трансформа */
+.tb-sign{width:var(--sz);height:var(--sz);margin:calc(var(--sz) * -.5) 0 0 calc(var(--sz) * -.5);will-change:transform}
+.tb-sign svg{display:block;width:100%;height:100%;overflow:visible}
+
+/* лента: кадр .tb-run повёрнут вдоль линии (начало координат — центр ленты в точке старта) */
+.tb-run{width:0;height:0;transform-origin:0 0}
+.tb-win{position:absolute;left:0;top:calc(var(--th) * -.5 - 14px);height:calc(var(--th) + 28px);width:var(--len);overflow:hidden;will-change:transform}
+.tb-strip,.tb-shd{position:absolute;left:0;top:14px;height:var(--th);width:var(--len);will-change:transform}
+.tb-shd{background:#000;opacity:.62}
+.tb-face{position:absolute;inset:0;background:var(--tile) 0 0/auto 100% repeat-x}
+.tb-flip .tb-face{transform:rotate(180deg)}
+.tb-run--lime{--tile:url("{{asset:img/v5/tapeblock/tile-lime.webp}}");--end:url("{{asset:img/v5/tapeblock/end-lime.webp}}")}
+.tb-run--black{--tile:url("{{asset:img/v5/tapeblock/tile-black.webp}}");--end:url("{{asset:img/v5/tapeblock/end-black.webp}}")}
+/* печать на ленте — живой текст (IGNORE THE SIGNS), по заливке ниже блика */
+.tb-txt{position:absolute;left:0;top:0;height:100%;display:flex;align-items:center;gap:calc(var(--th) * .2);white-space:nowrap;
+  padding-top:calc(var(--th) * .07);font:900 calc(var(--th) * .4)/1 var(--font-display);letter-spacing:.005em;color:#0a0a0a;
+  text-transform:uppercase}
+.tb-run--black .tb-txt{color:var(--c-paper);font-size:calc(var(--th) * .34);letter-spacing:.06em}
+.tb-txt i{display:block;flex:none;width:calc(var(--th) * .26);height:calc(var(--th) * .26);background:currentColor;
+  clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%)}
+.tb-run--piece .tb-txt{width:100%;justify-content:center}
+/* рваные концы (спрайт 120×256 = высота ленты), левый — зеркально; при перевёрнутой печати — и по вертикали */
+.tb-end{position:absolute;top:calc(var(--th) * -.5);width:calc(var(--th) * .47);height:var(--th);background:var(--end) 0 0/100% 100% no-repeat;
+  transform-origin:0 50%}
+.tb-end--l{transform-origin:50% 50%}
+
+/* рулон: слои SVG, центр в точке трансформа; размер слоя = 2,3·R0 */
+.tb-roll{width:0;height:0;will-change:transform}
+.tb-roll .tb-rl,.tb-spin{position:absolute;left:calc(var(--rs) * -.5);top:calc(var(--rs) * -.5);width:var(--rs);height:var(--rs)}
+.tb-roll .tb-rl{transform-origin:50% 50%;will-change:transform}
+.tb-rl svg{display:block;width:100%;height:100%;overflow:visible}
+.tb-spin{will-change:transform}
+.tb-spin .tb-rl{left:0;top:0}
+
+/* ---------- текст блока ---------- */
+.tb-copy{position:absolute;inset:0;pointer-events:none}
+.tb-copy>*{position:absolute;margin:0;pointer-events:auto}
+.tb-eye,.tb-count{font:var(--t-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--c-ink-2)}
+.tb-count b{font-weight:700;color:var(--c-white)}
+.tb-cap{font:500 clamp(1rem,1.25vw,1.25rem)/1.35 var(--font-text);color:var(--c-white);max-width:22em}
+.tb-copy .tb-cap{position:absolute}
+/* заголовок: без JS — крупно; с разложенной сценой его роль играет печать на ленте (сам он остаётся для скринридеров) */
+.tb-title{left:var(--gutter);top:50%;transform:translateY(-50%);font:900 clamp(2.5rem,8vw,7rem)/.9 var(--font-display);color:var(--c-white)}
+#tape.is-ready .tb-title{position:absolute!important;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+/* раскладки текста по композиции (data-tb-lay ставит JS): da/db — desktop A/B, ma/mb — телефон */
+#tape .tb-eye{left:var(--gutter);top:var(--ins)}
+#tape .tb-count{left:var(--gutter);top:calc(var(--ins) + 1.6em)}
+#tape .tb-copy .tb-cap{left:var(--gutter);bottom:clamp(28px,7vh,72px)}
+#tape[data-tb-lay="db"] .tb-eye{top:calc(50% - 4.2em)}
+#tape[data-tb-lay="db"] .tb-count{top:calc(50% - 2.6em)}
+#tape[data-tb-lay="db"] .tb-copy .tb-cap{top:calc(50% + .4em);bottom:auto;max-width:min(22em,24vw)}
+#tape[data-tb-lay="ma"] .tb-eye,#tape[data-tb-lay="ma"] .tb-count{max-width:7.5em;line-height:1.5}
+#tape[data-tb-lay="ma"] .tb-count{top:calc(var(--ins) + 3.4em)}
+#tape[data-tb-lay="ma"] .tb-copy .tb-cap{right:var(--gutter);bottom:calc(28px + env(safe-area-inset-bottom));max-width:none;font-size:1.0625rem}
+/* телефон b: крест занимает низ экрана — весь текст сверху, над лентой */
+#tape[data-tb-lay="mb"] .tb-copy .tb-cap{top:calc(var(--ins) + 3.3em);bottom:auto;right:var(--gutter);max-width:17em;font-size:1rem}
+/* подпись проявляется к финалу (JS ведёт opacity/transform); в статике видна сразу */
+#tape.is-ready .tb-copy .tb-cap{will-change:opacity,transform}
+#tape[data-tb-lay="mb"] .tb-run--lime .tb-txt{font-size:calc(var(--th) * .35)}

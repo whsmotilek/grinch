@@ -1,26 +1,50 @@
-<!-- V1 · прелоадер v4: «точка → линия → тело → улыбка с рожками → вдох → GRiNCHiN → лого в шапку» + раскрытие эллипсом из клюва,
-     слева из-за края выглядывает маскот с рулоном мультяшного скотча (поза preloader, hf/mascot/final; видео preloader_peek весит 1,1 МБ —
-     для заставки ≤2,4 с это дольше самой заставки, поэтому поза 460 px инлайном ~20 КБ + движение transform по тому же таймлайну).
-     Движок v2 (свой rAF-таймлайн, без GSAP, стартует с первой отрисовки), сценарий v1 (вдох, клюв), новое лого.
-     Режим решается до первой отрисовки: ?shot=1, &skip=1, reduced-motion, ПОВТОРНЫЙ ВИЗИТ (12 ч, localStorage) → без прелоадера.
-     API: GV.loader {mode, started, ready, done, duration, seek(t)}. События: grinchin:loader-progress {t, phase}, grinchin:ready.
-     Слот маскота [data-mascot-slot="preloader"] рисует сам прелоадер (data-mascot-manual: mascot.js его не трогает);
-     скрыт при data-mascot="quiet|none". -->
+<!-- H5 · заставки v5. Их ДВЕ (решение Матвея 28.10), общий движок GV.loader.run(kind):
+     home  — главная без deep-link: «точка → линия → тело → улыбка с рожками → вдох → GRiNCHiN», затем улыбка логотипа ПРЕВРАЩАЕТСЯ
+             в улыбку маскота: контур морфится по точкам и одновременно едет/масштабируется ровно в рот на кадре hero (контур снят
+             с самого кадра — hero5-data.json; координаты на экране даёт GV.hero5.mouth по рамке <img>), буквы садятся в лого шапки.
+             Вокруг улыбки сцена выходит из темноты: прорезь-эллипс растёт от рта (рот → глаза → капюшон/рожки → фонарь/дверь),
+             затемнение гаснет, «камера» отъезжает от рта (зум вокруг центра рта — рот на месте). Линия темнеет в цвет нарисованного
+             рта и растворяется в нём. ≈ 2,56 с. Страница ВСЕГДА открывается с самого верха (scrollRestoration=manual + scrollTo(0,0)
+             до показа, при перезагрузке и возврате из bfcache).
+     quick — повторный заход на главную в той же сессии (sessionStorage): тот же морф в рот, но знак уже стоит — ≈ 1 с; наверх — тоже.
+     page  — вход с deep-link (?open=…, ?lk=…, ?login=…, любой #якорь кроме #hero/#top/#main — разделы, #404, битый адрес через 404.html)
+             и любая будущая отдельная страница (<html data-gv-page>): только «вдох» знака ≈ 0,85 с, знак — в шапку, крышка гаснет;
+             прокрутку НЕ трогаем (якорь/шит открывает shop.js).
+     fade  — prefers-reduced-motion (и ?loader=fade): статичный знак и короткий кроссфейд ≈ 0,6 с.
+     off   — ?shot=1, &skip=1. Принудительно: ?loader=full|quick|page|fade.
+     Нет GV.hero5 / рот вне экрана — запасной путь v4: знак целиком в шапку, эллипс из клюва.
+     Движок свой (rAF-таймлайн, без GSAP). Пропуск: клик/клавиша/колесо/свайп — остаток за 0,35 с.
+     API: GV.loader {mode, kind, started, ready, done, duration, run(kind), seek(t)}. События: grinchin:loader-progress {t, phase}, grinchin:ready.
+     Новая отдельная страница: подключить loader.html (маркер @html) и поставить <html data-gv-page> — режим page сам. -->
 <script>
-(function(){var h=document.documentElement,m='full',q=location.search,K='gv-seen';
-try{if(h.dataset.shot==='1'||/[?&]shot=1/.test(q)||/[?&]skip=1/.test(q)||matchMedia('(prefers-reduced-motion: reduce)').matches)m='off';
-else if(/[?&]loader=short/.test(q))m='short';
-else if(!/[?&]loader=full/.test(q)){var t=+localStorage.getItem(K);if(t&&Date.now()-t<432e5)m='off';}}catch(e){}
-h.setAttribute('data-loader',m);})();
+(function(){var h=document.documentElement,L=location,q=L.search,m='full',ss=null;
+try{ss=sessionStorage}catch(e){}
+var deep=/[?&](open|lk|login)=/.test(q)||h.hasAttribute('data-gv-page')||(L.hash&&!/^#(hero|top|main)?$/.test(L.hash));
+var f=(q.match(/[?&]loader=(full|quick|page|fade|off|short)/)||[])[1];
+try{if(h.dataset.shot==='1'||/[?&]shot=1/.test(q)||/[?&]skip=1/.test(q))m='off';
+else if(f)m=f==='short'?'fade':f;
+else if(deep)m='page';
+else if(ss&&ss.getItem('gv-home'))m='quick';
+if(!f&&m!=='off'&&matchMedia('(prefers-reduced-motion: reduce)').matches)m='fade';}catch(e){}
+h.setAttribute('data-loader',m);
+/* главная (не deep-link): всегда с самого верха — и при перезагрузке, и при возврате «назад» (bfcache) */
+if(!deep){try{if('scrollRestoration' in history)history.scrollRestoration='manual';}catch(e){}
+  var top=function(){try{window.scrollTo(0,0);}catch(e){}};top();
+  window.addEventListener('pageshow',function(e){if(e.persisted)top();});
+  document.addEventListener('DOMContentLoaded',top,{once:true});}
+h.setAttribute('data-ld-kind',deep?'page':'home');})();
 </script>
 <style>
-html[data-loader="full"],html[data-loader="short"]{overflow:hidden}
-html[data-loader="full"] #logo,html[data-loader="short"] #logo{visibility:hidden}
+/* полоса прокрутки: место под неё держим и под крышкой — иначе после заставки кадр hero сдвинется на ширину полосы */
+html:is([data-loader="full"],[data-loader="quick"],[data-loader="page"],[data-loader="fade"]){overflow:hidden;scrollbar-gutter:stable}
+html:is([data-loader="full"],[data-loader="quick"],[data-loader="page"],[data-loader="fade"]) #logo{visibility:hidden}
 html[data-loader="off"] #loader,html[data-loader="done"] #loader{display:none}
+/* интерфейс шапки (кабинет, корзина, меню) и бирка режимов проявляются последними — после того как в hero устоялся свет */
+html:is([data-loader="full"],[data-loader="quick"]):not([data-hero-in]) :is(#header .hd-right,.mtag){opacity:0}
+html:is([data-loader="full"],[data-loader="quick"]) :is(#header .hd-right,.mtag){transition:opacity .5s .1s}
 #loader{position:fixed;inset:0;z-index:var(--z-loader,100);display:grid;place-items:center;pointer-events:none;contain:strict}
-/* крышка: сплошная заливка; при раскрытии в ней прорезается эллипс из клюва улыбки (clip-path: path evenodd) */
+/* крышка: сплошная заливка; при раскрытии в ней прорезается эллипс от рта маскота (clip-path: path evenodd) */
 .ld-cover{position:absolute;inset:0;background:#0b0b0b}
-/* статичное зерно: одна плитка, без feTurbulence; гаснет до раскрытия — крышка в момент прорези без картинки */
 .ld-grain{position:absolute;inset:0;background:url("{{img:img/loader/grain.webp}}") 0 0/160px 160px;opacity:.055}
 .ld-pos{position:relative;width:min(74vw,800px);transform:translateY(-35.6%)}
 .ld-mark{position:relative;width:100%;aspect-ratio:1660/458;transform-origin:0 0}
@@ -32,19 +56,17 @@ html[data-loader="off"] #loader,html[data-loader="done"] #loader{display:none}
 /* точка — на средней линии будущей улыбки (х 50 %, у 85,6 % знака); видна до JS */
 .ld-dot{position:absolute;left:50%;top:85.6%;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:var(--c-green,#8ED308);
   animation:ld-pop .45s cubic-bezier(.16,1,.3,1) both}
-html[data-loader="short"] .ld-dot{display:none}
 @keyframes ld-pop{from{transform:scale(.2);opacity:0}to{transform:scale(1);opacity:1}}
+/* морф: свой слой в координатах экрана, над крышкой (улыбка видна поверх темноты, пока вокруг проявляется сцена) */
+.ld-morph{position:absolute;inset:0;width:100%;height:100%;overflow:visible;display:block;visibility:hidden}
+.ld-mp{stroke-linejoin:round}
 .ld-cap{position:absolute;left:0;right:0;bottom:max(28px,7vh);margin:0;text-align:center;opacity:0;
   font:500 13px/1 var(--font-mono,ui-monospace,monospace);letter-spacing:.18em;text-transform:uppercase;color:#d6d6d0}
-/* маскот: прижат к левому краю (поза обрезана вертикальной кромкой слева), до старта — за краем */
-#loader .ld-mascot{position:absolute;left:0;bottom:0;height:min(40svh,360px);aspect-ratio:1122/2029;transform:translateX(-104%);transform-origin:0 100%;will-change:transform}
-#loader .ld-mascot img{display:block;width:100%;height:100%}
-/* DPR ≥ 1,25: поверх инлайновой позы 460 px — 900 px отдельным файлом (≈49 КБ), проявляется, как только пришла: без мыла на ретине */
-#loader .ld-mz-hi{position:absolute;inset:0;opacity:0}#loader .ld-mz-hi.is-on{opacity:1}
-html:is([data-mascot="quiet"],[data-mascot="none"]) #loader .ld-mascot,html[data-loader="short"] #loader .ld-mascot{display:none}
-#loader[data-mz] .ld-letters,#loader[data-mz] .ld-dot{color:#f2f2ec}#loader[data-mz] .ld-horn{stroke:#f2f2ec}
-@media (max-width:767px){.ld-pos{width:84vw}#loader .ld-mascot{height:min(27svh,230px)}
-  html:not([data-mascot="quiet"]):not([data-mascot="none"]) .ld-cap{text-align:right;right:max(16px,env(safe-area-inset-right));left:auto}}
+@media (max-width:767px){.ld-pos{width:84vw}}
+/* fade: знак сразу целиком, без точки; потом короткий кроссфейд всей заставки */
+html:is([data-loader="fade"],[data-loader="quick"],[data-loader="page"]) .ld-dot{display:none}
+html:is([data-loader="fade"],[data-loader="quick"],[data-loader="page"]) .ld-letters{clip-path:none}
+html:is([data-loader="quick"],[data-loader="page"]) .ld-cap{display:none}
 </style>
 <div id="loader" aria-hidden="true">
   <div class="ld-cover"><div class="ld-grain"></div></div>
@@ -56,7 +78,7 @@ html:is([data-mascot="quiet"],[data-mascot="none"]) #loader .ld-mascot,html[data
     </svg>
     <div class="ld-letters"><!--@svg:logo-letters--></div>
   </div></div>
-  <div class="ld-mascot" data-mascot-slot="preloader" data-mascot-manual data-pose="preloader"><img src="{{img:img/v4/hero/peek-460.webp}}" alt="" width="254" height="460" decoding="sync"><img class="ld-mz-hi" alt="" width="498" height="900" decoding="async" data-src="{{asset:img/v4/hero/peek-900.webp}}" onload="this.classList.add('is-on')"></div>
+  <svg class="ld-morph" aria-hidden="true"><path class="ld-mp" d=""/></svg>
   <p class="ld-cap">ignore the signs</p>
 </div>
 <!-- формы: одна структура команд (M + 57×C + Z) у flat/body/smile → морф интерполяцией чисел; half/arr — для истории STOP→ST’ART (motion.js).
@@ -65,7 +87,7 @@ html:is([data-mascot="quiet"],[data-mascot="none"]) #loader .ld-mascot,html[data
 <script>
 (function(){'use strict';
 var D=document,h=D.documentElement,W=window,mode=h.getAttribute('data-loader')||'off';
-var GV=W.GV=W.GV||{},L=GV.loader={mode:mode,started:false,ready:false,done:false,duration:0};
+var GV=W.GV=W.GV||{},L=GV.loader={mode:mode,kind:h.getAttribute('data-ld-kind')||'home',started:false,ready:false,done:false,duration:0};
 var fire=function(n,d){D.dispatchEvent(new CustomEvent(n,{detail:d}));};
 var dcl=D.readyState!=='loading',want=false;
 /* ready — не раньше DOMContentLoaded (подписчики соседей уже на месте) и после их DCL-обработчиков */
@@ -73,89 +95,182 @@ function sendReady(){if(L.ready)return;if(!dcl){want=true;return;}L.ready=true;h
   if(mode==='off')fire('grinchin:loader-progress',{t:1,phase:'done'});fire('grinchin:ready');}
 if(!dcl)D.addEventListener('DOMContentLoaded',function(){setTimeout(function(){dcl=true;if(want)sendReady();},0);},{once:true});
 var ld=D.getElementById('loader');
-if(mode==='off'||!ld||!W.requestAnimationFrame){if(mode!=='off')h.setAttribute('data-loader','done');sendReady();return;}
-L.started=true;try{localStorage.setItem('gv-seen',String(Date.now()));}catch(e){}
-var short=mode==='short',S=JSON.parse(D.getElementById('gv-shapes').textContent);
+/* run(kind): общий вход. На главной стартует сам по решению из <head>; отдельная страница может звать GV.loader.run('page') сама
+   (если на <html> стоит data-loader="manual"). kind: home|full (полная), quick, page, fade, off */
+L.run=function(kind){if(L.started)return;var k=kind==='home'?'full':kind;
+  if(!k||k==='off'||!ld||!W.requestAnimationFrame){h.setAttribute('data-loader',k==='off'||!k?'off':'done');mode=L.mode='off';sendReady();return;}
+  mode=L.mode=k;h.setAttribute('data-loader',k);start();};
+function start(){
+L.started=true;
+try{localStorage.setItem('gv-seen',String(Date.now()));if(L.kind==='home')sessionStorage.setItem('gv-home','1');}catch(e){}
+var FULL=mode==='full',QUICK=mode==='quick',PAGE=mode==='page',FADE=mode==='fade',GATE=null;
+var S=JSON.parse(D.getElementById('gv-shapes').textContent);
 var q=function(s){return ld.querySelector(s);},mk=q('.ld-mark'),cover=q('.ld-cover'),grain=q('.ld-grain'),smile=q('.ld-smile'),line=q('.ld-line'),
-  lt=q('.ld-letters'),dot=q('.ld-dot'),cap=q('.ld-cap'),mz=q('.ld-mascot'),horns=[].slice.call(ld.querySelectorAll('.ld-horn'));
+  lt=q('.ld-letters'),dot=q('.ld-dot'),cap=q('.ld-cap'),msvg=q('.ld-morph'),mp=q('.ld-mp'),horns=[].slice.call(ld.querySelectorAll('.ld-horn'));
 horns[0].setAttribute('d',S.hornL);horns[1].setAttribute('d',S.hornR);
 var NUM=/-?\d*\.?\d+(?:e[-+]?\d+)?/gi;
 function pl(a,b){var na=a.match(NUM).map(Number),nb=b.match(NUM).map(Number),pr=b.split(NUM);return function(t){var s=pr[0];for(var i=0;i<na.length;i++)s+=(+(na[i]+(nb[i]-na[i])*t).toFixed(1))+' '+pr[i+1];return s;};}
 var toBody=pl(S.flat,S.body),toSmile=pl(S.body,S.smile);
-line.setAttribute('d',short?S.smile:S.flat);
 function rgb(c){c=String(c).trim();if(c[0]==='#'){var x=c.slice(1);if(x.length===3)x=x.replace(/./g,'$&$&');return[0,2,4].map(function(i){return parseInt(x.substr(i,2),16);});}var m=c.match(/\d+(\.\d+)?/g);return m?m.slice(0,3).map(Number):[0,0,0];}
 function mix(a,b,t,al){return 'rgba('+a.map(function(v,i){return Math.round(v+(b[i]-v)*t);}).join(',')+','+(al==null?1:al)+')';}
-/* один зелёный на экран: если из-за края выглядывает маскот (лаймовый), знак и буквы рисуются белым — лайм у маскота и его рулона */
-var MZ=!short&&!!mz&&getComputedStyle(mz).display!=='none';if(MZ)ld.setAttribute('data-mz','1');
-if(MZ&&(W.devicePixelRatio||1)>1.24){var hi=mz.querySelector('.ld-mz-hi');if(hi){hi.setAttribute('fetchpriority','high');hi.src=hi.getAttribute('data-src');}}
-var GR=MZ?[242,242,236]:rgb(getComputedStyle(h).getPropertyValue('--c-green')||'#8ED308'),WH=[255,255,255];
+var GR=rgb(getComputedStyle(h).getPropertyValue('--c-green')||'#8ED308'),WH=[255,255,255];
 var E={p1io:function(t){return t<.5?2*t*t:1-2*(1-t)*(1-t);},p2io:function(t){return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;},
   p3io:function(t){return t<.5?8*t*t*t*t:1-Math.pow(-2*t+2,4)/2;},p2o:function(t){return 1-Math.pow(1-t,3);},p2i:function(t){return t*t*t;},
   si:function(t){return 1-Math.cos(t*Math.PI/2);},so:function(t){return Math.sin(t*Math.PI/2);},sio:function(t){return -(Math.cos(Math.PI*t)-1)/2;},lin:function(t){return t;}};
 var T=[],C=[];function tr(at,du,e,fn){T.push({at:at,du:du,e:e,fn:fn,d:0});}function call(at,fn){C.push({at:at,fn:fn,d:0});}
-/* тайминг: полный ≈ 2,3 с (ready ≈ 2,0 с), повтор ≈ 0,75 с */
-var t0=.18,tM=.58,tH=.95,tB=1.36,tL=short?.04:1.2,tF=short?.3:1.84,fd=short?.42:.5;   /* v4.1: раскрытие на 60 мс позже (место маскоту после вдоха), конец ≈ 2,4 с */
-/* куда садится знак: контент-бокс svg лого в шапке (viewBox вписан с xMidYMid) — посадка пиксель в пиксель */
+/* знак сразу целиком (quick/page/fade) */
+function solid(){line.setAttribute('d',S.smile);line.style.opacity=1;line.style.fill=mix(GR,GR,1);line.style.stroke=mix(GR,GR,1);}
+if(FULL)line.setAttribute('d',S.flat);else{solid();if(!FADE)mk.style.opacity='0';}
+
+/* ---------- куда садится знак: контент-бокс svg лого в шапке (viewBox вписан с xMidYMid) ---------- */
 var flip=null;function target(){if(flip)return flip;var a=mk.getBoundingClientRect(),l=D.querySelector('#logo svg'),b=l&&l.getBoundingClientRect(),ok=b&&b.width>4&&b.height>2;
   var x=0,y=0,s=.2,c=GR;
   if(ok){var A=1660/458,cw=b.width,ch=b.height;if(cw/ch>A)cw=ch*A;else ch=cw/A;x=b.left+(b.width-cw)/2-a.left;y=b.top+(b.height-ch)/2-a.top;s=cw/a.width;c=rgb(getComputedStyle(l).color);}
   else{x=0;y=-a.top-a.height;}
-  var bx=a.left+a.width*S.beak[0]/1660,by=a.top+a.height*S.beak[1]/458,vw=innerWidth,vh=innerHeight,R=0;
-  [[0,0],[vw,0],[0,vh],[vw,vh]].forEach(function(p){R=Math.max(R,Math.hypot(p[0]-bx,(p[1]-by)/.8));});
-  flip={x:x,y:y,s:s,c:c,ok:ok,bx:bx,by:by,R:R*1.04,vw:vw,vh:vh};return flip;}
+  flip={x:x,y:y,s:s,c:c,ok:ok,a:a,vw:innerWidth,vh:innerHeight};return flip;}
+
+/* ---------- морф улыбка лого → рот маскота ----------
+   Оба контура замкнутые, с общими ориентирами: низ клюва/низ рта → кончик левого рога/крючка → верх клюва/верх рта →
+   кончик правого → назад. Между ориентирами — равномерно по длине, одинаковое число точек → линейная интерполяция. */
+var MK={B:9,L:23,T:36,R:51},NPT=360;
+function logoPoly(){var n=S.smile.match(NUM).map(Number),P=[[n[0],n[1]]],ix=[0],p0=[n[0],n[1]],K=14;
+  for(var i=2;i+5<n.length;i+=6){var c1=[n[i],n[i+1]],c2=[n[i+2],n[i+3]],p3=[n[i+4],n[i+5]];
+    for(var k=1;k<=K;k++){var t=k/K,u=1-t,a=u*u*u,b=3*u*u*t,c=3*u*t*t,d=t*t*t;P.push([a*p0[0]+b*c1[0]+c*c2[0]+d*p3[0],a*p0[1]+b*c1[1]+c*c2[1]+d*p3[1]]);}
+    p0=p3;ix.push(P.length-1);}
+  if(Math.hypot(P[P.length-1][0]-P[0][0],P[P.length-1][1]-P[0][1])<.01){P.pop();ix[ix.length-1]=0;}
+  return {P:P,marks:[ix[MK.B],ix[MK.L],ix[MK.T],ix[MK.R]]};}
+function segLen(P,a,b){var s=0,n=P.length;for(var i=a;i!==b;i=(i+1)%n){var j=(i+1)%n;s+=Math.hypot(P[j][0]-P[i][0],P[j][1]-P[i][1]);}return s;}
+function sampleSeg(P,a,b,cnt,out){var n=P.length,tot=segLen(P,a,b),step=tot/cnt,acc=0,i=a,want=0,k=0;
+  while(k<cnt){var j=(i+1)%n,dl=Math.hypot(P[j][0]-P[i][0],P[j][1]-P[i][1]);
+    while(k<cnt&&want<=acc+dl+1e-9){var t=dl?(want-acc)/dl:0;out.push([P[i][0]+(P[j][0]-P[i][0])*t,P[i][1]+(P[j][1]-P[i][1])*t]);k++;want=k*step;}
+    acc+=dl;i=j;if(i===b&&k<cnt){out.push([P[b][0],P[b][1]]);k++;}}}
+function resample(P,marks,cnts){var o=[];for(var s=0;s<4;s++)sampleSeg(P,marks[s],marks[(s+1)%4],cnts[s],o);return o;}
+var LP=null,CNT=null,LOGO_N=null;
+function prepLogo(){if(LP)return;LP=logoPoly();var m=LP.marks,l=[0,1,2,3].map(function(s){return segLen(LP.P,m[s],m[(s+1)%4]);}),tot=l[0]+l[1]+l[2]+l[3];
+  CNT=l.map(function(v){return Math.max(24,Math.round(NPT*v/tot));});LOGO_N=resample(LP.P,LP.marks,CNT);}
+var MO=null;   // {A: старт (экран), B: рот при зуме 1 (экран), c, w, color, R, ok}
+function mouthState(){if(MO)return MO;MO={ok:false};
+  var hz=GV.hero5,m=hz&&hz.mouth&&hz.mouth(1);if(!m||!m.pts||m.pts.length<8)return MO;
+  var vw=innerWidth,vh=innerHeight;if(m.c[0]<0||m.c[0]>vw||m.c[1]<0||m.c[1]>vh)return MO;   // рот вне экрана — запасной путь
+  prepLogo();var a=mk.getBoundingClientRect(),sx=a.width/1660,sy=a.height/458;
+  MO.A=LOGO_N.map(function(p){return [a.left+p[0]*sx,a.top+p[1]*sy];});
+  MO.B=resample(m.pts,m.marks,CNT);MO.c=m.c;MO.w=m.w;MO.color=rgb(m.color||'#0b0b0b');MO.ok=true;
+  var R=0;[[0,0],[vw,0],[0,vh],[vw,vh]].forEach(function(p){R=Math.max(R,Math.hypot(p[0]-m.c[0],(p[1]-m.c[1])/.8));});MO.R=R*1.04;
+  msvg.setAttribute('viewBox','0 0 '+vw+' '+vh);return MO;}
+var ZOOM0=1.08,zoomNow=1,morphP=0,mStroke=2.5,USE=false;
+function drawMorph(){var M=MO;if(!M||!M.ok)return;var e=morphP,z=zoomNow,cx=M.c[0],cy=M.c[1],s='M';
+  for(var i=0;i<M.A.length;i++){var b=M.B[i],bx=cx+(b[0]-cx)*z,by=cy+(b[1]-cy)*z,x=M.A[i][0]+(bx-M.A[i][0])*e,y=M.A[i][1]+(by-M.A[i][1])*e;
+    s+=(i?'L':'')+x.toFixed(1)+' '+y.toFixed(1);}
+  mp.setAttribute('d',s+'Z');mp.style.strokeWidth=(mStroke*(1-e)).toFixed(2)+'px';}
+function zoom(z){zoomNow=z;if(GV.hero5)GV.hero5.zoom(z);drawMorph();}
+
+/* ---------- прорезь в крышке ---------- */
 var CLIP=!!(W.CSS&&CSS.supports&&CSS.supports('clip-path','path(evenodd,"M0 0H1V1H0Z")'));
-function hole(p){var f=target();if(!CLIP){cover.style.transform='translateY('+(100*p).toFixed(2)+'%)';return;}
-  var rx=Math.max(.01,f.R*p),ry=rx*.8,x=f.bx-rx,y=f.by;
-  cover.style.clipPath='path(evenodd,"M0 0H'+f.vw+'V'+f.vh+'H0Z M'+x.toFixed(1)+' '+y.toFixed(1)+'a'+rx.toFixed(1)+' '+ry.toFixed(1)+' 0 1 0 '+(2*rx).toFixed(1)+' 0a'+rx.toFixed(1)+' '+ry.toFixed(1)+' 0 1 0 '+(-2*rx).toFixed(1)+' 0Z")';}
-if(!short){
-  tr(.3,.5,E.so,function(p){cap.style.opacity=p.toFixed(3);});
-  tr(t0,.25,E.si,function(p){dot.style.animation='none';dot.style.opacity=1-p;dot.style.transform='scale('+(1-.5*p)+')';});
-  tr(t0,.5,E.p3io,function(p){line.style.opacity=1;line.style.transform='scaleX('+(.005+.995*p)+')';});
-  tr(tM,.42,E.p2io,function(p){line.setAttribute('d',toBody(p));});
-  tr(tM,.45,E.sio,function(p){line.style.fill=mix(GR,GR,0,p);line.style.stroke=mix(WH,GR,p);});
-  tr(tH,.38,E.p2o,function(p){line.setAttribute('d',toSmile(p));});
-  tr(tH,.32,E.p1io,function(p){horns.forEach(function(e){e.style.opacity=1;e.style.strokeDashoffset=1-p;});});
-  tr(tH+.32,.25,E.so,function(p){horns.forEach(function(e){e.style.opacity=1-p;});});
-  /* маскот: выглядывает из-за левого края (0,32 → 0,9 с, с перелётом), трясёт рулоном на «вдохе», прячется перед раскрытием */
-  if(MZ){var mzX=-104,mzR=0,mzS=function(){mz.style.transform='translateX('+mzX.toFixed(2)+'%) rotate('+mzR.toFixed(2)+'deg)';};
-    var back=function(t){var c=1.9;return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2);};
-    /* v4.1: сначала логотип (линия → улыбка → вдох), маскот выглядывает ПОСЛЕ вдоха — не перебивает главный момент; уходит, пока лого летит в шапку */
-    tr(tB+.02,.36,function(t){return t;},function(p){mzX=-104+104*back(p);mzS();});
-    tr(tB+.36,.3,E.lin,function(p){mzR=p<1?-3.2*Math.sin(p*Math.PI*2)*(1-p):0;mzS();});
-    tr(tF-.04,.24,E.p2i,function(p){mzX=-106*p;mzS();});}   /* уходит в начале раскрытия: не встречается с маскотом hero и подписью */
-  /* «вдох» v1: готовая улыбка чуть приподнимается от клюва и опускается */
-  tr(tB,.4,E.lin,function(p){smile.style.transform=p<1?'scale('+(1+.022*Math.sin(Math.PI*p)).toFixed(4)+')':'';});
-}else{
-  line.style.fill=mix(GR,GR,1);line.style.stroke=mix(GR,GR,1);
-  tr(0,.16,E.so,function(p){line.style.opacity=p;});
+function holeAt(cx,cy,r0,R,p){var vw=innerWidth,vh=innerHeight;if(!CLIP){cover.style.opacity=(1-p).toFixed(3);return;}
+  var rx=Math.max(.01,r0+(R-r0)*p),ry=rx*.8,x=cx-rx,y=cy;
+  cover.style.clipPath='path(evenodd,"M0 0H'+vw+'V'+vh+'H0Z M'+x.toFixed(1)+' '+y.toFixed(1)+'a'+rx.toFixed(1)+' '+ry.toFixed(1)+' 0 1 0 '+(2*rx).toFixed(1)+' 0a'+rx.toFixed(1)+' '+ry.toFixed(1)+' 0 1 0 '+(-2*rx).toFixed(1)+' 0Z")';}
+
+var paused=false,skipping=false,time=0,last=0,rate=1,held=false,ended=false,END=0;
+var tM=.48,tL=.96,tF=1.36,fd=.5;
+function inhale(at,du){tr(at,du,E.lin,function(p){smile.style.transform=p<1?'scale('+(1+.022*Math.sin(Math.PI*p)).toFixed(4)+')':'';});}
+/* ворота перед раскрытием: кадр hero декодирован и шрифты, не дольше 0,5 с */
+function gate(at,hero){GATE=function(){if(skipping)return;var w=[];
+    if(hero&&GV.hero5&&GV.hero5.ready)w.push(GV.hero5.ready());
+    if(D.fonts&&D.fonts.status!=='loaded')w.push(D.fonts.ready);
+    if(!w.length)return;paused=true;var go=function(){paused=false;last=0;};
+    Promise.race([Promise.all(w),new Promise(function(r){setTimeout(r,500);})]).then(go,go);};
+  call(at,GATE);}
+function flyMark(at,du,withLine){tr(at,du,E.p3io,function(p){var f=target();mk.style.transform='translate('+(f.x*p).toFixed(2)+'px,'+(f.y*p).toFixed(2)+'px) scale('+(1+(f.s-1)*p).toFixed(5)+')';
+  var c=mix(GR,f.c,p);lt.style.color=c;if(withLine()){line.style.fill=c;line.style.stroke=mix(GR,f.c,p,1-p);}});}
+function showLogo(at,fade){call(at,function(){var l=D.getElementById('logo');if(l){l.style.visibility='visible';if(fade&&l.animate)try{l.animate([{opacity:0},{opacity:1}],{duration:260,easing:'ease-out'});}catch(e){}}});}
+
+/* ---------- раскрытие в hero (full и quick): k — масштаб времени после развилки ---------- */
+/* ---------- финал (full и quick): улыбка садится на рот → ВКЛЮЧАЕТСЯ СВЕТ ----------
+   1) морф: улыбка лого летит в рот и по пути остывает до холодной светлой линии; буквы уплывают в шапку (как было);
+   2) села — крышка уходит (под ней та же тьма hero): видна только светлая улыбка и едва-едва блики глаз;
+   3) лампа зажигается неуверенно (full: 3 вспышки разной длины, quick: одна) — на каждой сцена проступает в узком холодном
+      конусе сверху; затем горит: конус «доливается» сверху вниз с пере-светом и оседает до кадра. Свет ведёт hero5.js
+      (GV.hero5.light — тот же код, что «свет гаснет» при прокрутке к #tape);
+   4) улыбка-линия гаснет, когда фронт света доходит до рта (под ней нарисованный рот), глаза — когда до глаз;
+   5) интерфейс (кнопки шапки, CTA, подпись дропа) — последним, после того как свет устоялся. */
+var PALE=[236,242,234];
+function reveal(tf,k,pat){
+  gate(tf-.03,true);
+  var md=.46*(k<1?.7:1),land=tf+md,IG=pat==='quick'?.46:1.0,ig0=land+(pat==='quick'?.04:.12);
+  /* развилка: есть рот на экране — морф + свет (v5); нет — знак целиком в шапку и эллипс из клюва (v4) */
+  call(tf,function(){var M=mouthState();USE=!!M.ok;
+    if(USE){line.style.visibility='hidden';mp.style.fill=mix(GR,GR,0);mp.style.stroke=mix(GR,GR,0);msvg.style.visibility='visible';
+      if(GV.hero5){GV.hero5.light(0);GV.hero5.eyes(0);}}});
+  flyMark(tf,fd*k,function(){return !USE;});
+  tr(tf,md,E.p2io,function(p){if(!USE)return;morphP=p;drawMorph();});
+  tr(tf+md*.4,md*.6,E.sio,function(p){if(!USE)return;var c=mix(GR,PALE,p);mp.style.fill=c;mp.style.stroke=c;});
+  call(land,function(){if(USE)cover.style.opacity='0';fire('grinchin:loader-progress',{t:+(land/END).toFixed(3),phase:'reveal'});});
+  tr(land,.22,E.so,function(p){if(USE&&GV.hero5)GV.hero5.eyes(.2*p);});
+  tr(ig0,IG,E.lin,function(p){if(!USE||!GV.hero5)return;var H5=GV.hero5;
+    var over=p>.45?(pat==='quick'?.25:.4)*Math.sin(Math.PI*Math.min(1,(p-.45)/.5)):0;   // пере-свет в начале горения, оседает
+    var fr=H5.light(p,{pattern:pat,over:over}),st=H5.stickTop(),my=MO.c[1]-st,ey=H5.eyesY();
+    if(p>=.45){mp.style.opacity=(1-Math.min(1,Math.max(0,(fr-my+12)/70))).toFixed(3);
+      H5.eyes(.2*(1-Math.min(1,Math.max(0,(fr-ey)/60))));}
+    else{mp.style.opacity='';H5.eyes(.2);}});
+  call(ig0+IG-.1,function(){h.setAttribute('data-hero-in','1');});
+  call(land,sendReady);
+  /* v4-запасной путь: эллипс из клюва */
+  tr(tf+.38*k,.56*k,E.p2io,function(p){if(USE)return;
+    var f=target(),a=f.a,bx=a.left+a.width*S.beak[0]/1660,by=a.top+a.height*S.beak[1]/458,R=0;
+    [[0,0],[f.vw,0],[0,f.vh],[f.vw,f.vh]].forEach(function(q){R=Math.max(R,Math.hypot(q[0]-bx,(q[1]-by)/.8));});holeAt(bx,by,0,R*1.04,E.p2o(p));});
+  call(tf+.38*k+.3,function(){if(!USE)h.setAttribute('data-hero-in','1');});
+  /* лого шапки проявляется поверх севших букв (буквы совпадают пиксель в пиксель, «приходит» только улыбка шапки) */
+  showLogo(tf+fd*k,true);
 }
-/* буквы: маска слева направо + посадка на 3 px. Никаких лент поверх знака */
-tr(tL,short?.26:.5,E.p2io,function(p){lt.style.clipPath='inset(-20% '+(100-100*p).toFixed(2)+'% -20% 0%)';lt.style.transform=short?'':'translateY('+(3*(1-p)).toFixed(2)+'px)';});
-/* ворота перед раскрытием: картинка hero и шрифты, не дольше 0,5 с */
-var paused=false,skipping=false;
-call(tF-.02,function(){if(skipping)return;var w=[];
-  [D.querySelector('#hero-media img'),D.querySelector('#hero .hm-still')].forEach(function(img){
-  if(img&&!img.complete)w.push(new Promise(function(r){img.addEventListener('load',r,{once:true});img.addEventListener('error',r,{once:true});}));});
-  if(D.fonts&&D.fonts.status!=='loaded')w.push(D.fonts.ready);
-  if(!w.length)return;paused=true;var go=function(){paused=false;last=0;};
-  Promise.race([Promise.all(w),new Promise(function(r){setTimeout(r,500);})]).then(go,go);});
-tr(tF-.25,.22,E.so,function(p){grain.style.opacity=(.055*(1-p)).toFixed(4);if(!short)cap.style.opacity=(1-p).toFixed(3);});
-/* посадка: знак — в лого шапки (FLIP), цвет — в цвет лого; сайт раскрывается эллипсом из клюва */
-tr(tF,fd,E.p3io,function(p){var f=target();mk.style.transform='translate('+(f.x*p).toFixed(2)+'px,'+(f.y*p).toFixed(2)+'px) scale('+(1+(f.s-1)*p).toFixed(5)+')';
-  var c=mix(GR,f.c,p);lt.style.color=c;line.style.fill=c;line.style.stroke=mix(GR,f.c,p,1-p);});
-call(tF+.02,function(){h.setAttribute('data-hero-in','1');fire('grinchin:loader-progress',{t:+(tF/END).toFixed(3),phase:'reveal'});});
-tr(tF+.04,fd+.02,E.p2o,hole);   /* v4.1: эллипс раскрывается с быстрым стартом (было p2i: долго висел маленький бледный круг под лого) */
-/* ready — когда раскрыт центр кадра: K2 рождает знак синхронно */
-call(tF+(short?.12:.2),sendReady);
-/* лого в шапке проявляется ровно в кадр посадки — подмена незаметна */
-call(tF+fd,function(){var l=D.getElementById('logo');if(l)l.style.visibility='visible';});
-var END=0;T.forEach(function(k){END=Math.max(END,k.at+k.du);});C.forEach(function(k){END=Math.max(END,k.at);});L.duration=END;
+
+if(FULL){
+  var t0=.16,tH=.8,tB=1.06;
+  tr(.3,.45,E.so,function(p){cap.style.opacity=p.toFixed(3);});
+  tr(t0,.25,E.si,function(p){dot.style.animation='none';dot.style.opacity=1-p;dot.style.transform='scale('+(1-.5*p)+')';});
+  tr(t0,.46,E.p3io,function(p){line.style.opacity=1;line.style.transform='scaleX('+(.005+.995*p)+')';});
+  tr(tM,.36,E.p2io,function(p){line.setAttribute('d',toBody(p));});
+  tr(tM,.4,E.sio,function(p){line.style.fill=mix(GR,GR,0,p);line.style.stroke=mix(WH,GR,p);});
+  tr(tH,.34,E.p2o,function(p){line.setAttribute('d',toSmile(p));});
+  tr(tH,.3,E.p1io,function(p){horns.forEach(function(e){e.style.opacity=1;e.style.strokeDashoffset=1-p;});});
+  tr(tH+.28,.22,E.so,function(p){horns.forEach(function(e){e.style.opacity=1-p;});});
+  inhale(tB,.3);
+  tr(tL,.42,E.p2io,function(p){lt.style.clipPath='inset(-20% '+(100-100*p).toFixed(2)+'% -20% 0%)';lt.style.transform='translateY('+(3*(1-p)).toFixed(2)+'px)';});
+  tr(tF-.25,.22,E.so,function(p){grain.style.opacity=(.055*(1-p)).toFixed(4);cap.style.opacity=(1-p).toFixed(3);});
+  reveal(tF,1,'full');
+}else if(QUICK){
+  /* повторный заход на главную: знак уже стоит, короткий вдох и тот же морф в рот — ≈ 1 с */
+  tM=0;tL=0;tF=.34;
+  tr(0,.14,E.so,function(p){mk.style.opacity=p.toFixed(3);});
+  inhale(.06,.28);
+  tr(tF-.2,.18,E.so,function(p){grain.style.opacity=(.055*(1-p)).toFixed(4);});
+  reveal(tF,.66,'quick');
+}else if(PAGE){
+  /* другая «страница» (deep-link): только вдох знака, знак — в шапку, крышка гаснет. Прокрутку не трогаем */
+  tM=0;tL=0;tF=.42;
+  tr(0,.14,E.so,function(p){mk.style.opacity=p.toFixed(3);});
+  inhale(.08,.32);
+  gate(tF-.03,false);
+  flyMark(tF,.4,function(){return true;});
+  call(tF,function(){h.setAttribute('data-hero-in','1');fire('grinchin:loader-progress',{t:+(tF/END).toFixed(3),phase:'reveal'});});
+  tr(tF+.04,.36,E.sio,function(p){cover.style.opacity=(1-p).toFixed(3);});
+  call(tF+.1,sendReady);
+  showLogo(tF+.4,false);
+}else{
+  /* fade (reduced-motion): знак стоит целиком; короткий кроссфейд всей заставки */
+  tM=0;tL=0;tF=.22;
+  call(.2,function(){h.setAttribute('data-hero-in','1');var l=D.getElementById('logo');if(l)l.style.visibility='visible';});
+  tr(.24,.36,E.sio,function(p){ld.style.opacity=(1-p).toFixed(3);});
+  call(.3,sendReady);
+}
+T.forEach(function(k){END=Math.max(END,k.at+k.du);});C.forEach(function(k){END=Math.max(END,k.at);});L.duration=END;
 function ph(t){return t<tM?'line':t<tL?'smile':t<tF?'word':'reveal';}
-function apply(t,force){for(var i=0;i<T.length;i++){var k=T[i];if(t<k.at||(k.d&&!force))continue;var p=Math.min(1,(t-k.at)/k.du);k.fn(k.e(p));if(p>=1)k.d=1;}
-  for(i=0;i<C.length;i++){k=C[i];if(t>=k.at&&!k.d){k.d=1;if(!(force&&i===0))k.fn();}}}
-var time=0,last=0,rate=1,held=false,ended=false;
+/* разовые вызовы — раньше твинов того же кадра: развилка в tF должна решить путь до первого шага морфа и перелёта букв */
+function apply(t,force){var i,k;for(i=0;i<C.length;i++){k=C[i];if(t>=k.at&&!k.d){k.d=1;if(!(force&&k.fn===GATE))k.fn();}}
+  for(i=0;i<T.length;i++){k=T[i];if(t<k.at||(k.d&&!force))continue;var p=Math.min(1,(t-k.at)/k.du);k.fn(k.e(p));if(p>=1)k.d=1;}}
 function finish(){if(ended)return;ended=true;['pointerdown','keydown','wheel','touchmove'].forEach(function(n){W.removeEventListener(n,skip,true);});
+  W.removeEventListener('resize',onResize);
   var l=D.getElementById('logo');if(l)l.style.visibility='';ld.style.display='none';h.setAttribute('data-hero-in','1');h.setAttribute('data-loader','done');
+  if(GV.hero5&&GV.hero5.release)GV.hero5.release();
   L.done=true;fire('grinchin:loader-progress',{t:1,phase:'done'});sendReady();}
 function tick(now){if(ended||held)return;
   if(!paused){if(last){var dt=Math.min(now-last,100)/1000;time=Math.min(END,time+dt*rate);}last=now;apply(time);
@@ -166,15 +281,25 @@ function tick(now){if(ended||held)return;
 function skip(e){if(ended||skipping)return;if(e&&e.type==='keydown'&&/^(Tab|Shift|Control|Alt|Meta)$/.test(e.key))return;
   skipping=true;paused=false;rate=Math.max(1,(END-time)/.35);}
 ['pointerdown','keydown','wheel','touchmove'].forEach(function(n){W.addEventListener(n,skip,{capture:true,passive:true});});
+/* ресайз/поворот посреди заставки: всё пересчитать по новой вёрстке (рот берётся с кадра заново) */
+function onResize(){flip=null;var was=MO&&MO.ok;MO=null;if(was&&USE){var z=zoomNow;if(GV.hero5)GV.hero5.zoom(1);zoomNow=1;
+  var mt=mk.style.transform;mk.style.transform='';mouthState();mk.style.transform=mt;
+  if(!MO.ok){USE=false;msvg.style.visibility='hidden';line.style.visibility='';}else zoom(z);}}
+W.addEventListener('resize',onResize);
 L.timer=setTimeout(function(){if(!ended)skip();},6000);
 fire('grinchin:loader-progress',{t:0,phase:'start'});
 requestAnimationFrame(tick);
 /* для покадровой проверки: остановить и поставить таймлайн в момент t (с) */
-L.seek=function(t){held=true;time=t;flip=null;
-  dot.style.animation='none';dot.style.opacity=1;dot.style.transform='';line.style.cssText='';line.setAttribute('d',short?S.smile:S.flat);smile.style.transform='';
-  horns.forEach(function(e){e.style.cssText='';});lt.style.cssText='';mk.style.transform='';cover.style.cssText='';grain.style.opacity='';cap.style.opacity='';ld.style.display='';if(mz)mz.style.transform='';
-  if(short){line.style.fill=mix(GR,GR,1);line.style.stroke=mix(GR,GR,1);}
+L.seek=function(t){held=true;time=t;flip=null;MO=null;USE=false;morphP=0;
+  if(ended){ended=false;h.setAttribute('data-loader',mode);L.done=false;if(GV.hero5&&GV.hero5.hold)GV.hero5.hold();}
+  var lg=D.getElementById('logo');if(lg)lg.style.visibility='';
+  dot.style.animation='none';dot.style.opacity=1;dot.style.transform='';line.style.cssText='';smile.style.transform='';
+  horns.forEach(function(e){e.style.cssText='';});lt.style.cssText='';mk.style.cssText='';cover.style.cssText='';grain.style.opacity='';cap.style.opacity='';
+  ld.style.display='';ld.style.opacity='';mp.style.cssText='';msvg.style.visibility='';if(GV.hero5){GV.hero5.zoom(1);GV.hero5.dim(0);}zoomNow=1;
+  if(FULL)line.setAttribute('d',S.flat);else solid();
   if(t<tF)h.removeAttribute('data-hero-in');
   T.forEach(function(k){k.d=0;});C.forEach(function(k){k.d=0;});apply(t,true);if(t>=END)finish();};
+}
+if(mode!=='manual')L.run(mode);
 })();
 </script>

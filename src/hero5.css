@@ -1,0 +1,93 @@
+/* H5 · v5 HERO «маскот у гаража» (hero5.html). Геометрия кадра — переменные --h5-* из hero5-vars.css (генерируются).
+   Вписывание: ширина кадра W = max(экран, min(высота × пропорция, экран × --h5-crop)) — на альбомном экране обычный cover,
+   на телефоне кадр не шире 1,5 экрана (иначе 4:5 теряет две трети), недостающая высота — сверху, кадр прижат к низу,
+   верх кадра чёрный и уходит в фон hero. Позиция — «по фокусу» (--h5-fx/fy) с упором в края. Те же формулы в transform-origin
+   не нужны: точку рта считает JS по рамке <img> (getBoundingClientRect), а не по CSS.
+   Движется только transform/opacity (+ путь SVG улыбки на переходе). Стык с #tape: сцена гаснет в #0b0b0b (фон блока скотча). */
+/* hero = липкая сцена (.h5-stick, один экран) + ход --h5-out для перехода «свет гаснет» → #tape (hero5.js):
+   фонарь мигает и гаснет, сцена уходит в темноту, остаются блики глаз и улыбка (Чеширский кот), улыбка вытягивается в лаймовую
+   ленту IGNORE THE SIGNS по линии ленты блока #tape и утягивается вниз-вправо — в блок скотча. Высота задана в CSS (CLS 0).
+   reduced-motion / ?shot=1 / без JS — хода нет, hero = один экран. */
+#hero.h5{position:relative;--stick-h:max(380px,calc(100svh - var(--header-h)));--h5-out:95svh;
+  height:calc(max(380px,calc(100vh - var(--header-h))) + 95vh);height:calc(var(--stick-h) + var(--h5-out));
+  background:#0b0b0b;color:var(--c-white)}
+@media (prefers-reduced-motion:reduce){#hero.h5{--h5-out:0px;height:var(--stick-h)}}
+html[data-shot="1"] #hero.h5,html:not(.js) #hero.h5{--h5-out:0px;height:var(--stick-h)}
+.h5-stick{position:sticky;top:var(--header-h);height:calc(100vh - var(--header-h));height:var(--stick-h);overflow:hidden;isolation:isolate;container-type:size;
+  --cw:100vw;--ch:var(--stick-h);
+  --w:max(var(--cw),min(calc(var(--ch) * var(--h5-ar,1.7778)),calc(var(--cw) * var(--h5-crop,9))));
+  --h:calc(var(--w) / var(--h5-ar,1.7778));
+  --l:clamp(calc(var(--cw) - var(--w)),calc(var(--cw) * .5 - var(--h5-fx,.5) * var(--w)),0px);
+  --t:clamp(calc(var(--ch) - var(--h)),calc(var(--ch) * .5 - var(--h5-fy,.5) * var(--h)),0px)}
+@supports (width:1cqw){.h5-stick{--cw:100cqw;--ch:100cqh}}
+.h5-cam{position:absolute;inset:0;pointer-events:none;transform-origin:50% 50%}
+.h5-frame,.h5-ches-f{position:absolute;left:var(--l);top:var(--t);width:var(--w);height:var(--h)}
+.h5-pic,.h5-pic img{display:block;width:100%;height:100%}
+.h5-pic img{-webkit-user-select:none;user-select:none}
+
+/* свет фонаря: холодная белая дымка вокруг лампы, изредка мерцает (opacity, композитор). Градиент статичный — растрится один раз */
+.h5-glow{position:absolute;left:var(--h5-lx,50%);top:var(--h5-ly,8%);width:44%;aspect-ratio:1;margin:-22% 0 0 -22%;border-radius:50%;
+  background:radial-gradient(closest-side,rgba(226,236,255,.24),rgba(214,228,255,.09) 48%,rgba(214,228,255,0));opacity:.85}
+/* «пере-свет» при включении лампы: холодный белый слой в луче (screen), opacity ведёт свет (hero5.js light) */
+.h5-flash{position:absolute;inset:0;pointer-events:none;opacity:0;mix-blend-mode:screen;
+  background:radial-gradient(ellipse 30% 75% at var(--h5-lx,50%) 38%,rgba(236,243,255,.85),rgba(228,238,255,.28) 55%,rgba(228,238,255,0) 82%)}
+/* маскот-слой: рамка из данных (доли кадра), «дыхание» — scale от низа фигуры */
+.h5-mz{position:absolute;left:var(--h5-mzx);top:var(--h5-mzy);width:var(--h5-mzw);height:var(--h5-mzh);opacity:0;transition:opacity .25s}
+.h5-mz.is-on{opacity:1}
+.h5-mz-b{width:100%;height:100%;transform-origin:50% 100%}
+.h5-mz-i{display:block;width:100%;height:100%}
+
+/* низ — в цвет блока скотча (#0b0b0b), верх — лёгкая тень под шапкой (подпись дропа читается на любом кадре) */
+.h5-shade{position:absolute;left:0;right:0;bottom:-1px;height:30%;pointer-events:none;z-index:1;
+  background:linear-gradient(180deg,rgba(11,11,11,0),rgba(11,11,11,.5) 52%,rgba(11,11,11,.9) 82%,#0b0b0b)}
+.h5-shade::before{content:"";position:absolute;left:0;right:0;bottom:calc(333% - 1px);height:60%;
+  background:linear-gradient(180deg,rgba(11,11,11,.55),rgba(11,11,11,0))}
+/* верх кадра (на телефоне кадр ниже экрана и прижат к низу) — растворяется в фоне hero: края картинки не видно */
+.h5-frame::before{content:"";position:absolute;z-index:1;left:0;right:0;top:-1px;height:14%;pointer-events:none;
+  background:linear-gradient(180deg,#0b0b0b,rgba(11,11,11,.6) 40%,rgba(11,11,11,0))}
+/* «выход из темноты» (заставка) и затемнение при уходе вниз к #tape — один слой, opacity ведёт JS */
+.h5-dim{position:absolute;inset:0;background:#0b0b0b;opacity:0;pointer-events:none;z-index:1}
+
+/* «Чеширский кот»: поверх затемнения — блики глаз (слой из кадра) и улыбка (контур рта с кадра, SVG в координатах сцены);
+   улыбка вытягивается в ленту с печатью. Всё — opacity/transform, путь SVG пересчитывает JS только во время перехода */
+.h5-ches{position:absolute;inset:0;z-index:2;pointer-events:none;visibility:hidden}
+.h5-ches.is-on{visibility:visible}
+.h5-eyes{position:absolute;left:var(--h5-ex);top:var(--h5-ey);width:var(--h5-ew);height:var(--h5-eh);opacity:0}
+.h5-smile{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible}
+.h5-smile path{fill:#ecf2ea}
+.h5-band-t{position:absolute;left:0;top:0;display:flex;align-items:center;justify-content:center;overflow:hidden;white-space:nowrap;
+  transform-origin:0 0;font:800 var(--bt,40px)/1 var(--font-display);letter-spacing:.02em;text-transform:uppercase;color:#0b0b0b;opacity:0}
+
+/* подпись дропа (моно, как бирки каталога) и CTA */
+.h5-tag{position:absolute;z-index:3;left:var(--gutter);top:18px;margin:0;white-space:nowrap;
+  font:400 12px/1.65 var(--font-mono);letter-spacing:.04em;text-transform:uppercase;color:#a2a29b;text-shadow:0 1px 8px rgba(0,0,0,.8)}
+.h5-foot{position:absolute;z-index:3;left:var(--gutter);right:var(--gutter);bottom:max(20px,calc(env(safe-area-inset-bottom) + 12px));display:grid;justify-items:stretch}
+.h5-cta{min-height:56px;padding:0 26px;border-radius:0;background:#f2f2ec;color:#0b0b0b;box-shadow:none;
+  font:800 14px/1 var(--font-display);letter-spacing:.02em;text-transform:uppercase;transition:background-color .2s;pointer-events:auto}
+.h5-cta:hover{background:#fff;color:#0b0b0b}
+.h5-cta span{display:inline-block;transition:transform .25s var(--e-out)}
+.h5-cta:hover span{transform:translateY(3px)}
+.h5-cta:focus-visible{outline:2px solid var(--c-green);outline-offset:3px}
+@media (min-width:768px){
+  .h5-tag{top:24px;font-size:13px}
+  .h5-foot{right:auto;bottom:clamp(28px,5.5vh,56px);justify-items:start}
+  .h5-cta{padding:0 32px}
+}
+/* телефон боком: кнопка по содержимому */
+@media (max-width:767px) and (orientation:landscape){.h5-foot{right:auto}.h5-cta{padding:0 28px}}
+
+/* появление интерфейса после раскрытия заставки (opacity/transform — без сдвигов вёрстки) */
+.h5-ui{transition:opacity .5s .1s,transform .7s .1s var(--e-out)}
+html:is([data-loader="full"],[data-loader="quick"],[data-loader="page"],[data-loader="fade"]):not([data-hero-in]) #hero .h5-ui{opacity:0;transform:translateY(12px)}
+
+/* живое: только если движение разрешено и hero в кадре */
+@media (prefers-reduced-motion:no-preference){
+  html:not([data-shot="1"]) #hero.is-vis:not(.is-out) .h5-glow{animation:h5-flicker 9.7s steps(1,end) infinite}
+  html:not([data-shot="1"]) #hero.is-vis .h5-mz.is-on .h5-mz-b{animation:h5-breathe 4.8s ease-in-out infinite}
+}
+/* мерцание: длинные ровные участки и короткие «провалы» лампы, неравномерно */
+@keyframes h5-flicker{
+  0%{opacity:.85}14%{opacity:.62}14.6%{opacity:.85}15.4%{opacity:.5}16%{opacity:.85}
+  47%{opacity:.78}48%{opacity:.85}71%{opacity:.4}71.5%{opacity:.8}72.3%{opacity:.58}73%{opacity:.85}93%{opacity:.7}93.6%{opacity:.85}}
+/* вдох: грудь/голова приподнимаются на ~1 %, выдох — обратно (база = кадр, слой никогда не меньше основы) */
+@keyframes h5-breathe{0%,100%{transform:scale(1,1)}45%{transform:scale(1.004,1.011)}55%{transform:scale(1.004,1.011)}}

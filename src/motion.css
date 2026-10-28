@@ -223,6 +223,9 @@ html[data-heroimg="mascot"][data-marquee="on"] .hx-marquee .hx-mq-txt{color:var(
 
 /* ================= О БРЕНДЕ ================= */
 section#about.ab { position: relative; isolation: isolate; padding: 0; background: #050505; overflow: visible; overflow-x: clip; }
+/* v5 (C1): знак ONE WAY / история — отдельный блок oneway.html (дверь отключена). Тот же фон, что у двери и холста знака;
+   overflow только по X — у предков #brand-stage нельзя overflow:hidden (ломает sticky кадра знака) */
+section#oneway.ow { position: relative; isolation: isolate; padding: 0; background: #050505; overflow: visible; overflow-x: clip; }
 /* ДВЕРЬ (v4, V3). Диорама door-A3 2560×1440 (16:9): слово GRINCHIN x 288–2194, y 442–913 (центр 1241/677),
    внизу слева — рулон скотча, внизу — мокрый асфальт с отражением, справа — знак ONE WAY на столбе.
    Desktop/планшет — кадр по ширине (cover, высота ≤ 92svh), низ тает в #050505, заголовок — ПОД кадром

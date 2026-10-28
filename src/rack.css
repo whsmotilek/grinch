@@ -1,5 +1,6 @@
 /* GRINCHIN v4 · S1 · «Дроп на вешалках». Токены — из site/src/tokens.css (с запасными значениями).
-   Один зелёный объект на экран — лаймовый скотч в 3D (флажок на вешалке в фокусе / карабин);
+   Один зелёный объект на экран. v5 (H5): бирки на вешалках — нейтральные картонные (фокус — светлая, остальные — графит),
+   скотча здесь больше нет (он только в блоке #tape);
    интерфейс модуля чёрно-белый. Анимации — только transform/opacity. */
 .rk {
   --rk-h: min(100svh, 920px);
@@ -48,7 +49,7 @@
 .rk-fb-it.is-on { opacity: 1; transform: none; }
 .rk-fb-hg { position: absolute; left: 50%; top: -8px; width: 92%; height: 70px; transform: translateX(-50%); overflow: visible; }
 .rk-fb-tag { position: absolute; left: calc(50% + 8px); top: 22px; padding: 3px 7px 2px; font: 700 11px/1 var(--font-display, Unbounded, sans-serif); color: #e6e6e2; background: #262626; border: 2px solid #000; }
-.rk-fb-it.is-on .rk-fb-tag { background: var(--c-green, #8ED308); color: #000; }
+.rk-fb-it.is-on .rk-fb-tag { background: #f2f2ec; color: #0b0b0b; }   /* v5 (H5): светлая картонная бирка, не лаймовый скотч */
 .rk-fb-it img { position: absolute; left: 0; right: 0; top: 64px; width: 100%; height: calc(100% - 64px); object-fit: contain; object-position: 50% 0; }
 .rk-fb-it img:not([src]) { visibility: hidden; }
 .rk[data-gl="off"] .rk-fb { display: block; }

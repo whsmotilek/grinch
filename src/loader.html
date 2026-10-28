@@ -4,9 +4,9 @@
              с самого кадра — hero5-data.json; координаты на экране даёт GV.hero5.mouth по рамке <img>), буквы садятся в лого шапки.
              Вокруг улыбки сцена выходит из темноты: прорезь-эллипс растёт от рта (рот → глаза → капюшон/рожки → фонарь/дверь),
              затемнение гаснет, «камера» отъезжает от рта (зум вокруг центра рта — рот на месте). Линия темнеет в цвет нарисованного
-             рта и растворяется в нём. ≈ 2,56 с. Страница ВСЕГДА открывается с самого верха (scrollRestoration=manual + scrollTo(0,0)
+             рта и растворяется в нём. ≈ 4,35 с (B1 29.10; до ворот кадра — ждёт «дыша»). Страница ВСЕГДА открывается с самого верха (scrollRestoration=manual + scrollTo(0,0)
              до показа, при перезагрузке и возврате из bfcache).
-     quick — повторный заход на главную в той же сессии (sessionStorage): тот же морф в рот, но знак уже стоит — ≈ 1 с; наверх — тоже.
+     quick — повторный заход на главную в той же сессии (sessionStorage): тот же морф в рот, но знак уже стоит — ≈ 1,6 с; наверх — тоже.
      page  — вход с deep-link (?open=…, ?lk=…, ?login=…, любой #якорь кроме #hero/#top/#main — разделы, #404, битый адрес через 404.html)
              и любая будущая отдельная страница (<html data-gv-page>): только «вдох» знака ≈ 0,85 с, знак — в шапку, крышка гаснет;
              прокрутку НЕ трогаем (якорь/шит открывает shop.js).
@@ -171,15 +171,32 @@ function holeAt(cx,cy,r0,R,p){var vw=innerWidth,vh=innerHeight;if(!CLIP){cover.s
   cover.style.clipPath='path(evenodd,"M0 0H'+vw+'V'+vh+'H0Z M'+x.toFixed(1)+' '+y.toFixed(1)+'a'+rx.toFixed(1)+' '+ry.toFixed(1)+' 0 1 0 '+(2*rx).toFixed(1)+' 0a'+rx.toFixed(1)+' '+ry.toFixed(1)+' 0 1 0 '+(-2*rx).toFixed(1)+' 0Z")';}
 
 var paused=false,skipping=false,time=0,last=0,rate=1,held=false,ended=false,END=0;
-var tM=.48,tL=.96,tF=1.36,fd=.5;
+var tM=.66,tL=1.22,tF=2.24,fd=.62,heroOK=true,gateOk=false,bt0=0,wt0=0;
 function inhale(at,du){tr(at,du,E.lin,function(p){smile.style.transform=p<1?'scale('+(1+.022*Math.sin(Math.PI*p)).toFixed(4)+')':'';});}
-/* ворота перед раскрытием: кадр hero декодирован и шрифты, не дольше 0,5 с */
+/* ВОРОТА перед раскрытием (B1, 29.10): свет не включается на пустом кадре. Ждём: hero5.js разобран (на медленной сети он ниже
+   по HTML), кадр hero НУЖНОГО размера загружен и декодирован (srcset выбрал сам браузер), слой глаз, шрифты. Пока ждём — знак
+   «дышит» (вдох/выдох 2,2 с), после 1,4 с ожидания внизу проступает подпись; продолжаем только на конце выдоха (без скачка).
+   Не дождались за 12 с — раскрытие без света (запасной путь: знак в шапку, эллипс из клюва), кадр догрузится сам. */
+function heroReady(){return new Promise(function(res){var done=false,fin=function(v){if(!done){done=true;res(v);}};
+  var go=function(){var hz=GV.hero5;if(!hz||!hz.ready){fin(false);return;}Promise.all([hz.ready(),hz.preload?hz.preload():true]).then(function(){fin(true);},function(){fin(false);});};
+  if(GV.hero5)go();else{D.addEventListener('grinchin:hero5',go,{once:true});
+    D.addEventListener('DOMContentLoaded',function(){setTimeout(function(){if(GV.hero5)go();else fin(false);},0);},{once:true});}});}
 function gate(at,hero){GATE=function(){if(skipping)return;var w=[];
-    if(hero&&GV.hero5&&GV.hero5.ready)w.push(GV.hero5.ready());
-    if(D.fonts&&D.fonts.status!=='loaded')w.push(D.fonts.ready);
-    if(!w.length)return;paused=true;var go=function(){paused=false;last=0;};
-    Promise.race([Promise.all(w),new Promise(function(r){setTimeout(r,500);})]).then(go,go);};
+    if(hero)w.push(heroReady().then(function(ok){heroOK=ok;}));
+    if(D.fonts&&D.fonts.status!=='loaded')w.push(Promise.race([D.fonts.ready,new Promise(function(r){setTimeout(r,800);})]));   // шрифты нужны интерфейсу (он в конце), свет их не ждёт дольше 0,8 с
+    if(!w.length)return;paused=true;gateOk=false;bt0=0;clearTimeout(L.timer);
+    var go=function(){gateOk=true;},cap0=function(){heroOK=false;go();};
+    Promise.race([Promise.all(w),new Promise(function(r){setTimeout(r,hero?12000:1500);}).then(hero?cap0:go)]).then(go,go);};
   call(at,GATE);}
+/* дыхание у ворот: s 0→1→0 за период BR. Ворота открылись — «выдох» из текущей точки за 0,32 с (не ждём конца цикла), затем дальше */
+var BR=2.2,rel0=0,relS=0;
+function resume(wt){smile.style.transform='';cap.style.transition='opacity .3s';cap.style.opacity='0';paused=false;last=0;
+  clearTimeout(L.timer);L.timer=setTimeout(function(){if(!ended)skip();},(END-time+2.5)*1000);L.waited=+wt.toFixed(2);
+  fire('grinchin:loader-progress',{t:+(time/END).toFixed(3),phase:'gate-open',waited:L.waited});}
+function breathe(now){if(!bt0){bt0=now;wt0=now;rel0=0;}var ph=(now-bt0)/1000/BR,s=Math.pow(Math.sin(Math.PI*ph),2),wt=(now-wt0)/1000;
+  if(gateOk){if(!rel0){rel0=now;relS=s;}var r=Math.min(1,(now-rel0)/320);s=relS*Math.pow(1-r,2);if(r>=1||relS<.01){resume(wt);return;}}
+  smile.style.transform='scale('+(1+.03*s).toFixed(4)+')';
+  if(FULL&&wt>1.4)cap.style.opacity=(Math.min(1,(wt-1.4)/.6)*.75).toFixed(3);}
 function flyMark(at,du,withLine){tr(at,du,E.p3io,function(p){var f=target();mk.style.transform='translate('+(f.x*p).toFixed(2)+'px,'+(f.y*p).toFixed(2)+'px) scale('+(1+(f.s-1)*p).toFixed(5)+')';
   var c=mix(GR,f.c,p);lt.style.color=c;if(withLine()){line.style.fill=c;line.style.stroke=mix(GR,f.c,p,1-p);}});}
 function showLogo(at,fade){call(at,function(){var l=D.getElementById('logo');if(l){l.style.visibility='visible';if(fade&&l.animate)try{l.animate([{opacity:0},{opacity:1}],{duration:260,easing:'ease-out'});}catch(e){}}});}
@@ -193,19 +210,19 @@ function showLogo(at,fade){call(at,function(){var l=D.getElementById('logo');if(
       (GV.hero5.light — тот же код, что «свет гаснет» при прокрутке к #tape);
    4) улыбка-линия гаснет, когда фронт света доходит до рта (под ней нарисованный рот), глаза — когда до глаз;
    5) интерфейс (кнопки шапки, CTA, подпись дропа) — последним, после того как свет устоялся. */
-var PALE=[236,242,234];
+var PALE=[236,242,234];   // цвет лампы версии (hero5.css --lt-pale: холодный белый / янтарь) — читается в reveal: hero5.css разбирается после заставки
 function reveal(tf,k,pat){
   gate(tf-.03,true);
-  var md=.46*(k<1?.7:1),land=tf+md,IG=pat==='quick'?.46:1.0,ig0=land+(pat==='quick'?.04:.12);
+  var md=k<1?.44:.6,land=tf+md,IG=pat==='quick'?.62:1.35,ig0=land+(pat==='quick'?.06:.16);
   /* развилка: есть рот на экране — морф + свет (v5); нет — знак целиком в шапку и эллипс из клюва (v4) */
-  call(tf,function(){var M=mouthState();USE=!!M.ok;
+  call(tf,function(){var lp=getComputedStyle(h).getPropertyValue('--lt-pale');if(lp&&lp.trim())PALE=rgb(lp);var M=mouthState();USE=!!M.ok&&heroOK;L.path=USE?'light':(heroOK?'no-mouth':'timeout');
     if(USE){line.style.visibility='hidden';mp.style.fill=mix(GR,GR,0);mp.style.stroke=mix(GR,GR,0);msvg.style.visibility='visible';
       if(GV.hero5){GV.hero5.light(0);GV.hero5.eyes(0);}}});
   flyMark(tf,fd*k,function(){return !USE;});
   tr(tf,md,E.p2io,function(p){if(!USE)return;morphP=p;drawMorph();});
   tr(tf+md*.4,md*.6,E.sio,function(p){if(!USE)return;var c=mix(GR,PALE,p);mp.style.fill=c;mp.style.stroke=c;});
   call(land,function(){if(USE)cover.style.opacity='0';fire('grinchin:loader-progress',{t:+(land/END).toFixed(3),phase:'reveal'});});
-  tr(land,.22,E.so,function(p){if(USE&&GV.hero5)GV.hero5.eyes(.2*p);});
+  tr(land,.3,E.so,function(p){if(USE&&GV.hero5)GV.hero5.eyes(.2*p);});
   tr(ig0,IG,E.lin,function(p){if(!USE||!GV.hero5)return;var H5=GV.hero5;
     var over=p>.45?(pat==='quick'?.25:.4)*Math.sin(Math.PI*Math.min(1,(p-.45)/.5)):0;   // пере-свет в начале горения, оседает
     var fr=H5.light(p,{pattern:pat,over:over}),st=H5.stickTop(),my=MO.c[1]-st,ey=H5.eyesY();
@@ -224,24 +241,27 @@ function reveal(tf,k,pat){
 }
 
 if(FULL){
-  var t0=.16,tH=.8,tB=1.06;
-  tr(.3,.45,E.so,function(p){cap.style.opacity=p.toFixed(3);});
-  tr(t0,.25,E.si,function(p){dot.style.animation='none';dot.style.opacity=1-p;dot.style.transform='scale('+(1-.5*p)+')';});
-  tr(t0,.46,E.p3io,function(p){line.style.opacity=1;line.style.transform='scaleX('+(.005+.995*p)+')';});
-  tr(tM,.36,E.p2io,function(p){line.setAttribute('d',toBody(p));});
-  tr(tM,.4,E.sio,function(p){line.style.fill=mix(GR,GR,0,p);line.style.stroke=mix(WH,GR,p);});
-  tr(tH,.34,E.p2o,function(p){line.setAttribute('d',toSmile(p));});
-  tr(tH,.3,E.p1io,function(p){horns.forEach(function(e){e.style.opacity=1;e.style.strokeDashoffset=1-p;});});
-  tr(tH+.28,.22,E.so,function(p){horns.forEach(function(e){e.style.opacity=1-p;});});
-  inhale(tB,.3);
-  tr(tL,.42,E.p2io,function(p){lt.style.clipPath='inset(-20% '+(100-100*p).toFixed(2)+'% -20% 0%)';lt.style.transform='translateY('+(3*(1-p)).toFixed(2)+'px)';});
-  tr(tF-.25,.22,E.so,function(p){grain.style.opacity=(.055*(1-p)).toFixed(4);cap.style.opacity=(1-p).toFixed(3);});
+  /* B1 29.10: ≈ 4,3 с, каждый шаг читается: точка .0–.5 → линия .24–.8 → тело .66–1.1 → улыбка с рожками 1.06–1.46 →
+     буквы 1.22–1.77 → вдох 1.6–2.15 → пауза (знак целиком) → ворота 2.21 → отлёт букв/морф 2.24–2.84 → посадка →
+     вспышки лампы 3.0–3.6 → свет стекает 3.6–4.35 → интерфейс 4.25 */
+  var t0=.24,tH=1.06,tB=1.6;
+  tr(.4,.5,E.so,function(p){cap.style.opacity=p.toFixed(3);});
+  tr(t0,.3,E.si,function(p){dot.style.animation='none';dot.style.opacity=1-p;dot.style.transform='scale('+(1-.5*p)+')';});
+  tr(t0,.56,E.p3io,function(p){line.style.opacity=1;line.style.transform='scaleX('+(.005+.995*p)+')';});
+  tr(tM,.44,E.p2io,function(p){line.setAttribute('d',toBody(p));});
+  tr(tM,.48,E.sio,function(p){line.style.fill=mix(GR,GR,0,p);line.style.stroke=mix(WH,GR,p);});
+  tr(tH,.4,E.p2o,function(p){line.setAttribute('d',toSmile(p));});
+  tr(tH,.36,E.p1io,function(p){horns.forEach(function(e){e.style.opacity=1;e.style.strokeDashoffset=1-p;});});
+  tr(tH+.36,.26,E.so,function(p){horns.forEach(function(e){e.style.opacity=1-p;});});
+  inhale(tB,.55);
+  tr(tL,.55,E.p2io,function(p){lt.style.clipPath='inset(-20% '+(100-100*p).toFixed(2)+'% -20% 0%)';lt.style.transform='translateY('+(3*(1-p)).toFixed(2)+'px)';});
+  tr(tF-.3,.26,E.so,function(p){grain.style.opacity=(.055*(1-p)).toFixed(4);cap.style.opacity=(1-p).toFixed(3);});
   reveal(tF,1,'full');
 }else if(QUICK){
   /* повторный заход на главную: знак уже стоит, короткий вдох и тот же морф в рот — ≈ 1 с */
-  tM=0;tL=0;tF=.34;
-  tr(0,.14,E.so,function(p){mk.style.opacity=p.toFixed(3);});
-  inhale(.06,.28);
+  tM=0;tL=0;tF=.5;
+  tr(0,.18,E.so,function(p){mk.style.opacity=p.toFixed(3);});
+  inhale(.06,.4);
   tr(tF-.2,.18,E.so,function(p){grain.style.opacity=(.055*(1-p)).toFixed(4);});
   reveal(tF,.66,'quick');
 }else if(PAGE){
@@ -275,18 +295,18 @@ function finish(){if(ended)return;ended=true;['pointerdown','keydown','wheel','t
 function tick(now){if(ended||held)return;
   if(!paused){if(last){var dt=Math.min(now-last,100)/1000;time=Math.min(END,time+dt*rate);}last=now;apply(time);
     fire('grinchin:loader-progress',{t:+(time/END).toFixed(3),phase:ph(time)});if(time>=END){finish();return;}}
-  else last=0;
+  else{last=0;if(!skipping)breathe(now);}
   requestAnimationFrame(tick);}
 /* пропуск: клик / клавиша / колесо / свайп — доигрывает остаток за 0,35 с */
 function skip(e){if(ended||skipping)return;if(e&&e.type==='keydown'&&/^(Tab|Shift|Control|Alt|Meta)$/.test(e.key))return;
-  skipping=true;paused=false;rate=Math.max(1,(END-time)/.35);}
+  skipping=true;paused=false;smile.style.transform='';rate=Math.max(1,(END-time)/.35);}
 ['pointerdown','keydown','wheel','touchmove'].forEach(function(n){W.addEventListener(n,skip,{capture:true,passive:true});});
 /* ресайз/поворот посреди заставки: всё пересчитать по новой вёрстке (рот берётся с кадра заново) */
 function onResize(){flip=null;var was=MO&&MO.ok;MO=null;if(was&&USE){var z=zoomNow;if(GV.hero5)GV.hero5.zoom(1);zoomNow=1;
   var mt=mk.style.transform;mk.style.transform='';mouthState();mk.style.transform=mt;
   if(!MO.ok){USE=false;msvg.style.visibility='hidden';line.style.visibility='';}else zoom(z);}}
 W.addEventListener('resize',onResize);
-L.timer=setTimeout(function(){if(!ended)skip();},6000);
+L.timer=setTimeout(function(){if(!ended)skip();},(END+2.5)*1000);   // страховка; у ворот снимается и ставится заново
 fire('grinchin:loader-progress',{t:0,phase:'start'});
 requestAnimationFrame(tick);
 /* для покадровой проверки: остановить и поставить таймлайн в момент t (с) */

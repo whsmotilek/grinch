@@ -358,9 +358,13 @@ html:not([data-mascot="quiet"]):not([data-mascot="none"]) .ov--menu .mi-o path{s
 html[data-clean] .menu-mode{display:none}
 /* маскот меню (V1 v4.1): стоит на линии и выглядывает из-за правого края экрана (поза обрезана кромкой справа). Ширину задаёт слот, высоту — поза.
    Телефон/планшет: на нижней линии пунктов, а разделители пунктов кончаются до него (не режут фигуру); desktop — на верхней линии подвала меню. */
-.menu-main{position:relative;padding-right:70px}
-.menu-mascot{position:absolute;right:calc(-1 * var(--gutter,16px));bottom:0;width:70px;margin:0;pointer-events:none;overflow:hidden}
-@media (min-width:768px) and (max-width:1099px){.menu-main{padding-right:118px}.menu-mascot{width:112px}}
+/* B2 v5: слот прижат к правой кромке ЭКРАНА (left от левого края пунктов = 100vw − поле − ширина), пункты рядом с ним
+   короче на его ширину; самый длинный («На вешалках») стоит выше фигуры и идёт во всю ширину — лист не шире экрана */
+.menu-main{position:relative;--mm-w:84px}
+.menu-mascot{position:absolute;right:auto;left:calc(100vw - var(--gutter,16px) - var(--mm-w));bottom:0;width:var(--mm-w);margin:0;pointer-events:none;overflow:hidden}
+html:not([data-mascot="quiet"]):not([data-mascot="none"]) .menu-main>.mi:nth-child(n+3){width:calc(100% - var(--mm-w) + var(--gutter,16px) - 8px)}
+.menu-mascot .mz{transform-origin:100% 100%}   /* B2 v5: точка опоры — правый край */
+@media (min-width:768px) and (max-width:1099px){.menu-main{--mm-w:112px}}
 .menu-mascot:empty,html:is([data-mascot="quiet"],[data-mascot="none"]) .menu-mascot{display:none}
 html:is([data-mascot="quiet"],[data-mascot="none"]) .menu-main{padding-right:0}
 .menu-mascot-fb{display:block;width:100%;height:auto;transform-origin:100% 100%}
@@ -373,7 +377,8 @@ html:is([data-mascot="quiet"],[data-mascot="none"]) .menu-main{padding-right:0}
   .menu-edge{display:none}
   .menu-in{min-height:100%;grid-template-rows:1fr auto}
   .menu-main{position:static;padding-right:0}
-  .menu-mascot{right:0;bottom:calc(36px + 16px + 1.375rem + 1px);width:120px}   /* = низ листа → верхняя линия подвала меню (padding .menu-in 36 + padding-top подвала 16 + строка слогана) */
+  html:not([data-mascot="quiet"]):not([data-mascot="none"]) .menu-main>.mi:nth-child(n+3){width:100%}
+  .menu-mascot{left:auto;right:0;bottom:calc(36px + 16px + 1.375rem + 1px);width:150px}   /* = низ листа → верхняя линия подвала меню (padding .menu-in 36 + padding-top подвала 16 + строка слогана) */
 }
 .menu-foot{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 24px;padding-top:16px;border-top:1px solid var(--c-line)}
 .menu-foot .t-mono{color:var(--text-2)}

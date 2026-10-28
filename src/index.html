@@ -100,6 +100,12 @@ pl("{{asset:img/v5/hero/d-1440.avif}} 1440w, {{asset:img/v5/hero/d-1920.avif}} 1
 <link rel="modulepreload" crossorigin href="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.186.1/three.module.min.js">
 <link rel="modulepreload" crossorigin href="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.186.1/three.core.min.js">
 <!--@css:tokens.css-->
+</head>
+<body>
+<!--@html:loader.html-->
+<!-- B1 v5 (29.10): стили страницы — ПОСЛЕ заставки. Раньше ~290 КБ инлайн-CSS шли в <head> до неё, и на медленной сети
+     (Slow 4G / Fast 3G) первый кадр заставки появлялся только через ~4,9 с. Теперь в <head> только tokens.css, заставка рисуется
+     сразу (её стили — в loader.html), остальное CSS разбирается под крышкой; всё, что ниже, по-прежнему идёт после своих стилей. -->
 <!--@css:base.css-->
 <!--@css:content.css-->
 <!--@css:motion.css-->
@@ -115,9 +121,6 @@ pl("{{asset:img/v5/hero/d-1440.avif}} 1440w, {{asset:img/v5/hero/d-1920.avif}} 1
 <!--@css:modes.css-->
 <!--@css:account.css--><!-- A2 v4.2: личный кабинет (шит, кнопка в шапке, сердечко) -->
 <!--@css:m-top.css--><!-- M2 v4.2: телефон, верх страницы (≤767 px) -->
-</head>
-<body>
-<!--@html:loader.html-->
 <a class="skip" href="#drop" data-nav="drop">К вещам</a>
 
 <!-- ============ ШАПКА: лого + бургер (+ счётчик корзины по оси data-cart) ============
@@ -196,7 +199,7 @@ pl("{{asset:img/v5/hero/d-1440.avif}} 1440w, {{asset:img/v5/hero/d-1920.avif}} 1
         <!-- V1 v4.1: маскот стоит на линии и выглядывает из-за правого края экрана (поза menu обрезана кромкой справа). Рисует V3 (GV.mascot.mount);
              <img> — запасной вариант. Телефон/планшет: стоит на нижней линии пунктов (последний разделитель), справа от коротких слов;
              desktop: стоит на верхней линии подвала меню у правого края. Скрыт при data-mascot="quiet|none". -->
-        <div class="menu-mascot" data-mascot-slot="menu" data-mascot-pose="menu" aria-hidden="true"><img class="menu-mascot-fb" src="{{asset:img/v4/hero/menu-600.webp}}" alt="" width="333" height="600" loading="lazy" decoding="async"></div>
+        <div class="menu-mascot" data-mascot-slot="menu" data-mascot-pose="menu" aria-hidden="true"></div><!-- B2 v5: поза menu (img/v5/mascot), запасная картинка v4 снята -->
       </nav>
       <div class="menu-side" style="--i:5">
         <button type="button" data-open="account" class="link menu-sub" data-ac-menu>Вход в&nbsp;кабинет</button><!-- A2 v4.2 -->

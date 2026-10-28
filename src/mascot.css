@@ -1,26 +1,27 @@
-/* GRINCHIN v4 · маскот «Гринчин» (V3, mascot.js). Слот задаёт ширину; коробка .mz — ширина × пропорция позы
-   (JS ставит aspect-ratio и --mz-ar на слот). Видео с альфой — поверх постера, совмещено по рамке фигуры
-   (--mz-vw/--mz-vx/--mz-vy); пока видео не дало кадр — виден постер (тот же первый кадр). Только transform/opacity. */
+/* GRINCHIN v5 · маскот по слотам (B2, mascot.js). Слот задаёт ширину; коробка .mz — ширина × пропорция позы.
+   Поза проявляется только после декода (.is-wait → прозрачно, место уже занято). Без видео — только transform/opacity. */
 .mz-slot{display:block;line-height:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 .mz-slot[hidden]{display:none!important}
 .mz{position:relative;width:100%;transform-origin:50% 100%}
-.mz-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:50% 100%;display:block;pointer-events:none}
-/* кадр видео (постер) — та же геометрия, что у видео */
-.mz-img--v,.mz-vid{position:absolute;inset:auto;left:var(--mz-vx);top:var(--mz-vy);width:var(--mz-vw);height:auto;aspect-ratio:var(--mz-var,1);max-width:none;object-fit:fill}
-.mz-vid{display:block;pointer-events:none;opacity:0;background:transparent}
-.mz.is-play .mz-vid{opacity:1}
-.mz.is-play .mz-img--v{visibility:hidden}
-/* после «один раз» (hero): лёгкое покачивание — композитный слой, без перерисовки */
-.mz-bob .mz{animation:mz-bob 3.6s ease-in-out infinite}
-@keyframes mz-bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-1.2%) rotate(-.8deg)}}
-/* всплывающий маскот «добавил в корзину»: правый нижний угол, над тостом, ничего не ловит */
-.mz-pop{position:fixed;right:max(10px,env(safe-area-inset-right));bottom:0;z-index:95;width:clamp(96px,22vw,168px);
-  pointer-events:none;visibility:hidden;transform:translateY(110%);transform-origin:50% 100%}
+.mz-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:50% 100%;display:block;pointer-events:none;
+  transition:opacity .32s cubic-bezier(.22,1,.36,1)}
+.mz.is-wait .mz-img,.mz-img.is-next{opacity:0}
+.mz.is-hold{visibility:hidden}
+/* покой: дыхание/покачивание (композитный слой) */
+.mz-bob .mz{animation:mz-bob 4.2s ease-in-out infinite}
+@keyframes mz-bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-1.4%) rotate(-.7deg)}}
+/* подвал: знак на столбе — качается вокруг основания столба, еле-еле */
+.mz-sway .mz{animation:mz-sway 6s ease-in-out infinite;transform-origin:42% 100%}
+@keyframes mz-sway{0%,100%{transform:rotate(0)}50%{transform:rotate(-.9deg)}}
+/* всплывающий «добавил в корзину»: правый нижний угол, ничего не ловит */
+.mz-pop{position:fixed;right:max(8px,env(safe-area-inset-right));bottom:0;z-index:95;width:clamp(112px,30vw,172px);
+  pointer-events:none;visibility:hidden;transform:translateY(110%);transform-origin:60% 100%;will-change:transform}
 .mz-pop.is-on{visibility:visible}
 .mz-pop img{display:block;width:100%;height:100%;object-fit:contain;object-position:50% 100%}
 html[data-overlay] .mz-pop{z-index:120}
-/* стикер (стиль B): белая обводка уже в картинке; ставится только в поля/стыки, не поверх текста */
+/* стикер (стиль B) — не маскот, остался с v4 */
 .st{position:absolute;display:block;pointer-events:none;width:var(--st-w,96px);aspect-ratio:var(--st-ar,1);
   transform:rotate(var(--st-r,0deg));transform-origin:50% 50%}
 .st img{display:block;width:100%;height:100%;object-fit:contain}
-@media (prefers-reduced-motion:reduce){.mz-bob .mz{animation:none}}
+@media (prefers-reduced-motion:reduce){.mz-bob .mz,.mz-sway .mz{animation:none}.mz-img{transition:none}}
+html[data-shot="1"] .mz-bob .mz,html[data-shot="1"] .mz-sway .mz{animation:none}

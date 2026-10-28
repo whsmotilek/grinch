@@ -36,6 +36,8 @@
 .nx-tag:focus-within{outline-color:var(--c-white)}
 .nx-tag:has(.nx-input[aria-invalid="true"]){border-color:var(--c-error)}
 .nx-submit{min-height:56px;margin:0;border:0;border-radius:0}
+#next:has(.nx-mz:not([hidden]):not(:empty)) .nx-submit{background:var(--c-white);color:var(--c-black)}   /* B2 v5: один зелёный — маскот */
+#next:has(.nx-mz:not([hidden]):not(:empty)) .nx-submit:hover{background:var(--c-white);text-decoration:underline;text-underline-offset:4px}
 .nx-submit:focus-visible{outline:2px solid var(--c-black);outline-offset:-6px}
 .nx-err{min-height:1.4em;margin-top:10px;font:var(--t-mono,500 .75rem/1.4 var(--font-mono));color:var(--c-error)}
 
@@ -112,9 +114,8 @@ button.fo-row:hover,.fo-acc>summary:hover{text-decoration:underline;text-underli
 
 /* логотип на мятой бумаге: форма — вектор нового лого (маска), цвет — бренд, заломы — ТОТ ЖЕ лист, что и фон
    (end.js совмещает --cx/--cy/--cw/--ch с фоном подвала). Размер задаёт невидимый inline-вектор (пропорции нового лого) */
-/* ширина ≤ 176: фигура в видео — 338 px родных, на DPR 2 это ~1:1 (крупнее — мыло); место над логотипом под маскота: высота фигуры над линией сиденья = ширина / пропорция × сиденье (видео: .565 и .694) */
-.fo-logo-box{position:relative;--fo-mz-w:clamp(84px,15vw,176px);margin-top:calc(var(--fo-mz-w) / .565 * .694 + 24px)}
-html[data-mascot="none"] .fo-logo-box{margin-top:clamp(40px,6vw,72px)}
+/* v5 (B2): маскот больше не сидит на логотипе — места над лого под него не нужно */
+.fo-logo-box{position:relative;margin-top:clamp(36px,5vw,72px)}
 .fo-logo{position:relative;width:100%;background-color:var(--c-green);
   background-position:var(--cx,50%) var(--cy,50%);background-size:var(--cw,cover) var(--ch,);background-repeat:no-repeat;
   background-blend-mode:multiply;
@@ -126,24 +127,21 @@ html:not(.js) .fo-logo,#footer.is-near .fo-logo{
 .fo-geom svg{display:block;width:100%;height:auto}
 /* «IGNORE THE SIGNS» под логотипом — как на упаковке (Grinchin2, стр. 10) */
 .fo-sign{margin:clamp(14px,2vw,26px) 0 0;text-align:center;font:800 clamp(.95rem,.5rem + 2.4vw,2.6rem)/1 var(--font-display);letter-spacing:.08em;color:var(--c-white)}
-/* маскот (v4) сидит на букве H (x 1057–1242 из 1660, верх ≈ 6 % ширины лого): линия сиденья видео footer_swing
-   (--mz-seat ≈ .694 высоты рамки, ставит mascot.js вместе с --mz-ar) — на верх буквы; ноги свисают поверх лого */
-.fo-mz{position:absolute;z-index:2;top:0;width:var(--fo-mz-w);left:calc(var(--fo-seat-x,69.3%) - var(--fo-mz-w) / 2);
-  margin-top:calc(var(--fo-seat-y,6%) - var(--fo-mz-w) / var(--mz-ar,.565) * var(--mz-seat,.66))} /* % у margin — от ширины: верх буквы = доля ширины лого */
-/* ТЕЛЕФОН (v4.2 · M3): маскот не на логотипе (при ширине лого ~340 px фигура 84 px закрывала буквы «CH»), а сидит
-   на нижней линейке «контактов», у правого поля, — как на краю полки; ноги свисают в пустое поле над логотипом.
-   Лого читается целиком. «скоро» — сразу за текстом строки, чтобы правая треть двух строк была свободна под фигуру.
-   Линия сиденья — та же --mz-seat видео (mascot.js); зазор над логотипом = свес ног + 20 px. */
-@media (max-width:767px){
-  .fo-logo-box{--fo-mz-w:84px;--fo-legs:calc(var(--fo-mz-w) / var(--mz-ar,.565) * (1 - var(--mz-seat,.694)));margin-top:calc(var(--fo-mz-w) / .565 * .306 + 28px)}
-  html[data-mascot="none"] .fo-logo-box{margin-top:40px}
-  .fo-mz{left:auto;right:6px;margin-top:calc(-1 * (var(--fo-mz-w) / .565 * .306 + 28px) - var(--fo-mz-w) / var(--mz-ar,.565) * var(--mz-seat,.694));pointer-events:none}
-  .fo-plain .fo-line{justify-content:flex-start;gap:12px}
+/* маскот v5 (B2): знак ONE WAY на столбе — справа от колонок «инфо/контакты»; низ столба тает в бумагу (маска),
+   поэтому «висящего» обреза нет. Телефон — под колонками у правого поля, ни на что не наезжает. */
+.fo-top{display:grid;gap:8px}
+.fo-mz{justify-self:end;width:min(56vw,220px);margin-right:-6px;pointer-events:none;
+  -webkit-mask-image:linear-gradient(#000 74%,transparent 98%);mask-image:linear-gradient(#000 74%,transparent 98%)}
+@media (min-width:768px){
+  .fo-top{grid-template-columns:minmax(0,1fr) clamp(190px,26vw,300px);column-gap:clamp(24px,4vw,72px);align-items:start}
+  .fo-mz{width:100%;margin:-24px 0 0}
 }
+/* один зелёный на экран: при маскоте лого «напечатано» белой краской на той же мятой бумаге */
+#footer:has(.fo-mz:not([hidden]):not(:empty)) .fo-logo{background-color:#e6e4de}
 /* стикеры подвала (режим «максимум»): в полях у логотипа, не на тексте */
 .fo-st{position:absolute;z-index:1;display:none}
 html[data-stickers="max"] .fo-st{display:block}
-.fo-st--1{--st-w:clamp(56px,7vw,104px);--st-r:-14deg;left:2%;top:calc(-1 * clamp(40px,6vw,96px))}
+.fo-st--1{--st-w:clamp(56px,7vw,104px);--st-r:-14deg;left:2%;top:calc(-1 * clamp(28px,4vw,64px))}
 
 .fo-legal{display:flex;flex-wrap:wrap;gap:4px 0;margin-top:clamp(32px,4vw,48px);padding-top:16px;
   border-top:1px solid color-mix(in srgb,var(--c-white) 18%,transparent);
@@ -163,6 +161,8 @@ html[data-stickers="max"] .fo-st{display:block}
 .e404-art{position:absolute;z-index:-1;left:50%;top:50%;width:max(100vw,100dvh * 16 / 9);aspect-ratio:16/9;transform:translate(calc(-50% + 7vw),-50%);pointer-events:none} /* сдвиг вправо: левая треть картинки — чёрная, заголовок не ложится на знак диорамы */
 .e404-bg,.e404-bg img{position:absolute;inset:0;width:100%;height:100%;display:block}
 .e404-mz{position:absolute;left:72.5%;bottom:24.5%;width:15.5%}
+/* B2 v5: один зелёный — маскот; лаймовый крест на барьере диорамы приглушён */
+.e404-art:has(.e404-mz:not([hidden]):not(:empty)) .e404-bg{filter:saturate(.16) brightness(.92)}
 @media (max-aspect-ratio:4/5){
   .e404-art{width:max(100vw,100dvh * 9 / 16 * 1.28);aspect-ratio:9/16;top:auto;bottom:0;transform:translate(calc(-50% + 14px),2.5%)}   /* ×1,28: диорама поднимается к тексту, пустоты нет; v4.2: сдвиг вправо-вниз — фонарь не касается «игнорировать.» */
   .e404-mz{left:max(13%,calc(50% - 50vw + 12px));bottom:21%;width:28%}

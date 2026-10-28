@@ -790,7 +790,7 @@
     };
     return '<div class="ac-hello ac-hello--guest">' +
       '<div class="ac-hello-c"><p class="ac-big">Свой кабинет.</p><p class="ac-lead">Заказы и&nbsp;путь предзаказа, «Разобрали&nbsp;— вернём» по&nbsp;размеру, избранное, адреса.</p></div>' +
-      mascotHTML("subscribe", "ac-mz--login") + "</div>" +
+      mascotHTML("account", "ac-mz--login") + "</div>" +
       '<div class="ac-methods" role="list" aria-label="Способы входа">' + on.map(btn).join("") +
       off.map((m) => '<span role="listitem" class="ac-method is-off"><span class="ac-method-n">' + METHOD[m.id][1] + '</span><span class="ac-method-s">' + (METHOD[m.id][3] || "скоро") + "</span></span>").join("") + "</div>" +
       errP("ac-e-login") +
@@ -875,7 +875,7 @@
   }
   function scrBye() {
     const del = S.flow.deleted;
-    return '<div class="ac-empty">' + mascotHTML(del ? "404" : "cart-empty", "ac-mz--empty") + '<p class="ac-big">' + (del ? "Кабинет удалится." : "Вышли.") + "</p>" +
+    return '<div class="ac-empty">' + mascotHTML("bye", "ac-mz--empty") + '<p class="ac-big">' + (del ? "Кабинет удалится." : "Вышли.") + "</p>" +
       '<p class="ac-lead ac-lead--ink">' + (del ? "Сотрём " + dLong(del.purge_at) + ". Передумаешь&nbsp;— войди до&nbsp;этой даты и&nbsp;отмени." : "На этом устройстве кабинета больше нет.") + "</p>" +
       '<button type="button" class="btn btn--dark" data-ac-close>Закрыть</button></div>';
   }
@@ -913,7 +913,7 @@
   }
   function scrOrders() {
     const list = S.c.orders || [];
-    if (!list.length) return '<div class="ac-empty">' + mascotHTML("cart-empty", "ac-mz--empty") + '<p class="ac-big">Заказов нет.</p><p class="ac-lead ac-lead--ink">Пока.</p><button type="button" class="btn btn--dark" data-ac-nav="drop">Смотреть дроп ' + ARROW + "</button></div>";
+    if (!list.length) return '<div class="ac-empty">' + mascotHTML("account", "ac-mz--empty") + '<p class="ac-big">Заказов нет.</p><p class="ac-lead ac-lead--ink">Пока.</p><button type="button" class="btn btn--dark" data-ac-nav="drop">Смотреть дроп ' + ARROW + "</button></div>";
     return '<ul class="ac-orders">' + list.map(orderCard).join("") + "</ul>";
   }
   function scrOrder() {
@@ -957,7 +957,7 @@
           (s.channels && s.channels.length ? " · " + s.channels.map(chName).join(", ") : "") + '</span><span class="ac-chip ac-chip--' + st[1] + '">' + st[0] + "</span>" +
           (back_ ? '<button type="button" class="ac-a" data-open-product="' + esc(s.product_id) + '">Есть&nbsp;— смотреть</button>' : "") + "</span>" +
           '<button type="button" class="ac-x" data-ac-act="unsub" data-ac-arg="' + esc(s.id) + '" aria-label="Отписаться: ' + esc(pname(s.product_id)) + ", " + sizeLabel(s.size) + '"></button></li>';
-      }).join("") + "</ul>" : '<div class="ac-empty ac-empty--s">' + mascotHTML("subscribe", "ac-mz--s") + '<p class="t-mono">подписок нет</p></div>') +
+      }).join("") + "</ul>" : '<div class="ac-empty ac-empty--s">' + mascotHTML("account", "ac-mz--s") + '<p class="t-mono">подписок нет</p></div>') +
       '<form class="ac-form ac-card" data-ac-form="restock" novalidate><h3 class="ac-h">Новая подписка</h3>' +
       '<div class="ac-field"><label class="ac-k" for="ac-rs-p">вещь:</label><select class="ac-sel" id="ac-rs-p" name="pid" data-ac-live="rs-p">' +
       ps.map((x) => '<option value="' + x.id + '"' + (x.id === pid ? " selected" : "") + ">" + esc(x.name) + (anyStock(x) ? "" : " — разобрали") + "</option>").join("") + "</select></div>" +
@@ -971,7 +971,7 @@
   }
   function scrFavs() {
     const ids = favSet().filter(prod);
-    if (!ids.length) return '<div class="ac-empty">' + mascotHTML("cart-empty", "ac-mz--empty") + '<p class="ac-big">Пусто.</p><p class="ac-lead ac-lead--ink">Жми ♡ на&nbsp;вещи в&nbsp;дропе&nbsp;— соберётся здесь.</p><button type="button" class="btn btn--dark" data-ac-nav="drop">Смотреть дроп ' + ARROW + "</button></div>";
+    if (!ids.length) return '<div class="ac-empty">' + mascotHTML("account", "ac-mz--empty") + '<p class="ac-big">Пусто.</p><p class="ac-lead ac-lead--ink">Жми ♡ на&nbsp;вещи в&nbsp;дропе&nbsp;— соберётся здесь.</p><button type="button" class="btn btn--dark" data-ac-nav="drop">Смотреть дроп ' + ARROW + "</button></div>";
     return '<ul class="ac-favs">' + ids.map((id) => {
       const p = prod(id), ok = anyStock(p);
       return '<li class="ac-fav"><button type="button" class="ac-fav-o" data-open-product="' + esc(id) + '">' + thumb(id, "ac-thumb--l") +

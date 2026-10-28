@@ -26,14 +26,16 @@ jobs:
         with:
           python-version: "3.12"
       - name: Build
+        # /5/ — холодный свет, /6/ — тёплый (одна база src, build.py --light). /1–/4 — замороженные сборки из versions/.
+        # Каждая версия — своя папка со своими assets/ (относительные пути), версии друг друга не задевают.
         run: |
-          python3 build.py
-          mkdir -p _site/4
-          cp -R versions/. _site/        # замороженные версии: _site/1, _site/2, _site/3
-          cp -R dist/. _site/4/          # текущая сборка = версия 4
-          mv _site/4/grinchin.html _site/4/index.html
+          mkdir -p _site && cp -R versions/. _site/
+          python3 build.py --light=cold --out=_site/5
+          python3 build.py --light=warm --out=_site/6
+          mv _site/5/grinchin.html _site/5/index.html
+          mv _site/6/grinchin.html _site/6/index.html
           cp root-index.html _site/index.html
-          cp root-404.html _site/404.html   # битые адреса → «Тупик.» на сайте
+          cp root-404.html _site/404.html   # битые адреса → «Тупик.» на /5/
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

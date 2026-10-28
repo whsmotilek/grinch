@@ -62,6 +62,12 @@
   /* заставка: свет и «чеширские» глаза (u — см. light ниже), stickTop — для перевода фронта света в координаты экрана */
   GV.hero5.light = function (u, opt) { return light(u, opt); }; GV.hero5.stickTop = function () { return stickTop(); };
   GV.hero5.eyes = function (o) { loadEyes(); ches.classList.toggle('is-on', o > .001); eyes.style.opacity = o > .001 ? o.toFixed(3) : '0'; sv.style.opacity = '0'; bt.style.opacity = '0'; };
+  /* ворота заставки (loader.html gate): кадр hero нужного размера декодирован + слой «чеширских» глаз (он виден в темноте до вспышек) */
+  GV.hero5.preload = function () {
+    loadEyes(); if (!eyes || !eyes.src) return Promise.resolve(false);
+    return new Promise(function (res) { var ok = function () { (eyes.decode ? eyes.decode() : Promise.resolve()).then(res, res); };
+      if (eyes.complete && eyes.naturalWidth) ok(); else { eyes.addEventListener('load', ok, { once: true }); eyes.addEventListener('error', res, { once: true }); } });
+  };
   GV.hero5.eyesY = function () { var d = DATA[key()]; return d && d.eyes ? frame.offsetTop + (d.eyes[1] + d.eyes[3] * .6) * frame.offsetHeight : 0; };   // hold — для покадровой проверки заставки (GV.loader.seek)
 
   /* маскот-слой: тот же кадр, вырезан по фигуре; грузится после раскрытия, проявляется только декодированным */
@@ -89,8 +95,9 @@
      вниз (рожки → лицо → плечи → краем дверь и надпись), расширяется, затем проступает вся сцена (финальная экспозиция = кадр).
      Включение в заставке идёт по u вперёд, «свет гаснет» при прокрутке — тот же u назад (мигания те же, в обратном порядке).
      Конус — маска на слое сцены (conic ∩ linear, mask-composite), тьма — фон hero #0b0b0b; яркость вспышек — затемнение .h5-dim.
-     Свет холодный белый: у лампы — холодная дымка, «пере-свет» при включении — холодный белый слой (screen). */
-  var FLS = { full: [[0, .1, .5], [.3, .37, .32], [.6, .84, .78]], quick: [[.25, .75, .7]] };
+     Цвет света — версии (html[data-light]: cold — холодный белый, warm — янтарь; токены --lt-* в hero5.css). */
+  // вспышки [начало, конец, сила] в долях фазы мигания (u 0..0,45). B1 29.10: чуть длиннее — каждая читается (79/61/159 мс при 4,3 с заставки)
+  var FLS = { full: [[0, .13, .5], [.32, .42, .3], [.6, .86, .8]], quick: [[.2, .78, .72]] };
   var flash = hero.querySelector('.h5-flash'), glowEl = hero.querySelector('.h5-glow'), maskOn = '', lastFront = -1;
   function lampXY() { var d = DATA[key()], lp = (d && d.lamp) || [.5, .06];
     return [frame.offsetLeft + lp[0] * frame.offsetWidth, frame.offsetTop + (lp[1] + .015) * frame.offsetHeight]; }
@@ -132,7 +139,8 @@
   var cl = function (v) { return v < 0 ? 0 : v > 1 ? 1 : v; }, sm = function (a, b, v) { var t = cl((v - a) / (b - a)); return t * t * (3 - 2 * t); };
   var io = function (t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; };
   function hx(c) { return [1, 3, 5].map(function (i) { return parseInt(c.substr(i, 2), 16); }); }
-  var PALE = hx('#ecf2ea'), LIME = hx('#8ed308');
+  // светлая улыбка в темноте — цвет лампы версии (hero5.css --lt-pale: холодный белый / янтарь)
+  var PALE = hx((getComputedStyle(H).getPropertyValue('--lt-pale').trim() || '#ecf2ea')), LIME = hx('#8ed308');
   function mixc(a, b, t) { return 'rgb(' + a.map(function (v, i) { return Math.round(v + (b[i] - v) * t); }).join(',') + ')'; }
   /* геометрия перехода (в координатах сцены): контур рта и прямоугольник ленты с общими ориентирами, по N точек */
   var G = null, NP = 240;
@@ -174,7 +182,9 @@
     var on = q > .24; ches.classList.toggle('is-on', on); if (!on) return;
     var g = geo(); if (!g) return;
     eyes.style.opacity = (sm(.28, .42, q) * (1 - sm(.54, .66, q))).toFixed(3);
-    var e = io(sm(.48, .8, q)), sh = sm(.88, 1, q) * g.L * 1.05, dx = g.ux * sh, dy = g.uy * sh, s = 'M';
+    // B1 29.10: лента уезжает вдоль себя лишь наполовину — к q=1 её хвост ещё в кадре и уходит вверх вместе со сценой,
+    // пока снизу входит блок #tape (раньше между ними было ~170 px пустой темноты)
+    var e = io(sm(.48, .8, q)), sh = sm(.86, 1, q) * g.L * .42, dx = g.ux * sh, dy = g.uy * sh, s = 'M';
     for (var i = 0; i < g.A.length; i++) { var a = g.A[i], b = g.B[i]; s += (i ? 'L' : '') + (a[0] + (b[0] - a[0]) * e + dx).toFixed(1) + ' ' + (a[1] + (b[1] - a[1]) * e + dy).toFixed(1); }
     sp.setAttribute('d', s + 'Z');
     sv.style.opacity = sm(.26, .42, q).toFixed(3);
@@ -223,6 +233,7 @@
   /* для проверок: GV.hero5.out(q) — поставить переход в момент q (0..1) без прокрутки */
   GV.hero5.out = function (q) { live = false; measure(); out(cl(q)); };
 
+  D.dispatchEvent(new CustomEvent('grinchin:hero5'));   // заставка ждёт hero5 у ворот (медленная сеть: скрипт ниже по HTML)
   /* старт: после раскрытия заставки (или сразу, если заставки нет) */
   function onReady() {
     var lm = H.getAttribute('data-loader');

@@ -25,12 +25,18 @@ html[data-shot="1"] #hero.h5,html:not(.js) #hero.h5{--h5-out:0px;height:var(--st
 .h5-pic,.h5-pic img{display:block;width:100%;height:100%}
 .h5-pic img{-webkit-user-select:none;user-select:none}
 
-/* свет фонаря: холодная белая дымка вокруг лампы, изредка мерцает (opacity, композитор). Градиент статичный — растрится один раз */
+/* СВЕТ ВЕРСИИ (B1, 29.10): build.py --light=cold|warm ставит html[data-light]. Все световые эффекты (дымка лампы, пере-свет
+   при включении, светлая линия улыбки в темноте — заставка и «свет гаснет») берут цвет отсюда:
+   cold (/5/) — холодный белый, warm (/6/) — янтарь. Рот и тьма (#0b0b0b) у обеих одинаковые. */
+:root{--lt-glow:226,236,255;--lt-glow2:214,228,255;--lt-flash:236,243,255;--lt-flash2:228,238,255;--lt-pale:#ecf2ea}
+html[data-light="warm"]{--lt-glow:255,184,96;--lt-glow2:255,160,64;--lt-flash:255,210,140;--lt-flash2:255,176,90;--lt-pale:#f6e3bd}
+/* свет фонаря: дымка вокруг лампы, изредка мерцает (opacity, композитор). Градиент статичный — растрится один раз */
 .h5-glow{position:absolute;left:var(--h5-lx,50%);top:var(--h5-ly,8%);width:44%;aspect-ratio:1;margin:-22% 0 0 -22%;border-radius:50%;
-  background:radial-gradient(closest-side,rgba(226,236,255,.24),rgba(214,228,255,.09) 48%,rgba(214,228,255,0));opacity:.85}
-/* «пере-свет» при включении лампы: холодный белый слой в луче (screen), opacity ведёт свет (hero5.js light) */
+  background:radial-gradient(closest-side,rgba(var(--lt-glow),.24),rgba(var(--lt-glow2),.09) 48%,rgba(var(--lt-glow2),0));opacity:.85}
+html[data-light="warm"] .h5-glow{background:radial-gradient(closest-side,rgba(var(--lt-glow),.3),rgba(var(--lt-glow2),.11) 48%,rgba(var(--lt-glow2),0))}
+/* «пере-свет» при включении лампы: слой цвета лампы в луче (screen), opacity ведёт свет (hero5.js light) */
 .h5-flash{position:absolute;inset:0;pointer-events:none;opacity:0;mix-blend-mode:screen;
-  background:radial-gradient(ellipse 30% 75% at var(--h5-lx,50%) 38%,rgba(236,243,255,.85),rgba(228,238,255,.28) 55%,rgba(228,238,255,0) 82%)}
+  background:radial-gradient(ellipse 30% 75% at var(--h5-lx,50%) 38%,rgba(var(--lt-flash),.85),rgba(var(--lt-flash2),.28) 55%,rgba(var(--lt-flash2),0) 82%)}
 /* маскот-слой: рамка из данных (доли кадра), «дыхание» — scale от низа фигуры */
 .h5-mz{position:absolute;left:var(--h5-mzx);top:var(--h5-mzy);width:var(--h5-mzw);height:var(--h5-mzh);opacity:0;transition:opacity .25s}
 .h5-mz.is-on{opacity:1}
@@ -54,7 +60,7 @@ html[data-shot="1"] #hero.h5,html:not(.js) #hero.h5{--h5-out:0px;height:var(--st
 .h5-ches.is-on{visibility:visible}
 .h5-eyes{position:absolute;left:var(--h5-ex);top:var(--h5-ey);width:var(--h5-ew);height:var(--h5-eh);opacity:0}
 .h5-smile{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible}
-.h5-smile path{fill:#ecf2ea}
+.h5-smile path{fill:var(--lt-pale)}
 .h5-band-t{position:absolute;left:0;top:0;display:flex;align-items:center;justify-content:center;overflow:hidden;white-space:nowrap;
   transform-origin:0 0;font:800 var(--bt,40px)/1 var(--font-display);letter-spacing:.02em;text-transform:uppercase;color:#0b0b0b;opacity:0}
 

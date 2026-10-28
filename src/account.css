@@ -89,8 +89,8 @@ html[data-overlay="account"] .hd-acc{color:var(--c-green)}
 .ac-hello--guest .ac-lead{color:var(--ink-2)}
 .ac-mz{display:block;pointer-events:none}
 .ac-mz:empty{display:none}
-.ac-mz--login{width:clamp(92px,26vw,128px);flex:0 0 auto;margin-bottom:-1px}
-.ac-mz--empty{width:clamp(120px,34vw,160px)}
+.ac-mz--login{width:clamp(78px,21vw,100px);flex:0 0 auto;margin-bottom:-1px}
+.ac-mz--empty{width:clamp(104px,28vw,132px)}
 .ac-mz--s{width:84px}
 
 /* ---------- способы входа ---------- */

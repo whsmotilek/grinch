@@ -1,9 +1,10 @@
-<!-- K5/V3 · подвал (v4: маскот «Гринчин» сидит на логотипе — видео footer_swing; стикер — при data-stickers="max"). Мятая бумага одним листом (img/end, грузится, когда подвал рядом), сервисные ссылки,
+<!-- K5/V3 · подвал (v5 B2: маскот на знаке ONE WAY справа от колонок, без видео; v4 — сидел на логотипе; стикер — при data-stickers="max"). Мятая бумага одним листом (img/end, грузится, когда подвал рядом), сервисные ссылки,
      контакты обычным текстом (без отрывной ленты), новый логотип «напечатан» на той же бумаге + IGNORE THE SIGNS.
-     На логотипе сидит маскот: [data-mascot-slot="footer"]. #footer-logo .fo-geom — невидимая геометрия лого для соседей. -->
+     Маскот: [data-mascot-slot="footer"] в .fo-top. #footer-logo .fo-geom — невидимая геометрия лого для соседей. -->
 <footer id="footer">
   <div class="fo-paper" aria-hidden="true"></div>
   <div class="wrap fo-in">
+    <div class="fo-top">
     <div class="fo-service">
       <div class="fo-col">
         <p class="fo-k">инфо:</p>
@@ -31,9 +32,12 @@
         </ul>
       </div>
     </div>
+      <!-- B2 v5: пушистый маскот сидит на погнутом ONE WAY и перерисовывает стрелку — справа от сервисных колонок
+           (телефон — под ними у правого поля); низ столба тает в бумагу. Лого под ним печатается белым: зелёный на экране — маскот -->
+      <div class="fo-mz" data-mascot-slot="footer" aria-hidden="true"></div>
+    </div>
 
     <div id="footer-logo" class="fo-logo-box">
-      <div class="fo-mz" data-mascot-slot="footer" aria-hidden="true"></div>
       <span class="st fo-st fo-st--1" aria-hidden="true" style="--st-ar:.941"><img src="{{asset:img/v4/scenes/sticker-6-stars.webp}}" alt="" width="240" height="255" loading="lazy" decoding="async"></span>
       <div class="fo-logo" role="img" aria-label="GRINCHIN"><span class="fo-geom" aria-hidden="true"><!--@svg:logo--></span></div>
       <p class="fo-sign" aria-label="Ignore the signs">IGNORE THE SIGNS</p>

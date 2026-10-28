@@ -207,29 +207,30 @@ function showLogo(at,fade){call(at,function(){var l=D.getElementById('logo');if(
    2) села — крышка уходит (под ней та же тьма hero): видна только светлая улыбка и едва-едва блики глаз;
    3) лампа зажигается неуверенно (full: 3 вспышки разной длины, quick: одна) — на каждой сцена проступает в узком холодном
       конусе сверху; затем горит: конус «доливается» сверху вниз с пере-светом и оседает до кадра. Свет ведёт hero5.js
-      (GV.hero5.light — тот же код, что «свет гаснет» при прокрутке к #tape);
+      (GV.hero5.lightAt — те же ключевые кадры, что «свет гаснет» при прокрутке, v51: только opacity/transform слоёв);
    4) улыбка-линия гаснет, когда фронт света доходит до рта (под ней нарисованный рот), глаза — когда до глаз;
    5) интерфейс (кнопки шапки, CTA, подпись дропа) — последним, после того как свет устоялся. */
 var PALE=[236,242,234];   // цвет лампы версии (hero5.css --lt-pale: холодный белый / янтарь) — читается в reveal: hero5.css разбирается после заставки
 function reveal(tf,k,pat){
   gate(tf-.03,true);
-  var md=k<1?.44:.6,land=tf+md,IG=pat==='quick'?.62:1.35,ig0=land+(pat==='quick'?.06:.16);
+  var md=k<1?.44:.6,land=tf+md,IG=pat==='quick'?.62:1.5,ig0=land+(pat==='quick'?.06:.16);
   /* развилка: есть рот на экране — морф + свет (v5); нет — знак целиком в шапку и эллипс из клюва (v4) */
   call(tf,function(){var lp=getComputedStyle(h).getPropertyValue('--lt-pale');if(lp&&lp.trim())PALE=rgb(lp);var M=mouthState();USE=!!M.ok&&heroOK;L.path=USE?'light':(heroOK?'no-mouth':'timeout');
     if(USE){line.style.visibility='hidden';mp.style.fill=mix(GR,GR,0);mp.style.stroke=mix(GR,GR,0);msvg.style.visibility='visible';
-      if(GV.hero5){GV.hero5.light(0);GV.hero5.eyes(0);}}});
+      if(GV.hero5){GV.hero5.dark();GV.hero5.eyes(0);}}});
   flyMark(tf,fd*k,function(){return !USE;});
   tr(tf,md,E.p2io,function(p){if(!USE)return;morphP=p;drawMorph();});
   tr(tf+md*.4,md*.6,E.sio,function(p){if(!USE)return;var c=mix(GR,PALE,p);mp.style.fill=c;mp.style.stroke=c;});
   call(land,function(){if(USE)cover.style.opacity='0';fire('grinchin:loader-progress',{t:+(land/END).toFixed(3),phase:'reveal'});});
   tr(land,.3,E.so,function(p){if(USE&&GV.hero5)GV.hero5.eyes(.2*p);});
   tr(ig0,IG,E.lin,function(p){if(!USE||!GV.hero5)return;var H5=GV.hero5;
-    var over=p>.45?(pat==='quick'?.25:.4)*Math.sin(Math.PI*Math.min(1,(p-.45)/.5)):0;   // пере-свет в начале горения, оседает
-    var fr=H5.light(p,{pattern:pat,over:over}),st=H5.stickTop(),my=MO.c[1]-st,ey=H5.eyesY();
+    // v51: свет — заранее заданные ключевые кадры на слоях (hero5.js lightAt): играет композитор, здесь только сверка времени
+    var fr=H5.lightAt(pat,p*IG,!held),st=H5.stickTop(),my=MO.c[1]-st,ey=H5.eyesY();
     if(p>=.45){mp.style.opacity=(1-Math.min(1,Math.max(0,(fr-my+12)/70))).toFixed(3);
       H5.eyes(.2*(1-Math.min(1,Math.max(0,(fr-ey)/60))));}
     else{mp.style.opacity='';H5.eyes(.2);}});
   call(ig0+IG-.1,function(){h.setAttribute('data-hero-in','1');});
+  call(ig0+IG,function(){if(USE&&GV.hero5&&!held)GV.hero5.lightOn();});   // свет горит — слои в покой, анимации сняты
   call(land,sendReady);
   /* v4-запасной путь: эллипс из клюва */
   tr(tf+.38*k,.56*k,E.p2io,function(p){if(USE)return;

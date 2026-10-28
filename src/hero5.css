@@ -8,8 +8,8 @@
    фонарь мигает и гаснет, сцена уходит в темноту, остаются блики глаз и улыбка (Чеширский кот), улыбка вытягивается в лаймовую
    ленту IGNORE THE SIGNS по линии ленты блока #tape и утягивается вниз-вправо — в блок скотча. Высота задана в CSS (CLS 0).
    reduced-motion / ?shot=1 / без JS — хода нет, hero = один экран. */
-#hero.h5{position:relative;--stick-h:max(380px,calc(100svh - var(--header-h)));--h5-out:95svh;
-  height:calc(max(380px,calc(100vh - var(--header-h))) + 95vh);height:calc(var(--stick-h) + var(--h5-out));
+#hero.h5{position:relative;--stick-h:max(380px,calc(100svh - var(--header-h)));--h5-out:60svh;
+  height:calc(max(380px,calc(100vh - var(--header-h))) + 60vh);height:calc(var(--stick-h) + var(--h5-out));
   background:#0b0b0b;color:var(--c-white)}
 @media (prefers-reduced-motion:reduce){#hero.h5{--h5-out:0px;height:var(--stick-h)}}
 html[data-shot="1"] #hero.h5,html:not(.js) #hero.h5{--h5-out:0px;height:var(--stick-h)}
@@ -20,8 +20,11 @@ html[data-shot="1"] #hero.h5,html:not(.js) #hero.h5{--h5-out:0px;height:var(--st
   --l:clamp(calc(var(--cw) - var(--w)),calc(var(--cw) * .5 - var(--h5-fx,.5) * var(--w)),0px);
   --t:clamp(calc(var(--ch) - var(--h)),calc(var(--ch) * .5 - var(--h5-fy,.5) * var(--h)),0px)}
 @supports (width:1cqw){.h5-stick{--cw:100cqw;--ch:100cqh}}
+/* v51: альбомное окно — кадр прижат к ВЕРХУ: лампа над дверью видна целиком (1366/1440/1920). Срезается низ, но не больше 10 %
+   высоты кадра: на сверхшироких окнах кадр поднимается ровно настолько, чтобы рот (≈75 % высоты) оставался в кадре */
+@media (min-aspect-ratio:10001/10000){.h5-stick{--t:clamp(calc(var(--ch) - var(--h)),calc(var(--ch) - .9 * var(--h)),0px)}}
 .h5-cam{position:absolute;inset:0;pointer-events:none;transform-origin:50% 50%}
-.h5-frame,.h5-ches-f{position:absolute;left:var(--l);top:var(--t);width:var(--w);height:var(--h)}
+.h5-frame,.h5-ches-f,.h5-lit{position:absolute;left:var(--l);top:var(--t);width:var(--w);height:var(--h)}
 .h5-pic,.h5-pic img{display:block;width:100%;height:100%}
 .h5-pic img{-webkit-user-select:none;user-select:none}
 
@@ -30,13 +33,23 @@ html[data-shot="1"] #hero.h5,html:not(.js) #hero.h5{--h5-out:0px;height:var(--st
    cold (/5/) — холодный белый, warm (/6/) — янтарь. Рот и тьма (#0b0b0b) у обеих одинаковые. */
 :root{--lt-glow:226,236,255;--lt-glow2:214,228,255;--lt-flash:236,243,255;--lt-flash2:228,238,255;--lt-pale:#ecf2ea}
 html[data-light="warm"]{--lt-glow:255,184,96;--lt-glow2:255,160,64;--lt-flash:255,210,140;--lt-flash2:255,176,90;--lt-pale:#f6e3bd}
-/* свет фонаря: дымка вокруг лампы, изредка мерцает (opacity, композитор). Градиент статичный — растрится один раз */
+/* v51 СВЕТ НА СЛОЯХ (iOS-дружелюбно): движутся только transform/opacity, всё растрируется один раз.
+   .h5-curtain — «тьма»: #0b0b0b с мягким верхним краем (24 % высоты шторки), высота 132 % сцены. Свет горит — шторка уехала
+   вниз за край (translateY 100 %), темно — стоит на месте (translateY −24,24 %: край над сценой). «Стекание света» = шторка едет вниз.
+   .h5-lit — над тьмой, в рамке кадра: конус (кадр в луче лампы, альфа), дымка лампы, пере-свет; по умолчанию конус и пере-свет 0.
+   Ключевые кадры — hero5.js (WAAPI), заставка и «свет гаснет» — одни и те же. */
+.h5-curtain{position:absolute;left:0;right:0;top:0;height:132%;pointer-events:none;transform:translate3d(0,100%,0);will-change:transform;
+  background:linear-gradient(180deg,rgba(11,11,11,0),rgba(11,11,11,.82) 16%,#0b0b0b 24.24%)}
+.h5-lit{pointer-events:none}
+.h5-cone,.h5-cone-i{display:block;width:100%;height:100%}
+.h5-cone{opacity:0;will-change:opacity}
+/* дымка лампы: изредка мерцает (opacity). Градиент статичный — растрится один раз */
 .h5-glow{position:absolute;left:var(--h5-lx,50%);top:var(--h5-ly,8%);width:44%;aspect-ratio:1;margin:-22% 0 0 -22%;border-radius:50%;
   background:radial-gradient(closest-side,rgba(var(--lt-glow),.24),rgba(var(--lt-glow2),.09) 48%,rgba(var(--lt-glow2),0));opacity:.85}
 html[data-light="warm"] .h5-glow{background:radial-gradient(closest-side,rgba(var(--lt-glow),.3),rgba(var(--lt-glow2),.11) 48%,rgba(var(--lt-glow2),0))}
-/* «пере-свет» при включении лампы: слой цвета лампы в луче (screen), opacity ведёт свет (hero5.js light) */
-.h5-flash{position:absolute;inset:0;pointer-events:none;opacity:0;mix-blend-mode:screen;
-  background:radial-gradient(ellipse 30% 75% at var(--h5-lx,50%) 38%,rgba(var(--lt-flash),.85),rgba(var(--lt-flash2),.28) 55%,rgba(var(--lt-flash2),0) 82%)}
+/* «пере-свет» при включении: обычное наложение (без blend-mode — на iOS это отдельный дорогой проход), только opacity */
+.h5-flash{position:absolute;inset:0;pointer-events:none;opacity:0;will-change:opacity;
+  background:radial-gradient(ellipse 30% 75% at var(--h5-lx,50%) 38%,rgba(var(--lt-flash),.34),rgba(var(--lt-flash2),.1) 55%,rgba(var(--lt-flash2),0) 82%)}
 /* маскот-слой: рамка из данных (доли кадра), «дыхание» — scale от низа фигуры */
 .h5-mz{position:absolute;left:var(--h5-mzx);top:var(--h5-mzy);width:var(--h5-mzw);height:var(--h5-mzh);opacity:0;transition:opacity .25s}
 .h5-mz.is-on{opacity:1}
@@ -48,9 +61,11 @@ html[data-light="warm"] .h5-glow{background:radial-gradient(closest-side,rgba(va
   background:linear-gradient(180deg,rgba(11,11,11,0),rgba(11,11,11,.5) 52%,rgba(11,11,11,.9) 82%,#0b0b0b)}
 .h5-shade::before{content:"";position:absolute;left:0;right:0;bottom:calc(333% - 1px);height:60%;
   background:linear-gradient(180deg,rgba(11,11,11,.55),rgba(11,11,11,0))}
+/* v51: на альбоме тень только в левом углу под подписью дропа — лампа по центру остаётся светлой */
+@media (min-aspect-ratio:10001/10000){.h5-shade::before{right:auto;width:42%;background:radial-gradient(ellipse 100% 100% at 0 0,rgba(11,11,11,.6),rgba(11,11,11,0) 70%)}}
 /* верх кадра (на телефоне кадр ниже экрана и прижат к низу) — растворяется в фоне hero: края картинки не видно */
-.h5-frame::before{content:"";position:absolute;z-index:1;left:0;right:0;top:-1px;height:14%;pointer-events:none;
-  background:linear-gradient(180deg,#0b0b0b,rgba(11,11,11,.6) 40%,rgba(11,11,11,0))}
+@media (max-aspect-ratio:1/1){.h5-frame::before,.h5-lit::before{content:"";position:absolute;z-index:1;left:0;right:0;top:-1px;height:14%;pointer-events:none;
+  background:linear-gradient(180deg,#0b0b0b,rgba(11,11,11,.6) 40%,rgba(11,11,11,0))}}
 /* «выход из темноты» (заставка) и затемнение при уходе вниз к #tape — один слой, opacity ведёт JS */
 .h5-dim{position:absolute;inset:0;background:#0b0b0b;opacity:0;pointer-events:none;z-index:1}
 
@@ -58,11 +73,12 @@ html[data-light="warm"] .h5-glow{background:radial-gradient(closest-side,rgba(va
    улыбка вытягивается в ленту с печатью. Всё — opacity/transform, путь SVG пересчитывает JS только во время перехода */
 .h5-ches{position:absolute;inset:0;z-index:2;pointer-events:none;visibility:hidden}
 .h5-ches.is-on{visibility:visible}
-.h5-eyes{position:absolute;left:var(--h5-ex);top:var(--h5-ey);width:var(--h5-ew);height:var(--h5-eh);opacity:0}
-.h5-smile{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible}
+.h5-eyes{position:absolute;left:var(--h5-ex);top:var(--h5-ey);width:var(--h5-ew);height:var(--h5-eh);opacity:0;transform-origin:50% 55%;will-change:transform,opacity}
+.h5-smile{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;opacity:0;will-change:transform,opacity}
 .h5-smile path{fill:var(--lt-pale)}
-.h5-band-t{position:absolute;left:0;top:0;display:flex;align-items:center;justify-content:center;overflow:hidden;white-space:nowrap;
-  transform-origin:0 0;font:800 var(--bt,40px)/1 var(--font-display);letter-spacing:.02em;text-transform:uppercase;color:#0b0b0b;opacity:0}
+/* ?out=line: линия-разделитель на всю ширину (2 px), едет transform, гаснет opacity */
+.h5-line{position:absolute;left:0;right:0;top:0;height:2px;margin-top:-1px;background:var(--lt-pale);opacity:0;will-change:transform,opacity;
+  box-shadow:0 0 14px rgba(var(--lt-glow),.45)}
 
 /* подпись дропа (моно, как бирки каталога) и CTA */
 .h5-tag{position:absolute;z-index:3;left:var(--gutter);top:18px;margin:0;white-space:nowrap;

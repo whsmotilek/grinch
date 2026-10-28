@@ -133,7 +133,7 @@ html:not(.js) .fo-logo,#footer.is-near .fo-logo{
 .fo-mz{justify-self:end;width:min(56vw,220px);margin-right:-6px;pointer-events:none;
   -webkit-mask-image:linear-gradient(#000 74%,transparent 98%);mask-image:linear-gradient(#000 74%,transparent 98%)}
 @media (min-width:768px){
-  .fo-top{grid-template-columns:minmax(0,1fr) clamp(190px,26vw,300px);column-gap:clamp(24px,4vw,72px);align-items:start}
+  .fo-top:has(.fo-mz){grid-template-columns:minmax(0,1fr) clamp(190px,26vw,300px);column-gap:clamp(24px,4vw,72px);align-items:start}
   .fo-mz{width:100%;margin:-24px 0 0}
 }
 /* один зелёный на экран: при маскоте лого «напечатано» белой краской на той же мятой бумаге */

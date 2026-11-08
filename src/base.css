@@ -1,12 +1,12 @@
 /* GRINCHIN v3 — каркас и магазин. Владелец: K1. База — base.css v2 (контейнер, типошкала, ячейки, оверлеи, шиты, корзина, тост),
-   новое в v3: шапка «лого + бургер», меню-лист, бирка размеров (ось html[data-size]), счётчик корзины (ось html[data-cart]).
+   новое в v3: шапка «лого + бургер», меню-лист, бирка размеров (ось html[data-size]), счетчик корзины (ось html[data-cart]).
    Цвета — только токены tokens.css. Брейкпоинты: 768 / 1100. Стили разделов hero/looks/about/next/footer — в content.css (слой v1).
 
    ОБЩИЕ ПРИМИТИВЫ (соседям можно пользоваться):
    .wrap        контейнер: один левый край на весь сайт — поля слева 16 / 32 / 40–72 px (var(--gutter)), справа var(--gutter-r) = тому же полю (v5; в v3.1–v4 было 24 / 32 / 64 — дорожка ленты рулона), max 1680 + safe-area
    .t-*         типошкала (ниже), шрифт целиком через переменные --t-* (font shorthand)
-   .btn         кнопка (--accent зелёная, --dark чёрная, --line контурная, --wide на всю ширину; v1: --ghost, --ghost-dark)
-   .link        текстовая ссылка с подчёркиванием
+   .btn         кнопка (--accent зеленая, --dark черная, --line контурная, --wide на всю ширину; v1: --ghost, --ghost-dark)
+   .link        текстовая ссылка с подчеркиванием
    .cell        кнопка-ячейка: grid + place-items:center + text-align:center (размеры, ±) — центровка 0 px
    .ov-x        крестик закрытия 44×44
    .kv          бирка «ключ: значение» моно (pres_12)
@@ -24,7 +24,7 @@
    7 --t-body-s Inter 400, 14 px / 1.5          подписи, раскрытия, лиды
    8 --t-ui     Inter 600, 14 px / 1.2          навигация, ссылки, «Убрать», заголовки аккордеонов
    9 --t-mono   Martian Mono 400, 12 px / 1.4   статусы, номера 01/08, [ЦВЕТ], бирки «size:»
-  10 --t-mono-l Martian Mono 400, 14 px / 1     цены, количество, счётчик корзины
+  10 --t-mono-l Martian Mono 400, 14 px / 1     цены, количество, счетчик корзины
   (+ постерный заголовок v1 .h-poster — 11-й стиль, характер v1)
 */
 :root{
@@ -41,9 +41,9 @@
 
   /* ПОЛЕ СТРАНИЦЫ — один левый край на весь сайт (v3.1, T4). Было 24 / 40 / 64 против 16 / 32 / clamp(40,4vw,72) у hero,
      двери и истории — левые края секций прыгали (телефон 16↔24, 1440: 57,6↔64, 1920: 72↔120). Теперь поле = поле hero:
-     16 (телефон) · 32 (768–1099) · clamp(40px,4vw,72px) (desktop); шире 1680 + поля контейнер центрируется (1920: край 124 — решение координатора, см. отчёт T4).
+     16 (телефон) · 32 (768–1099) · clamp(40px,4vw,72px) (desktop); шире 1680 + поля контейнер центрируется (1920: край 124 — решение координатора, см. отчет T4).
      Соседям — брать var(--gutter), а не свои числа.
-     --gutter-r — правое поле .wrap = дорожка ленты рулона (roll.js ведёт её по середине правого поля и требует ~30 px
+     --gutter-r — правое поле .wrap = дорожка ленты рулона (roll.js ведет ее по середине правого поля и требует ~30 px
      от края контента). Телефон 24 (при 16 лента 2/3 пути уходила «в туннель» под карточки: замер T4 — 4721 → 1715 px
      видимой ленты), desktop 64 (при 57,6 на 1440 пропадал зигзаг через образы/дверь). Асимметрия 8 / 6 px на глаз не видна.
      v5 (C1): ленты-маршрута больше нет → правое поле снова равно левому (--gutter-r = --gutter). Вернут roll.js —
@@ -157,7 +157,7 @@ html[data-overlay="menu"] #header{z-index:calc(var(--z-overlay) + 10)}
 @media (min-width:768px){#logo svg{height:30px}}
 .hd-right{display:flex;align-items:center;gap:2px;margin-right:-10px}
 
-/* счётчик корзины: моно «(n)», белый, без плашки. Ось data-cart: count — после первого добавления, menu — только в меню */
+/* счетчик корзины: моно «(n)», белый, без плашки. Ось data-cart: count — после первого добавления, menu — только в меню */
 .hd-cart{display:none;place-items:center;min-width:44px;height:44px;padding:0 6px;color:var(--c-white);font:var(--t-mono-l);font-variant-numeric:tabular-nums;
   transition:color .2s}
 .hd-cart:hover{color:var(--c-green)}
@@ -185,7 +185,7 @@ html[data-cart="count"][data-bag="full"] .hd-cart{display:grid;animation:gv-slap
 
 /* ---------- ДРОП 01: бумажный лист ---------- */
 #drop{position:relative;background:var(--c-paper);color:var(--c-black);padding:var(--sec-1) 0 var(--sec-2);--focus:var(--c-black)}
-/* v4.1 (V1): стык hero → каталог — бумага каталога рваным краем заходит на чёрное (как лист меню), а не обрывается по линейке */
+/* v4.1 (V1): стык hero → каталог — бумага каталога рваным краем заходит на черное (как лист меню), а не обрывается по линейке */
 #drop::before{content:"";position:absolute;left:0;right:0;top:-15px;height:16px;background:var(--c-paper);pointer-events:none;
   -webkit-mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20600%2018%22%20preserveAspectRatio%3D%22none%22%3E%3Cpath%20d%3D%22M0%2018V6L0%2012%2012%205%2032%202%2043%203%2054%2012%2073%202%2091%208%20101%204%20117%205%20128%208%20139%203%20155%202%20174%204%20187%2011%20197%2011%20216%205%20226%208%20236%203%20248%2010%20264%206%20282%204%20301%2010%20319%206%20330%2011%20349%208%20364%204%20382%204%20401%202%20420%208%20437%203%20453%2012%20470%2011%20487%2012%20501%208%20523%206%20544%208%20555%2011%20569%203%20586%2012%20600%206V18Z%22/%3E%3C/svg%3E") 0 0/600px 100% repeat-x;mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20600%2018%22%20preserveAspectRatio%3D%22none%22%3E%3Cpath%20d%3D%22M0%2018V6L0%2012%2012%205%2032%202%2043%203%2054%2012%2073%202%2091%208%20101%204%20117%205%20128%208%20139%203%20155%202%20174%204%20187%2011%20197%2011%20216%205%20226%208%20236%203%20248%2010%20264%206%20282%204%20301%2010%20319%206%20330%2011%20349%208%20364%204%20382%204%20401%202%20420%208%20437%203%20453%2012%20470%2011%20487%2012%20501%208%20523%206%20544%208%20555%2011%20569%203%20586%2012%20600%206V18Z%22/%3E%3C/svg%3E") 0 0/600px 100% repeat-x}
 .drop-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;margin-bottom:32px}
@@ -224,12 +224,12 @@ html[data-cart="count"][data-bag="full"] .hd-cart{display:grid;animation:gv-slap
   text-decoration-thickness:1px;transition:text-decoration-color .2s}
 .card-open:focus-visible{outline:none}
 .card:has(.card-open:focus-visible) .card-media{outline:2px solid var(--c-black);outline-offset:4px}
-/* исключения — серой строкой с чёрным квадратом; зелёного в сетке нет (один зелёный объект на экран) */
+/* исключения — серой строкой с черным квадратом; зеленого в сетке нет (один зеленый объект на экран) */
 .card-status.is-alert{color:var(--c-black)}
 .card-status.is-alert::before{content:"";display:inline-block;width:6px;height:6px;margin-right:7px;vertical-align:.12em;background:var(--c-black)}
 .card[data-state="soldout"] .card-name,.card[data-state="soldout"] .card-price{color:var(--ink-2)}
 .card[data-state="soldout"] .card-media{opacity:.6}
-/* «разобрали» — цена зачёркнута серым штрихом бирки */
+/* «разобрали» — цена зачеркнута серым штрихом бирки */
 .stk--price{position:absolute;left:-4px;right:-4px;top:2px;bottom:-4px;width:calc(100% + 8px);height:calc(100% + 2px)}
 .stk--price .n{opacity:1;stroke:var(--ink-2)}
 
@@ -245,7 +245,7 @@ html[data-cart="count"][data-bag="full"] .hd-cart{display:grid;animation:gv-slap
 
 /* ---------- БИРКА РАЗМЕРОВ «зачеркни неправильное» (айдентика стр. 7, R4 §3.6) ----------
    Ячейка — grid + place-items:center (центровка 0 px); штрих — абсолютный SVG поверх, в потоке не участвует.
-   Лайм — «не твой размер», серый — «нет в наличии», обводка — выбранный. Бирка всегда чёрная: лайм только на чёрном. */
+   Лайм — «не твой размер», серый — «нет в наличии», обводка — выбранный. Бирка всегда черная: лайм только на черном. */
 .szt{position:relative;display:grid;grid-template-columns:repeat(var(--n,5),minmax(0,1fr));background:var(--c-black);color:var(--c-white);border-radius:3px}
 .szt-c{position:relative;display:grid;place-items:center;text-align:center;min-width:0;padding:0;cursor:pointer;color:inherit}
 .szt-l{position:relative;z-index:1;display:block;font:800 1.25rem/1 var(--font-display);letter-spacing:-.02em;transition:opacity .15s ease}
@@ -318,9 +318,9 @@ html[data-cards="d"] .card:hover .szt--quick[data-sel]:not([data-sel=""]) .szt-c
   .sheet-bar{padding-left:32px;padding-right:20px;min-height:72px}
 }
 
-/* ---------- МЕНЮ: чёрный лист с рваным краем съезжает из-под шапки (R4 §3.2, вариант A) ----------
+/* ---------- МЕНЮ: черный лист с рваным краем съезжает из-под шапки (R4 §3.2, вариант A) ----------
    Только transform; вход из display:none — @starting-style. desktop — по содержимому, под ним затемнение;
-   mobile — на весь экран под шапкой. Текущий раздел обведён от руки (единственный зелёный объект в меню). */
+   mobile — на весь экран под шапкой. Текущий раздел обведен от руки (единственный зеленый объект в меню). */
 .ov--menu{top:var(--header-h)}
 .ov--menu .ov-scrim{background:color-mix(in srgb,var(--c-black) 72%,transparent)}   /* плотнее: лаймовый маскот hero под листом не спорит с маскотом меню */
 .menu-panel{left:0;right:0;top:0;max-height:100%;color:var(--c-white);padding-bottom:18px;
@@ -340,7 +340,7 @@ html[data-cards="d"] .card:hover .szt--quick[data-sel]:not([data-sel=""]) .szt-c
 .mi-n{font-variant-numeric:tabular-nums}
 .mi-o{position:absolute;left:-.32em;right:-.38em;top:-.32em;bottom:-.3em;width:calc(100% + .7em);height:calc(100% + .62em);overflow:visible;pointer-events:none}
 .mi-o path{fill:none;stroke:var(--c-green);stroke-width:3;stroke-linecap:round;stroke-dasharray:1 1;stroke-dashoffset:1;opacity:0}
-/* один зелёный в меню: маскот в меню лаймовый — обводка текущего пункта белым маркером (лайм — только если маскот выключен осью) */
+/* один зеленый в меню: маскот в меню лаймовый — обводка текущего пункта белым маркером (лайм — только если маскот выключен осью) */
 html:not([data-mascot="quiet"]):not([data-mascot="none"]) .ov--menu .mi-o path{stroke:var(--c-white)}
 .ov--menu.is-open .mi.is-current .mi-o path{stroke-dashoffset:0;opacity:1;transition:stroke-dashoffset .42s cubic-bezier(.4,.1,.3,1) .32s,opacity 0s linear .32s}
 .menu-side{display:grid;align-content:start;gap:4px}
@@ -356,10 +356,10 @@ html:not([data-mascot="quiet"]):not([data-mascot="none"]) .ov--menu .mi-o path{s
 .menu-mode-k{margin-left:auto;font:var(--t-mono);letter-spacing:.02em;color:var(--text-2);transition:color .2s}
 .menu-mode:hover .menu-mode-k{color:var(--c-white)}
 html[data-clean] .menu-mode{display:none}
-/* маскот меню (V1 v4.1): стоит на линии и выглядывает из-за правого края экрана (поза обрезана кромкой справа). Ширину задаёт слот, высоту — поза.
+/* маскот меню (V1 v4.1): стоит на линии и выглядывает из-за правого края экрана (поза обрезана кромкой справа). Ширину задает слот, высоту — поза.
    Телефон/планшет: на нижней линии пунктов, а разделители пунктов кончаются до него (не режут фигуру); desktop — на верхней линии подвала меню. */
 /* B2 v5: слот прижат к правой кромке ЭКРАНА (left от левого края пунктов = 100vw − поле − ширина), пункты рядом с ним
-   короче на его ширину; самый длинный («На вешалках») стоит выше фигуры и идёт во всю ширину — лист не шире экрана */
+   короче на его ширину; самый длинный («На вешалках») стоит выше фигуры и идет во всю ширину — лист не шире экрана */
 .menu-main{position:relative;--mm-w:84px}
 .menu-mascot{position:absolute;right:auto;left:calc(100vw - var(--gutter,16px) - var(--mm-w));bottom:0;width:var(--mm-w);margin:0;pointer-events:none;overflow:hidden}
 html:not([data-mascot="quiet"]):not([data-mascot="none"]) .menu-main>.mi:nth-child(n+3){width:calc(100% - var(--mm-w) + var(--gutter,16px) - 8px)}
@@ -411,7 +411,7 @@ html:is([data-mascot="quiet"],[data-mascot="none"]) .menu-main{padding-right:0}
 .ps-slide img{width:100%;height:100%;object-fit:contain}
 .ps-slide--art>svg{width:100%;height:100%}
 .ps-count{position:absolute;right:var(--gutter);bottom:12px;font:var(--t-mono);letter-spacing:.02em;color:var(--ink-2)}
-.ps-info{padding:24px var(--gutter) 0;display:grid;gap:0}
+.ps-info{padding:24px var(--gutter) 0;display:grid;grid-template-columns:minmax(0,1fr);gap:0}
 .ps-num{font:var(--t-mono);letter-spacing:.02em;color:var(--ink-2)}
 .ps-title{margin-top:8px;font:var(--t-d2);letter-spacing:-.035em}
 .ps-line{display:flex;justify-content:space-between;gap:16px;margin-top:10px;font:var(--t-mono);letter-spacing:.02em}
@@ -511,7 +511,7 @@ html:is([data-mascot="quiet"],[data-mascot="none"]) .menu-main{padding-right:0}
 .ci-meta{margin-top:4px;color:var(--ink-2)}
 .ci-price{font:var(--t-mono-l);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
 .ci-row{grid-column:2/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px}
-/* «Убрать»: строку перечёркивает штрих бирки, потом она уходит */
+/* «Убрать»: строку перечеркивает штрих бирки, потом она уходит */
 .ci-strike{position:absolute;left:-4px;right:-4px;top:50%;height:2px;margin-top:-1px;background:var(--c-black);transform:scaleX(0);transform-origin:0 50%;
   transition:transform .15s cubic-bezier(.3,.7,.2,1);pointer-events:none}
 .cart-item.is-removing .ci-strike{transform:scaleX(1)}

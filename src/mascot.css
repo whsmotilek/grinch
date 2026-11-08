@@ -1,4 +1,4 @@
-/* GRINCHIN v5 · маскот по слотам (B2, mascot.js). Слот задаёт ширину; коробка .mz — ширина × пропорция позы.
+/* GRINCHIN v5 · маскот по слотам (B2, mascot.js). Слот задает ширину; коробка .mz — ширина × пропорция позы.
    Поза проявляется только после декода (.is-wait → прозрачно, место уже занято). Без видео — только transform/opacity. */
 .mz-slot{display:block;line-height:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 .mz-slot[hidden]{display:none!important}
@@ -19,6 +19,7 @@
 .mz-pop.is-on{visibility:visible}
 .mz-pop img{display:block;width:100%;height:100%;object-fit:contain;object-position:50% 100%}
 html[data-overlay] .mz-pop{z-index:120}
+html[data-overlay="cart"] .mz-pop{visibility:hidden}
 /* стикер (стиль B) — не маскот, остался с v4 */
 .st{position:absolute;display:block;pointer-events:none;width:var(--st-w,96px);aspect-ratio:var(--st-ar,1);
   transform:rotate(var(--st-r,0deg));transform-origin:50% 50%}

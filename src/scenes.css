@@ -1,8 +1,8 @@
 /* GRINCHIN v3 · K2 · 3D: знак G в hero (#g3d), знак ONE WAY or ANOTHER (#brand-stage). Рулон ленты — roll.css (T1, v3.1).
-   Стили 3D-G перенесены из game.css (игра удалена, файл удалён); позицию #g3d задаёт K4. Цвета — только токены. */
+   Стили 3D-G перенесены из game.css (игра удалена, файл удален); позицию #g3d задает K4. Цвета — только токены. */
 
 /* ───────── 3D-G (#g3d) ─────────
-   Прямоугольник #g3d задаёт K4 (hero.html / motion.css: #g3d — inset:0 внутри обёртки .hx-g, которую K4 двигает
+   Прямоугольник #g3d задает K4 (hero.html / motion.css: #g3d — inset:0 внутри обертки .hx-g, которую K4 двигает
    и масштабирует по прокрутке). Здесь позиции #g3d нет — знак рисуется строго внутри этого прямоугольника. */
 .g3d{position:absolute;inset:0;touch-action:pan-y;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;contain:layout}
 .g3d__cv{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:0;pointer-events:none}
@@ -38,8 +38,8 @@
 .g-gyro:focus-visible{outline:2px solid var(--c-acid);outline-offset:3px}
 
 /* ───────── Знак ONE WAY or ANOTHER (data-brand="sign") ─────────
-   Каркас блока — K4 (about.html, motion.css): #brand-stage резервирует высоту заранее (220svh, без pin-спейсера →
-   CLS 0), внутри .bs-sign — sticky-кадр 100svh. K2 рисует в .bs-sign: подписи слева, знак справа; оборот идёт
+   Каркас блока — K4 (about.html, motion.css): #brand-stage резервирует высоту заранее (170svh, без pin-спейсера →
+   CLS 0), внутри .bs-sign — sticky-кадр 100svh. K2 рисует в .bs-sign: подписи слева, знак справа; оборот идет
    по прокрутке через #brand-stage. Mobile (≤767): без sticky и без пустой прокрутки — блок по высоте содержимого,
    оборот проигрывается при входе в кадр.
    NB: у предков #brand-stage не должно быть overflow:hidden (ломает sticky) — только overflow-x:clip. */
@@ -50,7 +50,7 @@
 .k2-sign__cap{position:relative;display:grid;align-content:center;min-height:12em}
 .k2-sign__kicker{margin:0 0 1.2em;font:500 var(--fs-xs)/1 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--text-2)}
 .k2-sign__kicker i{font-style:normal;color:var(--c-green);transition:color .3s var(--ease-out)}
-/* «один зелёный на экран»: когда на знаке проявился лаймовый OR ANOTHER (шаг 2), «or» в подписи гаснет до белого */
+/* «один зеленый на экран»: когда на знаке проявился лаймовый OR ANOTHER (шаг 2), «or» в подписи гаснет до белого */
 .k2-sign[data-step="2"] .k2-sign__kicker i{color:var(--text)}
 .k2-sign__l{grid-area:2/1;align-self:start;margin:0;color:var(--text);font:800 clamp(1.75rem,3.6vw,3.25rem)/1.05 var(--font-display);letter-spacing:-.01em;text-wrap:balance;
   transition:opacity .34s var(--ease-out) .2s,transform .42s var(--ease-out) .2s}
@@ -78,7 +78,7 @@
   /* v4.2 (M3): строкой выше — заголовок двери «One way or another.»; повтор кикером через 80 px на телефоне лишний */
   .ab-door ~ #brand-stage .k2-sign__kicker{display:none}
   .ab-door ~ #brand-stage .k2-sign__pin{padding-top:28px}
-  /* v5 (C1): двери нет — знак открывает свой блок после рейла: кикер «ONE WAY or ANOTHER» даёт контекст, отступ сверху — как у секций */
+  /* v5 (C1): двери нет — знак открывает свой блок после рейла: кикер «ONE WAY or ANOTHER» дает контекст, отступ сверху — как у секций */
   .k2-sign__pin{padding-top:var(--sec-1,72px)}
   .k2-sign__l{font-size:clamp(1.5rem,7vw,2rem)}
   .k2-sign__view{height:auto;min-height:0;aspect-ratio:1/1.08;margin:0 calc(-1 * var(--gutter,16px));cursor:pointer}

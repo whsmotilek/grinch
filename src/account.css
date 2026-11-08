@@ -1,8 +1,8 @@
-/* GRINCHIN v4.2 · ЛИЧНЫЙ КАБИНЕТ (A2). Шит как у корзины: бумага + чёрный текст, лайм — только заливкой под чёрным (чип «в пути», текущая стадия).
+/* GRINCHIN v4.2 · ЛИЧНЫЙ КАБИНЕТ (A2). Шит как у корзины: бумага + черный текст, лайм — только заливкой под черным (чип «в пути», текущая стадия).
    Телефон — снизу почти на весь экран (свайп вниз по шапке), 768–1099 — справа 520, ≥1100 — справа 960 в две колонки (меню | раздел).
    Анимации — только transform/opacity; reduced-motion — без поездок. Токены — tokens.css, примитивы — base.css (.btn, .link, .kv, .acc, .ov-*). */
 
-/* ---------- кнопка в шапке: гость — контур головы с рожками, вошёл — буква в круге ---------- */
+/* ---------- кнопка в шапке: гость — контур головы с рожками, вошел — буква в круге ---------- */
 .hd-acc{position:relative;display:grid;place-items:center;width:44px;height:44px;flex:0 0 44px;color:var(--c-white);transition:color .2s}
 .hd-acc:hover{color:var(--c-green)}
 .hd-acc svg{width:24px;height:24px;overflow:visible}
@@ -83,7 +83,7 @@ html[data-overlay="account"] .hd-acc{color:var(--c-green)}
 .ac-hi{font:var(--t-h3);letter-spacing:-.02em}
 .ac-hello-k{margin-top:4px;color:var(--c-ink-2);overflow-wrap:anywhere}
 .ac-aside .ac-hello{padding:14px}
-/* гость: заголовок + маскот (единственный зелёный на экране входа) */
+/* гость: заголовок + маскот (единственный зеленый на экране входа) */
 .ac-hello--guest{background:none;color:var(--c-black);padding:4px 0 0;align-items:flex-end;justify-content:space-between;border-bottom:1px solid var(--c-black)}
 .ac-hello-c{display:grid;gap:10px;padding-bottom:18px;min-width:0}
 .ac-hello--guest .ac-lead{color:var(--ink-2)}
@@ -150,7 +150,7 @@ legend.ac-k{margin-bottom:8px}
 .ac-cb:disabled{border-color:var(--c-line-paper);cursor:not-allowed}
 .ac-check-t{padding-top:1px}
 
-/* сегменты (как получить) и «пилюли» размеров/посадки — радио, обводка выбранного чёрным */
+/* сегменты (как получить) и «пилюли» размеров/посадки — радио, обводка выбранного черным */
 .ac-seg{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0;border:0}
 .ac-seg legend{width:100%}
 .ac-seg label,.ac-pill{position:relative;display:inline-grid}
@@ -208,7 +208,7 @@ legend.ac-k{margin-bottom:8px}
 .ac-now--empty{border-style:dashed;border-color:var(--c-line-paper);justify-items:start;gap:4px}
 .ac-now--empty .t-mono{color:var(--ink-2)}
 
-/* чипы статусов: лайм — только «в пути» (заливка под чёрным текстом) */
+/* чипы статусов: лайм — только «в пути» (заливка под черным текстом) */
 .ac-chip{display:inline-flex;align-items:center;min-height:24px;padding:3px 9px 2px;border:1px solid var(--c-black);border-radius:999px;font:var(--t-mono);letter-spacing:.02em;white-space:nowrap;justify-self:start;align-self:start}
 .ac-chip--ok{background:var(--c-black);color:var(--c-white)}
 .ac-chip--go{background:var(--c-green);color:var(--c-black)}
@@ -216,7 +216,7 @@ legend.ac-k{margin-bottom:8px}
 .ac-chip--off{border-color:var(--c-line-paper);color:var(--ink-2)}
 .ac-chip--done{background:transparent}
 
-/* путь предзаказа: шесть точек на линии, текущая — лаймовая с чёрным контуром */
+/* путь предзаказа: шесть точек на линии, текущая — лаймовая с черным контуром */
 .ac-steps{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));margin:0;padding:0;list-style:none;counter-reset:s}
 .ac-steps li{position:relative;display:grid;justify-items:start;gap:8px;padding-top:2px}
 .ac-steps li::before{content:"";position:absolute;left:0;right:0;top:8px;height:2px;background:var(--c-line-paper)}

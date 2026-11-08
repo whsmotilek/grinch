@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- K2 · запекание matcap «под материал v1» (MeshPhysical + процедурное окружение PMREM + френелевый rim).
      Не входит в сборку. Запуск: python3 -m http.server в src/img/3d, headless Chrome → window.__bake() → dataURL.
-     В рантайме сайта остаётся дешёвый MeshMatcapMaterial, а вид — как у тяжёлого физического материала v1. -->
+     В рантайме сайта остается дешевый MeshMatcapMaterial, а вид — как у тяжелого физического материала v1. -->
 <html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000}canvas{display:block}</style></head>
 <body><canvas id="c" width="256" height="256"></canvas>
 <script type="module">
@@ -34,9 +34,9 @@ const MATS = {
   lime: () => rim(new T.MeshPhysicalMaterial({ color: cG, roughness: .4, clearcoat: .9, clearcoatRoughness: .2, emissive: cG, emissiveIntensity: .015 }), cA, .5, 2.6),
   // скотч: сатин — блик шире и мягче, лака меньше
   tape: () => rim(new T.MeshPhysicalMaterial({ color: cG, roughness: .62, clearcoat: .35, clearcoatRoughness: .5, emissive: cG, emissiveIntensity: .015, sheen: .35, sheenColor: cL }), cA, .4, 2.8),
-  // борт/фаска: тёмный лес с лаком (v1 side)
+  // борт/фаска: темный лес с лаком (v1 side)
   side: () => rim(new T.MeshPhysicalMaterial({ color: cF.clone().lerp(cG, .22), roughness: .32, metalness: .08, clearcoat: 1, clearcoatRoughness: .12 }), cA, .4, 3.2),
-  // чёрный глянец с лаймовым контуром
+  // черный глянец с лаймовым контуром
   black: () => rim(new T.MeshPhysicalMaterial({ color: new T.Color('#0a0a0a'), roughness: .28, clearcoat: 1, clearcoatRoughness: .06 }), cG, .55, 5.0),
 };
 const scene = new T.Scene(); scene.environment = envRT.texture; scene.background = new T.Color('#000');

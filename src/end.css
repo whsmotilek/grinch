@@ -1,6 +1,6 @@
-/* GRINCHIN v4 · финал страницы (V3; основа K5 v3): #next «Разобрали — вернём», #footer, 404.
+/* GRINCHIN v4 · финал страницы (V3; основа K5 v3): #next «Разобрали — вернем», #footer, 404.
    Свои префиксы (nx-, fo-, e404-). Шрифты — из типошкалы K1 (--t-*), если она есть; иначе те же значения здесь.
-   Один зелёный на экран: в подписке — кнопка (после успеха — лаймовая лента на пакете), в подвале — логотип. */
+   Один зеленый на экран: в подписке — кнопка (после успеха — лаймовая лента на пакете), в подвале — логотип. */
 
 /* ============ #next ============ */
 #next{position:relative;isolation:isolate;background:#050505;color:var(--c-white);padding:48px 0 64px}   /* фон = «О бренде»: без полосы на стыке */
@@ -13,7 +13,7 @@
 .nx-sub{margin-top:14px;max-width:34ch;font:var(--t-body,400 1rem/1.5 var(--font-text));color:var(--text-2)}
 .nx-side{min-width:0}
 
-/* переключатель Telegram / Почта: выбранный — белым, зелёная на экране только кнопка */
+/* переключатель Telegram / Почта: выбранный — белым, зеленая на экране только кнопка */
 .nx-switch{display:flex;gap:8px;margin:0 0 16px;padding:0;border:0;min-width:0}
 .nx-switch label{position:relative;display:block}
 .nx-switch input{position:absolute;inset:0;margin:0;opacity:0;cursor:pointer}
@@ -24,7 +24,7 @@
 .nx-switch input:checked+span{background:var(--c-white);border-color:var(--c-white);color:var(--c-black)}
 .nx-switch input:focus-visible+span{outline:2px solid var(--c-white);outline-offset:3px}
 
-/* поле-бирка (навесная бирка: подпись «ник:» в углу, значение крупно) — белая рамка, без второго зелёного */
+/* поле-бирка (навесная бирка: подпись «ник:» в углу, значение крупно) — белая рамка, без второго зеленого */
 .nx-tag{display:grid;grid-template-columns:minmax(0,1fr);border:2px solid var(--c-white);border-radius:var(--r-sm);
   outline:2px solid transparent;outline-offset:3px;transition:outline-color .15s}
 .nx-cell{display:grid;gap:6px;padding:12px 16px;cursor:text;min-width:0}
@@ -36,7 +36,7 @@
 .nx-tag:focus-within{outline-color:var(--c-white)}
 .nx-tag:has(.nx-input[aria-invalid="true"]){border-color:var(--c-error)}
 .nx-submit{min-height:56px;margin:0;border:0;border-radius:0}
-#next:has(.nx-mz:not([hidden]):not(:empty)) .nx-submit{background:var(--c-white);color:var(--c-black)}   /* B2 v5: один зелёный — маскот */
+#next:has(.nx-mz:not([hidden]):not(:empty)) .nx-submit{background:var(--c-white);color:var(--c-black)}   /* B2 v5: один зеленый — маскот */
 #next:has(.nx-mz:not([hidden]):not(:empty)) .nx-submit:hover{background:var(--c-white);text-decoration:underline;text-underline-offset:4px}
 .nx-submit:focus-visible{outline:2px solid var(--c-black);outline-offset:-6px}
 .nx-err{min-height:1.4em;margin-top:10px;font:var(--t-mono,500 .75rem/1.4 var(--font-mono));color:var(--c-error)}
@@ -58,7 +58,7 @@
 .nx-shine{fill:var(--c-white);opacity:.08}
 .nx-print{fill:var(--c-black);opacity:.9}
 .nx-ign{font:800 19px/1 var(--font-display);letter-spacing:.08em;fill:var(--c-black);opacity:.9}
-/* крест из двух мультяшных лент (tape-cross) и стикер «класс» — «шлёпаются» на пакет (end.js) */
+/* крест из двух мультяшных лент (tape-cross) и стикер «класс» — «шлепаются» на пакет (end.js) */
 .nx-x{position:absolute;left:50%;top:52%;width:56%;height:auto;transform:translate(-50%,-50%) rotate(-3deg);pointer-events:none}
 .nx-st{position:absolute;right:3%;bottom:4%;width:17%;height:auto;transform:rotate(9deg);pointer-events:none}
 /* маскот подписки (v4.1): не прилеплен к углу формы, а стоит у текста — на телефоне справа от заголовка (заголовку
@@ -113,7 +113,7 @@ button.fo-row:hover,.fo-acc>summary:hover{text-decoration:underline;text-underli
 @media (min-width:768px){.fo-service{grid-template-columns:repeat(2,minmax(0,1fr));gap:48px;max-width:920px}}
 
 /* логотип на мятой бумаге: форма — вектор нового лого (маска), цвет — бренд, заломы — ТОТ ЖЕ лист, что и фон
-   (end.js совмещает --cx/--cy/--cw/--ch с фоном подвала). Размер задаёт невидимый inline-вектор (пропорции нового лого) */
+   (end.js совмещает --cx/--cy/--cw/--ch с фоном подвала). Размер задает невидимый inline-вектор (пропорции нового лого) */
 /* v5 (B2): маскот больше не сидит на логотипе — места над лого под него не нужно */
 .fo-logo-box{position:relative;margin-top:clamp(36px,5vw,72px)}
 .fo-logo{position:relative;width:100%;background-color:var(--c-green);
@@ -136,7 +136,7 @@ html:not(.js) .fo-logo,#footer.is-near .fo-logo{
   .fo-top:has(.fo-mz){grid-template-columns:minmax(0,1fr) clamp(190px,26vw,300px);column-gap:clamp(24px,4vw,72px);align-items:start}
   .fo-mz{width:100%;margin:-24px 0 0}
 }
-/* один зелёный на экран: при маскоте лого «напечатано» белой краской на той же мятой бумаге */
+/* один зеленый на экран: при маскоте лого «напечатано» белой краской на той же мятой бумаге */
 #footer:has(.fo-mz:not([hidden]):not(:empty)) .fo-logo{background-color:#e6e4de}
 /* стикеры подвала (режим «максимум»): в полях у логотипа, не на тексте */
 .fo-st{position:absolute;z-index:1;display:none}
@@ -158,10 +158,10 @@ html[data-stickers="max"] .fo-st{display:block}
   padding:max(8px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(20px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
 @media (min-width:768px){.e404{padding-inline:32px}}
 @media (min-width:1100px){.e404{padding-inline:48px}}
-.e404-art{position:absolute;z-index:-1;left:50%;top:50%;width:max(100vw,100dvh * 16 / 9);aspect-ratio:16/9;transform:translate(calc(-50% + 7vw),-50%);pointer-events:none} /* сдвиг вправо: левая треть картинки — чёрная, заголовок не ложится на знак диорамы */
+.e404-art{position:absolute;z-index:-1;left:50%;top:50%;width:max(100vw,100dvh * 16 / 9);aspect-ratio:16/9;transform:translate(calc(-50% + 7vw),-50%);pointer-events:none} /* сдвиг вправо: левая треть картинки — черная, заголовок не ложится на знак диорамы */
 .e404-bg,.e404-bg img{position:absolute;inset:0;width:100%;height:100%;display:block}
 .e404-mz{position:absolute;left:72.5%;bottom:24.5%;width:15.5%}
-/* B2 v5: один зелёный — маскот; лаймовый крест на барьере диорамы приглушён */
+/* B2 v5: один зеленый — маскот; лаймовый крест на барьере диорамы приглушен */
 .e404-art:has(.e404-mz:not([hidden]):not(:empty)) .e404-bg{filter:saturate(.16) brightness(.92)}
 @media (max-aspect-ratio:4/5){
   .e404-art{width:max(100vw,100dvh * 9 / 16 * 1.28);aspect-ratio:9/16;top:auto;bottom:0;transform:translate(calc(-50% + 14px),2.5%)}   /* ×1,28: диорама поднимается к тексту, пустоты нет; v4.2: сдвиг вправо-вниз — фонарь не касается «игнорировать.» */
@@ -174,7 +174,7 @@ html[data-stickers="max"] .fo-st{display:block}
 .e404-title{margin:0 0 0 -.04em;font:900 clamp(3.4rem,2rem + 9vw,9rem)/.86 var(--font-display);letter-spacing:-.06em;text-shadow:0 2px 24px rgb(0 0 0 / .6)}
 .e404-sub{margin:14px 0 0;max-width:30ch;font:var(--t-body,400 1rem/1.5 var(--font-text));color:var(--text-2)}
 .e404-stage{min-height:0}
-/* кнопка белая: зелёный на этом экране — крест на барьере и маскот */
+/* кнопка белая: зеленый на этом экране — крест на барьере и маскот */
 .e404-home{justify-self:start;min-width:min(100%,260px);position:relative;z-index:1;background:var(--c-white);color:var(--c-black)}
 .e404-home:hover{background:var(--c-white);box-shadow:none;text-decoration:underline;text-underline-offset:4px}
 .e404-home .gl{width:16px;height:auto}

@@ -1,6 +1,6 @@
 /* GRINCHIN v4 · «Рулон-маршрут», мультяшный (V3; маршрут и физика — T1 v3.1) → window.GV.roll
    v4: лента — мультяшные тайлы (img/v4/tape/tile-lime|black: толстый контур, плоская заливка, блик), рваные концы —
-   спрайты end-* с контуром, загибы — с чёткой складкой, финал — крест tape-cross; на загибах — стикеры (ось stickers).
+   спрайты end-* с контуром, загибы — с четкой складкой, финал — крест tape-cross; на загибах — стикеры (ось stickers).
    Рулон — CSS-спрайт: тело (вид сверху, печать едет по прокрутке) + торец tape-roll-front, сжатый в эллипс (перспектива)
    и вращающийся на угол качения; к финалу/смене рулон ложится на торец — эллипс раскрывается в круг. WebGL-рулона больше нет:
    плоская мультяшная графика спрайтом сочнее и легче (ни сцены в GV.gl, ни перерисовки холста — только transform).
@@ -11,14 +11,14 @@
    Маршрут не нарисован руками — он СЧИТАЕТСЯ по странице (и пересчитывается при любом изменении высоты блоков,
    ResizeObserver): препятствия = текст (прямоугольники строк), ссылки/кнопки/поля, карточки товаров, 3D-объекты,
    маскоты, лаймовые плашки. Содержимое липких (sticky) кадров «размазывается» на весь их ход. Фото и пустые фоны —
-   можно. Лента идёт полосой в правом поле страницы (центр поля каталога); если полоса перекрыта — лента уходит ПОД блок
-   (туннель: срез по стыку секций с тенью) и выходит у его нижнего края. Начало — поперёк верхнего поля каталога слева
-   направо, загиб на 45°, вниз. Конец — в подвале: поворот влево по свободной полосе (если есть), крест лайм/чёрная
+   можно. Лента идет полосой в правом поле страницы (центр поля каталога); если полоса перекрыта — лента уходит ПОД блок
+   (туннель: срез по стыку секций с тенью) и выходит у его нижнего края. Начало — поперек верхнего поля каталога слева
+   направо, загиб на 45°, вниз. Конец — в подвале: поворот влево по свободной полосе (если есть), крест лайм/черная
    поверх конца ленты, рулон ложится на торец.
 
-   «Один зелёный объект на экран»: в режиме tape=lime лаймовая лента только в блоках без своего зелёного (каталог);
-   на входе в «зелёный» блок лаймовый рулон кончается (худеет до шпули), шпуля ложится и исчезает, падает чёрный рулон —
-   дальше чёрная лента с лаймовой печатью. Если смена приходится на туннель — подмена скрыта под блоком.
+   «Один зеленый объект на экран»: в режиме tape=lime лаймовая лента только в блоках без своего зеленого (каталог);
+   на входе в «зеленый» блок лаймовый рулон кончается (худеет до шпули), шпуля ложится и исчезает, падает черный рулон —
+   дальше черная лента с лаймовой печатью. Если смена приходится на туннель — подмена скрыта под блоком.
 
    Катится честно: угол = ∫ds/R (у худеющего рулона — замкнутая формула), R² = rc² + (R0² − rc²)·(1 − s/L).
    Рендер: лента — DOM-полосы с мультяшным тайлом (img/v4/tape/tile-*.webp); раскрытие — два встречных transform
@@ -48,7 +48,7 @@
   const idle = (f, to) => (W.requestIdleCallback ? W.requestIdleCallback(f, { timeout: to || 1200 }) : setTimeout(f, 60));
   const TILE_AR = { lime: 408 / 128, black: 488 / 128 };   // мультяшные тайлы v4 (высота 128 = ширина ленты)
   const END_AR = { lime: 150 / 128, black: 159 / 128 }, END_BODY = 0.825, END_TOP = 0.155;   // спрайты end-*: тело ленты 82 % высоты, сверху 15,5 %   // рваный конец end-*: тело ленты — 82 % высоты спрайта, с 16 %
-  const FACE_K = 0.3;   // торец в перспективе: эллипс 2R вдоль курса × 2R·k поперёк
+  const FACE_K = 0.3;   // торец в перспективе: эллипс 2R вдоль курса × 2R·k поперек
   const CROSS_W = (w, Wd) => Math.round(w * (Wd < 768 ? 7 : 5.5));   // финальный крест tape-cross (квадрат)
   // стикеры на загибах: ось data-stickers (V1) = on (2 шт.) | max (4) | off; без оси — по режиму (2 — щедро, 3 — нет)
   const STK = (() => { const v = R.dataset.stickers || ({ 2: 'max', 3: 'off' })[R.dataset.m] || 'on'; return v === 'off' ? 0 : v === 'max' ? 4 : 2; })();
@@ -56,10 +56,10 @@
   /* ═════════════ 1. ПРЕПЯТСТВИЯ (координаты документа) ═════════════ */
   // блоки, под которые можно «нырнуть» (туннель), — от мелкого к крупному
   const UNITS = ['.ab-door', '#brand-stage', '#rack', '#looks', '#drop', '#about', '#next', '#footer', '.hx-marquee'];
-  // 3D-сцена рейла (S1) ловит перетаскивание, но это «картинка», не кнопка: ленте поверх неё можно (pointer-events:none)
+  // 3D-сцена рейла (S1) ловит перетаскивание, но это «картинка», не кнопка: ленте поверх нее можно (pointer-events:none)
   const SOFT = '.rk-stage';
   const HARD = 'a[href],button,input,select,textarea,label,summary,[role=button],[tabindex]:not([tabindex="-1"]),article.card,[data-product],.nx-bag,#looks .lk-print';   // полароиды «Образов» — не под ленту (в т.ч. reduced-motion)
-  // зелёные объекты: 3D-G, маскоты, лаймовые плашки/ленты, 3D-знак, лого подвала, дверь со скотчем, граффити истории
+  // зеленые объекты: 3D-G, маскоты, лаймовые плашки/ленты, 3D-знак, лого подвала, дверь со скотчем, граффити истории
   const GREEN = '#g3d,[data-mascot-slot],.btn--accent,.tape--lime,.tape--toon-lime,.tape-strip--lime,.k2-sign__view,.bs-svg,.fo-logo,.ab-door';
   const VIEW3D = '.k2-sign__view';   // 3D-знак: в кадре рисуется по центру — поля холста пустые
   // фото и холсты в липких кадрах (дверь T2 на телефоне, улица истории): ленте по ним нельзя — кадр стоит, страница едет
@@ -117,12 +117,12 @@
       }
       for (const el of root.querySelectorAll(HARD)) if (!el.closest(SKIP) && !el.matches(SOFT) && shown(el)) add(obs, el, el.getBoundingClientRect(), el.matches('article.card') ? 'C' : 'I');
       for (const el of root.querySelectorAll(PINNED)) {
-        // видимость самой картинки не важна (дверь T2 рисует её холстом) — важен показанный липкий кадр
+        // видимость самой картинки не важна (дверь T2 рисует ее холстом) — важен показанный липкий кадр
         if (el.closest(SKIP) || el.closest(VIEW3D) || !el.getClientRects().length) continue;
         const fr = stickyOf(el); if (!fr || !shown(fr) || frames.has(fr)) continue;
         frames.set(fr, el);
       }
-      // карусель, которая листается вбок: подписи могут оказаться где угодно по ширине → вся её полоса занята
+      // карусель, которая листается вбок: подписи могут оказаться где угодно по ширине → вся ее полоса занята
       for (const el of root.querySelectorAll('.lk-rail')) {
         if (!shown(el) || !/auto|scroll/.test(getComputedStyle(el).overflowX) || el.scrollWidth <= el.clientWidth + 4) continue;
         const b = el.getBoundingClientRect();
@@ -149,16 +149,16 @@
         add(obs, el, r, 'G', el.matches(VIEW3D) ? 0.12 : 0);
       }
     }
-    // v4.2 (M3): на телефоне дверь — фон-постер во всю ширину; лента его не обрамляет (поперёк кадра и вдоль края
-    // получалась рамка вокруг слова — второй зелёный и суета), а проходит ПОД блоком туннелем, как под каруселью
+    // v4.2 (M3): на телефоне дверь — фон-постер во всю ширину; лента его не обрамляет (поперек кадра и вдоль края
+    // получалась рамка вокруг слова — второй зеленый и суета), а проходит ПОД блоком туннелем, как под каруселью
     // v4.2 (M3, по замечанию S1): рейл/цепь на вешалках — вещи ездят и крутятся по всей ширине сцены (в «Цепи» одна вещь
-    // по центру) → ни поперёк, ни вдоль края по вещам лента не идёт: весь блок — туннель (оба режима, телефон и desktop)
+    // по центру) → ни поперек, ни вдоль края по вещам лента не идет: весь блок — туннель (оба режима, телефон и desktop)
     { const rk = D.getElementById('rack'); if (rk && shown(rk)) { const b = rk.getBoundingClientRect(); if (b.height > 40) obs.push({ x0: 0, x1: Wd, y0: b.top + sy, y1: b.bottom + sy, k: 'M', el: rk }); } }
     if (Wd < 768) {
       const fr = D.querySelector('.ab-door-frame');
       if (fr && shown(fr)) { const b = fr.getBoundingClientRect(); obs.push({ x0: 0, x1: Wd, y0: b.top + sy, y1: b.bottom + sy, k: 'M', el: fr }); }
     }
-    // дверь (T2, GV.door.zones): зелёное слово и заголовок — препятствия; в режиме камеры кадр липкий → туннель (см. PINNED)
+    // дверь (T2, GV.door.zones): зеленое слово и заголовок — препятствия; в режиме камеры кадр липкий → туннель (см. PINNED)
     if (GV.door && GV.door.zones) {
       try {
         const z = GV.door.zones(), el = D.querySelector('.ab-door') || D.body;
@@ -174,8 +174,8 @@
       const b = el.getBoundingClientRect();
       units.push({ sel, el, y0: b.top + sy, y1: b.bottom + sy });
     }
-    // липкие кадры с фото (дверь T2 на телефоне, улица истории): ленту внутри кадра кладём в «зеркало» — свой липкий
-    // слой той же высоты и с тем же top: кадр стоит — и лента на нём стоит, стыки с лентой страницы прячутся под шапкой
+    // липкие кадры с фото (дверь T2 на телефоне, улица истории): ленту внутри кадра кладем в «зеркало» — свой липкий
+    // слой той же высоты и с тем же top: кадр стоит — и лента на нем стоит, стыки с лентой страницы прячутся под шапкой
     // и под нижним краем экрана (кадр во весь экран). Препятствия внутри кадра — в его собственных координатах.
     const pins = [];
     for (const [fr] of frames) {
@@ -186,7 +186,7 @@
       for (const o of obs) (fr.contains(o.el) ? loc : rest).push(o);
       obs.length = 0; obs.push(...rest);
       const fTopNow = fb.top + sy;
-      // дверь T2 в режиме камеры: зелёное слово ездит по кадру — берём его рамку на всём ходе камеры (GV.door.pose)
+      // дверь T2 в режиме камеры: зеленое слово ездит по кадру — берем его рамку на всем ходе камеры (GV.door.pose)
       const wordLoc = [];
       if (fr.closest('.ab-door') && GV.door && GV.door.pose) {
         try {
@@ -255,12 +255,12 @@
       p.ok = under.reduce((m, q) => m + q[1] - q[0], 0) < p.fh * 0.62 && !under.some((q) => q[0] < 2);
       if (!p.ok) obs.push({ x0: 0, x1: Wd, y0: p.bTop, y1: p.bBot, k: 'M', el: p.el });
     }
-    // старт: поперёк верхнего поля каталога — от левого края колонки к полосе
+    // старт: поперек верхнего поля каталога — от левого края колонки к полосе
     const yS = Math.round(drop.y0 + clamp(drop.padT * 0.42, R0 * 0.7 + c, 60));
     // v4.1: лента входит из-за левого края экрана (а не начинается «в воздухе» над заголовком): начало — под кромкой
     const xS = -Math.round(w * 2), xC = Math.round(Math.max(xMin, R0 + c));
     const okTop = drop.padT > w + 2 * c && !hit(0, yS - bandH, xL + band, yS + bandH) && !hit(xC - cr, yS - cr, xC + cr, yS + cr);   // старт — без запаса на разворот
-    // v4.2 (M3): телефон — лента кончается на верхней кромке подвала: поворот поперёк стыка «подписка | подвал» и крест —
+    // v4.2 (M3): телефон — лента кончается на верхней кромке подвала: поворот поперек стыка «подписка | подвал» и крест —
     // лист мятой бумаги «приклеен» к странице. Ниже, у «Москва», крест висел в воздухе рядом с текстом и маскотом
     const FOOT_TOP = Wd < 768 && !QUIET;
     const yEnd = FOOT_TOP ? Math.round(foot.y0 + Math.max(10, w)) : Math.round(Math.min(foot.y1, H) - Math.max(cr, 40));
@@ -328,7 +328,7 @@
         : { sel: 'pin', y0: pin.bTop, y1: pin.bBot };
       if (!u || u.sel === '#footer' || u.y1 >= yEnd) { const ye = Math.max(y + R0, oy - cr); seg(x, y, x, ye, 'tape'); y = ye; ended = true; break; }
       const yIn = Math.max(y, Math.floor(u.y0)), yOut = Math.ceil(u.y1);   // туннель — с запасом в долю пикселя (стык со сценой рейла)
-      // выход: полоса, свободная ниже (лучше прежняя), поперёк под блоком — не видно
+      // выход: полоса, свободная ниже (лучше прежняя), поперек под блоком — не видно
       const pin3 = pinAfter(yOut + 1), stop3 = pin3 ? pin3.bTop : yEnd;
       let x2 = x, bestRun = -1;
       for (const xc of [x, xL].concat(lanes(yOut, yOut + cr * 2))) {
@@ -382,7 +382,7 @@
     return { S, fin };
   }
 
-  /* цвет: лайм — только в блоках без своего зелёного; смена — на стыке блоков. Раз почернев, лента дальше чёрная */
+  /* цвет: лайм — только в блоках без своего зеленого; смена — на стыке блоков. Раз почернев, лента дальше черная */
   const dyA = (g) => (g.pin != null ? g.dy0 : g.a.y), dyB = (g) => (g.pin != null ? g.dy1 : g.b.y);
   function colorize(S, E) {
     const greenUnit = (u) => E.greens.some((q) => q.y1 > u.y0 + 2 && q.y0 < u.y1 - 2 && !(q.el && q.el.closest('#hero')));
@@ -427,7 +427,7 @@
     // ключи: Y (прокрутка) ↔ s; голова держится на ~56 % высоты экрана, поперечные пробеги — пока стык поднимается
     const A = 0.56, K = [];
     const first = segs[0];
-    // лаймовый рулон падает, когда 3D-G из hero уже ушла из кадра («один зелёный на экран»): замер — G уходит,
+    // лаймовый рулон падает, когда 3D-G из hero уже ушла из кадра («один зеленый на экран»): замер — G уходит,
     // когда стык hero/каталог поднимается до ~0,45 экрана (desktop) / ~0,75 (телефон, hero static)
     const fD = TAPE === 'lime' && segs[0].col === 'lime' ? (E.Wd >= 768 ? 0.5 : 0.74) : 0.82;
     const Yd = E.drop.y0 - fD * vh;
@@ -438,7 +438,7 @@
       let a1 = A;
       if (horiz) { const prevA = K[K.length - 1].a == null ? 0.8 : K[K.length - 1].a; a1 = Math.max(0.36, prevA - 0.22); }
       const sw = swaps.find((q) => q.vis && Math.abs(q.s - g.s0) < 0.5);
-      if (sw) {   // пауза на смену рулона: путь стоит, идёт событие
+      if (sw) {   // пауза на смену рулона: путь стоит, идет событие
         const Yp = K[K.length - 1].Y;
         K.push({ Y: Yp + vh * 0.24, s: g.s0, ev: 'swap', e: 1, a: A - 0.24 });
         K[K.length - 2].ev = 'swap'; K[K.length - 2].e = 0;
@@ -454,7 +454,7 @@
     const iEnd = K.length - 4;                       // конец ленты
     K[iEnd].Y = Math.min(K[iEnd].Y, Yt - vh * 0.03);
     if (turn) K[iEnd - 1].Y = Math.min(K[iEnd - 1].Y, K[iEnd].Y - vh * 0.14);   // угол поворота
-    // голова не уходит за низ экрана (0,92); монотонность (не быстрее 4× прокрутки) — назад от конца, потом вперёд
+    // голова не уходит за низ экрана (0,92); монотонность (не быстрее 4× прокрутки) — назад от конца, потом вперед
     for (const k of K) if (k.y != null && k.Y < k.y - vh * 0.92) k.Y = k.y - vh * 0.92;
     const gapOf = (i) => Math.max(1, (K[i].s - K[i - 1].s) * (K[i].h ? 0.16 : 0.25), K[i].ev && K[i].e === 1 ? vh * 0.05 : 0);
     for (let i = K.length - 2; i >= 0; i--) { if (K[i].Y > K[i + 1].Y - gapOf(i + 1)) K[i].Y = K[i + 1].Y - gapOf(i + 1); else if (i < K.length - 5) break; }
@@ -504,7 +504,7 @@
       g.fillStyle = 'rgba(0,0,0,.18)'; g.beginPath(); g.ellipse(32, 32, 31, 31, 0, 0, Math.PI * 2); g.fill();
       g.fillStyle = 'rgba(0,0,0,.26)'; g.beginPath(); g.ellipse(32, 32, 23, 23, 0, 0, Math.PI * 2); g.fill();
     });
-    // тело рулона сверху — тун: плоские ступени тени к краям цилиндра, белая полоса-блик, чёрный контур по краям
+    // тело рулона сверху — тун: плоские ступени тени к краям цилиндра, белая полоса-блик, черный контур по краям
     bakeTo(css, '--shade', 'sd2', 64, 16, (g, w, h) => {
       g.fillStyle = 'rgba(0,0,0,.42)'; g.fillRect(0, 0, 9, h); g.fillRect(w - 11, 0, 11, h);
       g.fillStyle = 'rgba(0,0,0,.2)'; g.fillRect(9, 0, 7, h); g.fillRect(w - 20, 0, 9, h);
@@ -512,7 +512,7 @@
       g.fillStyle = '#000'; g.fillRect(0, 0, 3, h); g.fillRect(w - 3, 0, 3, h);
     });
   }
-  function foldTo(el, ang) {   // загиб: второй слой ленты в тени + ЧЁТКАЯ складка (чёрная линия и белый блик) по диагонали
+  function foldTo(el, ang) {   // загиб: второй слой ленты в тени + ЧЕТКАЯ складка (черная линия и белый блик) по диагонали
     const k = Math.round(ang);
     bakeTo(el, '--fold', 'fold2' + k, 48, 48, (g, w, h) => {
       const a = (k * Math.PI) / 180, dx = Math.sin(a), dy = -Math.cos(a), L = w;
@@ -556,7 +556,7 @@
       const prev = segs[i - 1], next = segs[i + 1];
       const contIn = prev && prev.t === 'tape', contOut = next && next.t === 'tape';
       const sameIn = contIn && prev.col === g.col, sameOut = contOut && next.col === g.col;
-      // кусок тянется на пол-ширины за угол (покрыть квадрат загиба); при смене цвета — внахлёст с рваным концом
+      // кусок тянется на пол-ширины за угол (покрыть квадрат загиба); при смене цвета — внахлест с рваным концом
       const ext0 = contIn ? (sameIn ? 0 : w * 0.15) : 0, ext1 = contOut ? (sameOut ? w / 2 : w * 0.45) : 0;
       const len = g.len + ext0 + ext1, tile = w * TILE_AR[g.col];
       const ox = g.a.x - Math.cos(g.hd) * ext0, oy = g.a.y - Math.sin(g.hd) * ext0;
@@ -564,12 +564,12 @@
       // длинный пробег режем на куски ≤ CH: слой раскрываемого куска (will-change) маленький, остальные — статичная картинка
       const CH = Math.max(240, Math.round(E.vh * 0.6)), n = Math.max(1, Math.ceil(len / CH));
       for (let k = 0; k < n; k++) {
-        const d0 = (len * k) / n, ln = len / n + (k < n - 1 ? 1 : 0);   // +1 px внахлёст — без щели между кусками
+        const d0 = (len * k) / n, ln = len / n + (k < n - 1 ? 1 : 0);   // +1 px внахлест — без щели между кусками
         const run = el('div', 'rl-run rl--' + g.col, g.pin != null ? ST.pins[g.pin] : st);
         run.style.cssText = `left:${(ox + Math.cos(g.hd) * d0).toFixed(1)}px;top:${(oy + Math.sin(g.hd) * d0 - hh).toFixed(1)}px;width:${ln.toFixed(1)}px;height:${2 * hh}px;transform:rotate(${(g.hd * 180 / Math.PI).toFixed(2)}deg)`;
         const win = el('div', 'rl-win', run), tp = el('div', 'rl-tape', win);
         const t0 = torn0 && k === 0, t1 = torn1 && k === n - 1;
-        // под рваным концом тайл короче: торец рисует спрайт (его левая половина — тело ленты внахлёст на тайл)
+        // под рваным концом тайл короче: торец рисует спрайт (его левая половина — тело ленты внахлест на тайл)
         const cw = (w / END_BODY) * END_AR[g.col], cut0 = t0 ? cw * 0.5 : 0, cut1 = t1 ? cw * 0.5 : 0;
         const tl = Math.max(1, ln - cut0 - cut1);
         tp.style.cssText = `top:${pad}px;left:${cut0.toFixed(1)}px;height:${w}px;width:${tl.toFixed(1)}px;background-size:${tile.toFixed(1)}px ${w}px;background-position:${(-((g.s0 - ext0 + d0 + cut0) % tile)).toFixed(1)}px 0`;
@@ -577,7 +577,7 @@
         if (t1) tornCap(tp, g.col, w, true, tl + cut1);
         ST.runs.push({ g, run, win, tp, len: ln, ext0, s0: g.s0 - ext0 + d0, state: -2 });
       }
-      // загиб 45° на углу того же цвета: тень второго слоя + чёткая складка
+      // загиб 45° на углу того же цвета: тень второго слоя + четкая складка
       if (sameOut && Math.abs(next.hd - g.hd) > 0.1) {
         const f = el('div', 'rl-fold', g.pin != null ? ST.pins[g.pin] : st);
         const dx = Math.cos(g.hd) - Math.cos(next.hd), dy = Math.sin(g.hd) - Math.sin(next.hd);
@@ -598,10 +598,10 @@
       ST.mouths.push({ e: a, s: g.s0 - 2, on: null }, { e: b, s: g.s1 + 1, on: null });
     });
     // стикеры на загибах (дозированно): угол свободен на радиус рулона (план это гарантирует) — стикер в него вписан;
-    // только где лайм уместен: лаймовая лента или блок без своего зелёного
+    // только где лайм уместен: лаймовая лента или блок без своего зеленого
     if (STK && ST.folds.length) {
       const names = ['arrow-turn', 'sparkle', 'stars', 'crown', 'arrow-zigzag', 'stamp'];
-      const ok = ST.folds.filter((f) => f.pin == null && (TAPE === 'lime' ? f.g.col === 'lime' : !f.g.greenU));   // лента почернела — значит, рядом свой зелёный
+      const ok = ST.folds.filter((f) => f.pin == null && (TAPE === 'lime' ? f.g.col === 'lime' : !f.g.greenU));   // лента почернела — значит, рядом свой зеленый
       const n = Math.min(STK, ok.length), MS = GV.mascot;
       for (let k = 0; k < n; k++) {
         const f = ok[Math.floor((ok.length / n) * (k + 0.5))], nm = names[k % names.length], src = MS && MS.sticker && MS.sticker(nm);
@@ -613,7 +613,7 @@
         ST.sts.push({ e, s: f.s + w * 1.5, on: null });
       }
     }
-    // финал: мультяшный крест tape-cross поверх конца ленты (тихий режим — один чёрный рваный кусок поперёк)
+    // финал: мультяшный крест tape-cross поверх конца ленты (тихий режим — один черный рваный кусок поперек)
     const lastTape = tape[tape.length - 1];
     if (lastTape) {
       const ex = lastTape.b.x, ey = lastTape.b.y, base = lastTape.hd;
@@ -632,7 +632,7 @@
         ST.xs.push({ e: x, k: 0, on: null });
       }
     }
-    // рулон — CSS-спрайт: тень, тело (вид сверху, печать едет), торец-эллипс (крутится; лёжа — круг)
+    // рулон — CSS-спрайт: тень, тело (вид сверху, печать едет), торец-эллипс (крутится; лежа — круг)
     const cs = Math.ceil(E.R0 * 2.9 + E.sl * 2 + 8);
     ST.cs = cs;
     const roll = el('div', 'rl-roll', st);
@@ -665,7 +665,7 @@
     const g = segs[i], t = (s - g.s0) / Math.max(1e-6, g.len);
     let hd = g.hd;
     // разворот на углу — уже ПОСЛЕ угла, пока рулон отъезжает от него на T2: у края страницы (полоса x=378 при Ø48)
-    // лёгший поперёк рулон иначе на миг вылезал за край экрана
+    // легший поперек рулон иначе на миг вылезал за край экрана
     const T2 = Math.max(w * 1.5, ST.E.R0 * 1.1);
     const prev = segs[i - 1];
     const turn = (h1, h2, k) => { let d = h2 - h1; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return h1 + d * sstep(k); };
@@ -694,7 +694,7 @@
     for (const f of ST.folds) { const on = drawn >= f.s - 0.5; if (on !== f.on) { f.f.style.visibility = on ? 'visible' : 'hidden'; f.on = on; } }
     for (const m of ST.mouths) { const on = drawn >= m.s; if (on !== m.on) { m.e.style.visibility = on ? 'visible' : 'hidden'; m.on = on; } }
     const finE = Y >= T.K[T.K.length - 1].Y ? 1 : q.ev === 'fin' ? q.e : 0;
-    // стикеры на загибах: «шлёпаются», когда лента прошла угол
+    // стикеры на загибах: «шлепаются», когда лента прошла угол
     for (const x of ST.sts) {
       const on = drawn >= x.s;
       if (on === x.on) continue;
@@ -717,7 +717,7 @@
     if (q.pre) alpha = 0;
     if (q.ev === 'drop') { const e = q.e; lift = 1 - e; alpha = clamp(e * 3, 0, 1); scale = 1 + 0.55 * Math.pow(1 - e, 2) - Math.sin(e * Math.PI) * 0.0; }
     if (q.ev === 'swap') {
-      // лаймовый кончился: шпуля ложится на торец и тает → сверху падает чёрный рулон
+      // лаймовый кончился: шпуля ложится на торец и тает → сверху падает черный рулон
       const e = q.e, k = T.swaps.findIndex((z) => Math.abs(z.s - s) < 1), was = T.rolls[Math.max(0, k)], nxt = T.rolls[Math.max(0, k) + 1] || was;
       if (e < 0.48) { const t = e / 0.48; col = was.col; R2 = rr.R; tip = 0; alpha = 1 - sstep((t - 0.45) / 0.55); scale = 1 - 0.35 * sstep(t); }   // v4.1: не ложится на торец (круг 2R задевал кнопки рядом со стыком) — сжимается и тает
       else { const t = (e - 0.48) / 0.52; col = nxt.col; R2 = E.R0; lift = 1 - t; alpha = clamp(t * 3, 0, 1); scale = 1 + 0.06 * Math.pow(1 - t, 2); tip = 0; }   // новый рулон проявляется на месте, без «падения» крупным планом
@@ -737,7 +737,7 @@
       if (nx && nx.t === 'tunnel' && nx.a.y - h.y < half) clip = `inset(0 0 ${clamp(half - (nx.a.y - h.y), 0, cs).toFixed(1)}px 0)`;
       if (pv && pv.t === 'tunnel' && h.y - pv.b.y < half) clip = `inset(${clamp(half - (h.y - pv.b.y), 0, cs).toFixed(1)}px 0 0 0)`;
     }
-    // поперёк курса рулон ≈ w, вдоль — 2R; лёжа на торце — круг 2R: держим целиком в пределах страницы
+    // поперек курса рулон ≈ w, вдоль — 2R; лежа на торце — круг 2R: держим целиком в пределах страницы
     { const ext = (tip > 0 ? Math.max(R2, E.w / 2 + E.sl) : R2 * Math.abs(Math.cos(h.hd)) + (E.w / 2 + E.sl) * Math.abs(Math.sin(h.hd))) * scale + 3, W0 = h.pin != null ? E.pins[h.pin].fw : E.Wd;
       ST.lastR = R2; ST.lastScale = scale;
       if (h.x + ext > W0) h.x = W0 - ext; if (h.x - ext < 0) h.x = ext; }
@@ -745,7 +745,7 @@
     if (roll.parentNode !== host) host.appendChild(roll);   // в липком кадре рулон едет вместе с кадром
     roll.style.transform = `translate3d(${(h.x - half).toFixed(2)}px,${(h.y - half).toFixed(2)}px,0) scale(${scale.toFixed(3)})`;
     // не 0: прозрачность ровно 0 выключает отрисовку слоя, и браузер пересобирает слои страницы (в программном растре —
-    // перерастр крупных слоёв 0,2–0,8 с). 0,002 глазом не видно, слой живёт
+    // перерастр крупных слоев 0,2–0,8 с). 0,002 глазом не видно, слой живет
     roll.style.opacity = Math.max(0.002, alpha).toFixed(3);
     if (roll.dataset.clip !== clip) { roll.style.clipPath = clip; roll.dataset.clip = clip; }
     const pose = { hd: +h.hd.toFixed(4), R: +R2.toFixed(2), sp: +(rr.sp + (q.ev === 'swap' && q.e < 0.48 ? 0 : 0)).toFixed(3), tip: +tip.toFixed(3), mat: col, sh: +(1 - lift).toFixed(3), x: Math.round(h.x) };
@@ -765,7 +765,7 @@
     c.style.setProperty('--hd', hd + 'deg');
     c.style.setProperty('--rl', (Math.round(4 * p.R) / 2).toFixed(1) + 'px');   // шаг 0,5 px: размер меняется редко
     const tp = p.tip >= 0.5 ? '1' : '0'; if (c.dataset.tip !== tp) c.dataset.tip = tp;
-    c.style.setProperty('--shs', (0.35 + 0.65 * p.sh).toFixed(3));   // тень растёт при приземлении — масштабом
+    c.style.setProperty('--shs', (0.35 + 0.65 * p.sh).toFixed(3));   // тень растет при приземлении — масштабом
     c.style.setProperty('--off', (-(p.sp * p.R) % (E.w * TILE_AR[p.mat])).toFixed(1) + 'px');   // печать едет с качением
     c.style.setProperty('--tile', (E.w * TILE_AR[p.mat]).toFixed(1) + 'px');
     if (c.dataset.col !== p.mat) c.dataset.col = p.mat;
@@ -791,7 +791,7 @@
     xL = faceOut(Wd) ? Math.round(Wd - 4 - z.w / 2) : Math.min(xL, Wd - 10 - z.w / 2);   // телефон: полоса у самого края (торец наружу, кромка — под 2–3 px за экраном)
     // торец в перспективе: насколько верх рулона (высота 2R) уезжает от центра глаза
     const sl = faceOut(Wd) ? 0 : Math.ceil(z.R0 * FACE_K) + 1;   // торец-эллипс выступает за ленту на R·k (на телефоне — наружу)
-    // бирка режимов в левом поле (fixed) — левее неё ленте нельзя; при ?clean=1 её нет
+    // бирка режимов в левом поле (fixed) — левее нее ленте нельзя; при ?clean=1 ее нет
     const tag = D.querySelector('.mtag--full,.mtag--mini'), tagR = [...D.querySelectorAll('.mtag')].reduce((m, e) => (e.getClientRects().length && getComputedStyle(e).display !== 'none' ? Math.max(m, e.getBoundingClientRect().right) : m), 0);
     void tag;
     const bandX = z.w / 2 + Math.max(z.c, sl + 2);
@@ -900,10 +900,10 @@
       for (const x of ST.sts) if (x.on) { const b = x.e.getBoundingClientRect(), i = Math.min(b.width, b.height) * 0.12; out.push({ k: 'st', x0: b.left + i, y0: b.top + i, x1: b.right - i, y1: b.bottom - i }); }   // у стикера углы прозрачные
       if (ST.roll && +ST.roll.style.opacity > 0.05) {
         const b = ST.roll.getBoundingClientRect(), E = ST.E, h = headAt(lookup(ST.T, ST.ys).s);
-        // фактический след рулона: вдоль курса 2R, поперёк w + торец в перспективе
+        // фактический след рулона: вдоль курса 2R, поперек w + торец в перспективе
         const sc = ST.lastScale || 1, along = (ST.lastR || E.R0) * sc, across = (E.w / 2 + (Math.abs(Math.sin(h.hd)) < 0.5 ? Math.ceil(E.R0 * FACE_K) + 1 : E.sl)) * sc;   // текущий радиус и масштаб приземления
         const cx = (b.left + b.right) / 2, cy = (b.top + b.bottom) / 2, co = Math.abs(Math.cos(h.hd)), si = Math.abs(Math.sin(h.hd));
-        const hx = along * co + across * si, hy = along * si + across * co;   // описанный прямоугольник повёрнутого следа
+        const hx = along * co + across * si, hy = along * si + across * co;   // описанный прямоугольник повернутого следа
         const q = { k: 'roll', x0: cx - hx, x1: cx + hx, y0: cy - hy, y1: cy + hy };
         const m = /inset\(([\d.]+)px 0(?:px)? ([\d.]+)px/.exec(ST.roll.style.clipPath || '') || /inset\(0(?:px)? 0(?:px)? ([\d.]+)px/.exec(ST.roll.style.clipPath || '');
         if (m && m.length === 3) { q.y0 = Math.max(q.y0, b.top + +m[1]); q.y1 = Math.min(q.y1, b.bottom - +m[2]); }   // срез по устью туннеля

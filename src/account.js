@@ -5,11 +5,11 @@
      .open(screen?, arg?) / .close() / .isOpen      — то же, что GV.open('account', screen)
      .authed / .user / .adapter ('demo'|'api')
      .fav.has(id) / .fav.toggle(id) / .fav.list()    — избранное (гость — на устройстве, после входа сливается в аккаунт)
-     .restock.add([{product_id, size}])               — «Разобрали — вернём» (гость — запоминаем цель БЕЗ контакта, после входа переносим)
+     .restock.add([{product_id, size}])               — «Разобрали — вернем» (гость — запоминаем цель БЕЗ контакта, после входа переносим)
      .call(name, params, body)                        — сырой вызов адаптера (для соседей)
    Событие: grinchin:account {authenticated, user} — после входа/выхода/загрузки сессии.
    Адаптеры (одна настройка — #gv-account-config "adapter"):
-     demo — ничего не отправляет в сеть; аккаунт живёт в памяти + sessionStorage вкладки; на экране плашка «демо-режим».
+     demo — ничего не отправляет в сеть; аккаунт живет в памяти + sessionStorage вкладки; на экране плашка «демо-режим».
      api  — fetch(baseUrl + путь, {credentials:'include'}), X-CSRF-Token из GET /auth/session; ошибки — problem+json.
    Query: ?lk=<экран> — открыть кабинет (shot/возврат с VK ID) · ?login=ok|consent — возврат с VK ID (A1) ·
           &lkdemo=1 — демо сразу с вошедшим покупателем (кадры) · на localhost: &lkadapter=api&lkbase=<url> — проверка против мока A1.
@@ -70,7 +70,7 @@
   /* ---------- ошибки (problem+json, RFC 9457) ---------- */
   class LkError extends Error {
     constructor(status, data, retry) {
-      super((data && data.title) || "Что-то сломалось. Попробуй ещё раз.");
+      super((data && data.title) || "Что-то сломалось. Попробуй еще раз.");
       this.status = status; this.data = data || {}; this.code = this.data.code || (status === 0 ? "network" : "internal");
       this.retry = +(this.data.retry_after || retry || 0);
     }
@@ -80,8 +80,8 @@
     if (e.code === "network") return "Нет связи с сервером. Проверь интернет.";
     if (e.code === "rate_limited") return "Слишком часто. Подожди " + (e.retry ? plural(e.retry, "секунду", "секунды", "секунд") : "минуту") + ".";
     if (e.code === "invalid_code") return "Код не тот." + (e.data.attempts_left != null ? " Осталось попыток: " + e.data.attempts_left + "." : "");
-    if (e.code === "challenge_expired") return "Код истёк. Запроси новый.";
-    if (e.code === "captcha_required") return "Сервер просит капчу — во фронте её пока нет. Попробуй позже или другим способом.";
+    if (e.code === "challenge_expired") return "Код истек. Запроси новый.";
+    if (e.code === "captcha_required") return "Сервер просит капчу — во фронте ее пока нет. Попробуй позже или другим способом.";
     if (e.code === "contact_taken") return "Этот контакт уже привязан к другому кабинету.";
     if (e.data.errors && e.data.errors.length) return e.data.errors.map((x) => x.message).join(" ");
     return e.message;
@@ -89,7 +89,7 @@
 
   /* ---------- маршруты контракта A1 0.2.0-draft (operationId → метод + путь) ----------
      0.2: вход — телефон (звонок-сброс → SMS) + VK ID + Яндекс ID; почта и Telegram как вход выключены (149-ФЗ ч. 10 ст. 8),
-     кнопки — строго по GET /auth/methods. Согласие на ПДн берём ПОСЛЕ кода / возврата с VK·Яндекс (409 consent_required / ?login=consent). */
+     кнопки — строго по GET /auth/methods. Согласие на ПДн берем ПОСЛЕ кода / возврата с VK·Яндекс (409 consent_required / ?login=consent). */
   const ROUTES = {
     methods: ["GET", "/auth/methods"], session: ["GET", "/auth/session"],
     emailStart: ["POST", "/auth/email/start"], phoneStart: ["POST", "/auth/phone/start"], verify: ["POST", "/auth/verify"],
@@ -139,7 +139,7 @@
       if (res.status !== 204) { try { data = await res.json(); } catch (e) { data = null; } }
       if (!res.ok) {
         const err = new LkError(res.status, data, res.headers.get("Retry-After"));
-        // CSRF устарел (вход/выход в другой вкладке) — берём новый и повторяем один раз
+        // CSRF устарел (вход/выход в другой вкладке) — берем новый и повторяем один раз
         if (err.code === "csrf_failed" && !retried) { csrf = null; await call("session"); return call(name, params, bodyObj, true); }
         throw err;
       }
@@ -163,13 +163,13 @@
     const DOCS = [
       { type: "pd_processing", version: VER, title: "Согласие на обработку персональных данных", short_label: "Даю согласие на обработку моих персональных данных на условиях [Согласия](#)",
         required_for: ["account", "checkout", "restock"], published_at: "2026-11-01T00:00:00Z", text_hash: "demo",
-        body_md: "# Согласие на обработку персональных данных\n\n**Демо-пересказ.** Полный черновик — A1, `v4/lk/consents/pd_processing.md`, на проверке у юриста.\n\n## Кто обрабатывает\nОператор — {LEGAL_ENTITY}, бренд GRINCHIN.\n\n## Что обрабатываем\n- телефон (им входишь), имя, почта — если добавишь;\n- адреса доставки и пункты выдачи;\n- заказы, подписки «Разобрали — вернём», избранное, размерный профиль.\n\n## Зачем\nВести кабинет, оформлять и доставлять заказы, сообщать о статусе и о вернувшихся размерах.\n\n## Сколько храним\nПока есть кабинет. После удаления — только то, что требует закон (заказы и чеки).\n\n## Как отозвать\nВ кабинете: «Данные и согласия» → «Удалить кабинет». Или письмом оператору." },
+        body_md: "# Согласие на обработку персональных данных\n\n**Демо-пересказ.** Полный черновик — A1, `v4/lk/consents/pd_processing.md`, на проверке у юриста.\n\n## Кто обрабатывает\nОператор — {LEGAL_ENTITY}, бренд GRINCHIN.\n\n## Что обрабатываем\n- телефон (им входишь), имя, почта — если добавишь;\n- адреса доставки и пункты выдачи;\n- заказы, подписки «Разобрали — вернем», избранное, размерный профиль.\n\n## Зачем\nВести кабинет, оформлять и доставлять заказы, сообщать о статусе и о вернувшихся размерах.\n\n## Сколько храним\nПока есть кабинет. После удаления — только то, что требует закон (заказы и чеки).\n\n## Как отозвать\nВ кабинете: «Данные и согласия» → «Удалить кабинет». Или письмом оператору." },
       { type: "marketing", version: VER, title: "Согласие на рекламные рассылки", short_label: "Хочу получать новости о дропах и предложения GRINCHIN (можно отписаться в любой момент)",
         required_for: ["newsletter"], published_at: "2026-11-01T00:00:00Z", text_hash: "demo",
         body_md: "# Согласие на рекламные рассылки\n\n**Демо-пересказ.** Полный черновик — A1, `v4/lk/consents/marketing.md`.\n\nПишем о новых дропах, раннем доступе и перезапусках — не чаще раза в неделю, по каналам из настроек уведомлений.\n\nНеобязательно: без этого согласия кабинет и заказы работают так же.\n\nОтписаться — в любой момент: в кабинете («Уведомления» или «Данные и согласия») или по ссылке в каждом письме." }
     ];
     DOCS.push({ type: "privacy_policy", version: VER, title: "Политика обработки персональных данных", published_at: "2026-11-01T00:00:00Z",
-      body_md: "# Политика обработки персональных данных\n\n**Демо-пересказ.** Полный черновик — A1, `v4/lk/consents/privacy_policy.md`; публикуется всегда, ссылка — у каждой формы и в подвале.\n\n## Коротко\n- кто оператор и как с ним связаться;\n- какие данные, зачем и сколько храним;\n- кому передаём (доставка, оплата, рассылки — по поручению);\n- данные хранятся в России;\n- как получить выгрузку, исправить или удалить данные." });
+      body_md: "# Политика обработки персональных данных\n\n**Демо-пересказ.** Полный черновик — A1, `v4/lk/consents/privacy_policy.md`; публикуется всегда, ссылка — у каждой формы и в подвале.\n\n## Коротко\n- кто оператор и как с ним связаться;\n- какие данные, зачем и сколько храним;\n- кому передаем (доставка, оплата, рассылки — по поручению);\n- данные хранятся в России;\n- как получить выгрузку, исправить или удалить данные." });
     const P = () => GV.byId || {};
     const lineOf = (id, size, qty) => { const p = P()[id] || { name: id, price: 0 }; return { product_id: id, name: p.name, size, qty, price: p.price, is_preorder: true }; };
     function newAccount(contact) {
@@ -184,13 +184,13 @@
         preorder: { ship_from: "2026-12-01", eta_text: "Отправим с 1 декабря", stage: "production" },
         timeline: [{ status: "pending_payment", label: "Создан", at: ago(30), note: null },
           { status: "preorder_confirmed", label: "Оплачен, предзаказ принят", at: ago(29.9), note: null },
-          { status: "in_production", label: "Партия в работе", at: ago(6), note: "Шьём дроп 01" }],
+          { status: "in_production", label: "Партия в работе", at: ago(6), note: "Шьем дроп 01" }],
         receipt_url: null, can_pay: false, can_cancel: false };
-      const o2 = { id: "ord_demo2", number: "GV-0004", created_at: ago(80), status: "cancelled", status_label: "Отменён",
+      const o2 = { id: "ord_demo2", number: "GV-0004", created_at: ago(80), status: "cancelled", status_label: "Отменен",
         is_preorder: true, ship_from: "2026-12-01", example: true, items: [lineOf("hoodie-crack", "M", 1)], discount: 0, delivery_price: 0, refunded_amount: 0,
         delivery: { method: "russianpost", address_text: "Почта России (пример)", track_number: null, track_url: null, pickup_until: null }, preorder: null,
         timeline: [{ status: "pending_payment", label: "Создан", at: ago(80), note: null },
-          { status: "cancelled", label: "Отменён", at: ago(79.5), note: "Не оплачен за 30 минут" }],
+          { status: "cancelled", label: "Отменен", at: ago(79.5), note: "Не оплачен за 30 минут" }],
         receipt_url: null, can_pay: false, can_cancel: false };
       [o1, o2].forEach((o) => { o.subtotal = o.items.reduce((a, i) => a + i.price * i.qty, 0); o.total = o.subtotal + o.delivery_price - o.discount; o.items_count = o.items.reduce((a, i) => a + i.qty, 0); });
       return { user: u, orders: [o1, o2], restock: [], favs: [], addresses: [], cart: [],
@@ -233,7 +233,7 @@
     const maskPhone = (p) => "+7 " + p.slice(2, 5) + " ***-**-" + p.slice(-2);
     function checkCode(id, code) {
       const c = chal[id];
-      if (!c || Date.now() - c.at > 600e3 || c.left <= 0) fail(410, "challenge_expired", "Код истёк");
+      if (!c || Date.now() - c.at > 600e3 || c.left <= 0) fail(410, "challenge_expired", "Код истек");
       if (code !== "123456".slice(0, c.len)) { c.left--; fail(c.left > 0 ? 401 : 410, c.left > 0 ? "invalid_code" : "challenge_expired", "Неверный код", { attempts_left: c.left }); }
       c.ok = true; // код верный: не сгорает до входа (409 consent_required → повтор с тем же кодом, как у A1)
       return c;
@@ -378,7 +378,7 @@
       const so = (GV.products || []).filter((p) => p.state === "soldout")[0];
       acc.restock = [{ id: uid("rs"), product_id: "jeans-restart", size: "L", channels: ["email"], status: "active", created_at: ago(20), notified_at: null }];
       if (so) acc.restock.push({ id: uid("rs"), product_id: so.id, size: "*", channels: ["email"], status: "active", created_at: ago(40), notified_at: null });
-      acc.addresses = [{ id: uid("adr"), kind: "pickup", is_default: true, label: "ПВЗ у дома", recipient: { name: "Пётр", phone: "+79990000000" },
+      acc.addresses = [{ id: uid("adr"), kind: "pickup", is_default: true, label: "ПВЗ у дома", recipient: { name: "Петр", phone: "+79990000000" },
         pickup: { provider: "cdek", point_id: "DEMO-1", name: "СДЭК · пункт 1 (пример)", city: "Москва", address: "Москва, ул. Примерная, 7", work_hours: "10–21" }, courier: null, created_at: now() }];
       acc.size = Object.assign(acc.size, { height_cm: 182, chest_cm: 102, fit: "oversize", usual_sizes: { top: "L", bottom: "L" }, updated_at: now() });
       db.acc = acc; db.authed = true; save();
@@ -386,9 +386,9 @@
     return { name: "demo", demo: true, call, exportBlob, seed };
   }
 
-  /* ---------- размер по сетке дропа (демо и запасной расчёт без сервера) ---------- */
+  /* ---------- размер по сетке дропа (демо и запасной расчет без сервера) ---------- */
   const GRID = [["S", 88, 94], ["M", 94, 100], ["L", 100, 106], ["XL", 106, 112], ["XXL", 112, 118]]; // = таблица «Размерная сетка» (index.html)
-  const RETAINED = [{ what: "Заказы и чеки", basis: "Бухучёт (402-ФЗ ст. 29) — 5 лет", until: null }, { what: "Журнал согласий", basis: "Доказательство согласия (152-ФЗ ст. 9 ч. 3)", until: null }];
+  const RETAINED = [{ what: "Заказы и чеки", basis: "Бухучет (402-ФЗ ст. 29) — 5 лет", until: null }, { what: "Журнал согласий", basis: "Доказательство согласия (152-ФЗ ст. 9 ч. 3)", until: null }];
   function localRecommend(sp, pid) {
     const chest = +sp.chest_cm || 0, top = sp.usual_sizes && sp.usual_sizes.top;
     let size = null, conf = "low", reason = "";
@@ -455,7 +455,7 @@
     });
   }
 
-  /* ---------- «Разобрали — вернём» ---------- */
+  /* ---------- «Разобрали — вернем» ---------- */
   function markSubs(list) { // карточка товара (shop.js) показывает «Подписан ✓» по p.subs
     (list || []).forEach((s) => { const p = prod(s.product_id); if (p && s.status !== "cancelled") (p.subs = p.subs || {})[s.size] = 1; });
   }
@@ -470,7 +470,7 @@
     try {
       const r = await A.call("addRestock", null, { targets });
       S.c.restock = null; markSubs(r && r.items);
-      if (!quiet) toast("Сохранили в кабинете: «Разобрали — вернём».");
+      if (!quiet) toast("Сохранили в кабинете: «Разобрали — вернем».");
     } catch (e) { toast(errText(e)); }
   }
 
@@ -510,7 +510,7 @@
     emit("grinchin:account", { authenticated: authed(), user: S.user });
   }
   const needsConsent = () => authed() && ((S.session.required_consents || []).some((c) => c.required));
-  // вход состоялся (код / VK ID / Яндекс ID). Если сервер ждёт согласие — сначала экран согласий, перенос корзины и прочего — после
+  // вход состоялся (код / VK ID / Яндекс ID). Если сервер ждет согласие — сначала экран согласий, перенос корзины и прочего — после
   async function afterLogin(r) {
     S.c = {}; S.pendingLogin = r || {};
     await loadSession();
@@ -544,7 +544,7 @@
     toast((r.is_new_user ? "Кабинет готов" : "Ты в кабинете") + (notes.length ? ": " + notes.join(", ") + "." : "."), 3600);
   }
   async function doLogout(all) {
-    try { if (all) await A.call("logoutAll"); await A.call("logout"); } catch (e) { /* сессию на устройстве всё равно гасим */ }
+    try { if (all) await A.call("logoutAll"); await A.call("logout"); } catch (e) { /* сессию на устройстве все равно гасим */ }
     S.session = { authenticated: false, user: null }; S.user = null; S.c = {}; S.flow = {};
     (GV.products || []).forEach((p) => { delete p.subs; }); // подписки кабинета — не на этом устройстве
     replaceCart([]); // корзина принадлежала кабинету — на общем устройстве не оставляем
@@ -672,7 +672,7 @@
 
   /* ---------- экраны ---------- */
   const NAV = [
-    ["orders", "Заказы"], ["restock", "Разобрали — вернём"], ["favs", "Избранное"], ["profile", "Профиль"],
+    ["orders", "Заказы"], ["restock", "Разобрали — вернем"], ["favs", "Избранное"], ["profile", "Профиль"],
     ["sizes", "Размеры"], ["addresses", "Адреса и ПВЗ"], ["notify", "Уведомления"], ["privacy", "Данные и согласия"]
   ];
   const TITLES = { login: "Вход", email: "Вход по почте", phone: "Вход по телефону", tg: "Telegram", code: "Код",
@@ -749,14 +749,14 @@
   const check = (name, label, checked, extra) => '<label class="ac-check"><input type="checkbox" name="' + name + '"' + (checked ? " checked" : "") + (extra || "") + '><span class="ac-check-t">' + label + "</span></label>";
   const errP = (id) => '<p class="field-err" id="' + id + '" data-ac-err aria-live="polite">' + esc(S.err || "") + "</p>";
   const STATUS = {
-    pending_payment: ["Ждёт оплаты", "wait"], paid: ["Оплачен", "ok"], preorder_confirmed: ["Предзаказ принят", "ok"], in_production: ["Шьём", "ok"],
-    ready_to_ship: ["Собран", "ok"], shipped: ["В пути", "go"], at_pickup_point: ["Ждёт в пункте", "go"], delivered: ["Получен", "done"],
-    cancelled: ["Отменён", "off"], refund_pending: ["Возврат в работе", "wait"], refunded: ["Возвращён", "off"], partially_refunded: ["Частичный возврат", "off"]
+    pending_payment: ["Ждет оплаты", "wait"], paid: ["Оплачен", "ok"], preorder_confirmed: ["Предзаказ принят", "ok"], in_production: ["Шьем", "ok"],
+    ready_to_ship: ["Собран", "ok"], shipped: ["В пути", "go"], at_pickup_point: ["Ждет в пункте", "go"], delivered: ["Получен", "done"],
+    cancelled: ["Отменен", "off"], refund_pending: ["Возврат в работе", "wait"], refunded: ["Возвращен", "off"], partially_refunded: ["Частичный возврат", "off"]
   };
   const chip = (st, label) => { const s = STATUS[st] || [label || st, "ok"]; return '<span class="ac-chip ac-chip--' + s[1] + '">' + esc(label || s[0]) + "</span>"; };
   const FINAL = { delivered: 1, cancelled: 1, refunded: 1, partially_refunded: 1 };
   // путь предзаказа: стадии A1 (preorder.stage) + отправка/получение
-  const STAGES = [["collecting", "Собираем предзаказ"], ["production", "Шьём"], ["quality_check", "Проверяем"], ["packing", "Пакуем"], ["shipped", "Отправили"], ["delivered", "У тебя"]];
+  const STAGES = [["collecting", "Собираем предзаказ"], ["production", "Шьем"], ["quality_check", "Проверяем"], ["packing", "Пакуем"], ["shipped", "Отправили"], ["delivered", "У тебя"]];
   function stageIndex(o) {
     if (o.status === "delivered") return 5;
     if (o.status === "shipped" || o.status === "at_pickup_point") return 4;
@@ -789,7 +789,7 @@
         '<span class="ac-method-n">' + M[1] + '</span><span class="ac-method-s">' + M[2] + '</span><span class="ac-row-go" aria-hidden="true">' + ARROW + "</span></button>";
     };
     return '<div class="ac-hello ac-hello--guest">' +
-      '<div class="ac-hello-c"><p class="ac-big">Свой кабинет.</p><p class="ac-lead">Заказы и&nbsp;путь предзаказа, «Разобрали&nbsp;— вернём» по&nbsp;размеру, избранное, адреса.</p></div>' +
+      '<div class="ac-hello-c"><p class="ac-big">Свой кабинет.</p><p class="ac-lead">Заказы и&nbsp;путь предзаказа, «Разобрали&nbsp;— вернем» по&nbsp;размеру, избранное, адреса.</p></div>' +
       mascotHTML("account", "ac-mz--login") + "</div>" +
       '<div class="ac-methods" role="list" aria-label="Способы входа">' + on.map(btn).join("") +
       off.map((m) => '<span role="listitem" class="ac-method is-off"><span class="ac-method-n">' + METHOD[m.id][1] + '</span><span class="ac-method-s">' + (METHOD[m.id][3] || "скоро") + "</span></span>").join("") + "</div>" +
@@ -812,16 +812,16 @@
       (mk ? check("mkt", label("marketing", mk.short_label) + ' <span class="ac-opt">по желанию</span>', f.mkt) : "") +
       "</fieldset>";
   }
-  function scrEmail() { // выключено контрактом 0.2 (email_code → next); экран живёт до решения юриста
+  function scrEmail() { // выключено контрактом 0.2 (email_code → next); экран живет до решения юриста
     return '<form class="ac-form" data-ac-form="email" novalidate>' +
       field("ac-email", "почта:", '<input class="ac-in" id="ac-email" name="email" type="email" inputmode="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="имя@почта.ру" value="' + esc(S.flow.email || "") + '" required aria-describedby="ac-e-email">') +
       errP("ac-e-email") + '<button type="submit" class="btn btn--dark btn--wide ac-submit">Получить код ' + ARROW + "</button>" +
-      '<p class="ac-note">Пришлём 6&nbsp;цифр. Письма нет&nbsp;— проверь «Спам». ' + policyLink() + "</p></form>";
+      '<p class="ac-note">Пришлем 6&nbsp;цифр. Письма нет&nbsp;— проверь «Спам». ' + policyLink() + "</p></form>";
   }
   function scrPhone() {
     return '<form class="ac-form" data-ac-form="phone" novalidate>' +
       field("ac-phone", "телефон:", '<span class="ac-pre" aria-hidden="true">+7</span><input class="ac-in" id="ac-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="999 123-45-67" value="' + esc(S.flow.phoneView || "") + '" required aria-describedby="ac-e-phone ac-phone-h">',
-        "Номер российский. Сначала позвоним: отвечать не&nbsp;нужно, код&nbsp;— последние 4&nbsp;цифры входящего. Не&nbsp;дозвонимся&nbsp;— пришлём SMS.") +
+        "Номер российский. Сначала позвоним: отвечать не&nbsp;нужно, код&nbsp;— последние 4&nbsp;цифры входящего. Не&nbsp;дозвонимся&nbsp;— пришлем SMS.") +
       errP("ac-e-phone") + '<button type="submit" class="btn btn--dark btn--wide ac-submit">Получить код ' + ARROW + "</button>" +
       '<p class="ac-note">' + policyLink() + "</p></form>";
   }
@@ -842,7 +842,7 @@
       (A.demo ? '<p class="ac-hint ac-hint--demo" id="ac-code-demo">демо: код&nbsp;— ' + "123456".slice(0, len) + "</p>" : "") +
       errP("ac-e-code") +
       '<button type="submit" class="btn btn--dark btn--wide ac-submit">' + (f.purpose === "delete" ? "Удалить кабинет" : f.purpose === "contact" ? "Подтвердить" : "Войти") + "</button>" +
-      '<div class="ac-code-foot"><button type="button" class="ac-a" data-ac-act="resend" data-ac-resend disabled>Ещё раз через 0:' + String(ch.resend_after || 60).padStart(2, "0") + "</button>" +
+      '<div class="ac-code-foot"><button type="button" class="ac-a" data-ac-act="resend" data-ac-resend disabled>Еще раз через 0:' + String(ch.resend_after || 60).padStart(2, "0") + "</button>" +
       (f.purpose === "login" && ch.channel === "flash_call" ? '<button type="button" class="ac-a" data-ac-act="sms">Не звонят? SMS</button>' : "") +
       (f.purpose === "login" ? '<button type="button" class="ac-a" data-ac-back-to="' + (f.method || "phone") + '">' + (f.method === "email" ? "Другая почта" : "Другой номер") + "</button>" : "") + "</div></form>";
   }
@@ -876,7 +876,7 @@
   function scrBye() {
     const del = S.flow.deleted;
     return '<div class="ac-empty">' + mascotHTML("bye", "ac-mz--empty") + '<p class="ac-big">' + (del ? "Кабинет удалится." : "Вышли.") + "</p>" +
-      '<p class="ac-lead ac-lead--ink">' + (del ? "Сотрём " + dLong(del.purge_at) + ". Передумаешь&nbsp;— войди до&nbsp;этой даты и&nbsp;отмени." : "На этом устройстве кабинета больше нет.") + "</p>" +
+      '<p class="ac-lead ac-lead--ink">' + (del ? "Сотрем " + dLong(del.purge_at) + ". Передумаешь&nbsp;— войди до&nbsp;этой даты и&nbsp;отмени." : "На этом устройстве кабинета больше нет.") + "</p>" +
       '<button type="button" class="btn btn--dark" data-ac-close>Закрыть</button></div>';
   }
 
@@ -933,7 +933,7 @@
       '<div class="ac-sum-t"><dt>итого:</dt><dd>' + money(o.total) + "</dd></div></dl></section>" +
       '<section class="ac-sec" aria-labelledby="ac-dl-h"><h3 class="ac-h" id="ac-dl-h">Доставка</h3><p class="ac-p">' + esc(dl.address_text || "—") + "</p>" +
       (dl.track_number ? '<p class="t-mono">трек: ' + (dl.track_url ? '<a href="' + esc(dl.track_url) + '" target="_blank" rel="noopener">' + esc(dl.track_number) + "</a>" : esc(dl.track_number)) + "</p>" : "") +
-      (dl.pickup_until ? '<p class="t-mono">ждёт в пункте до ' + dt(dl.pickup_until) + "</p>" : "") + "</section>" +
+      (dl.pickup_until ? '<p class="t-mono">ждет в пункте до ' + dt(dl.pickup_until) + "</p>" : "") + "</section>" +
       '<section class="ac-sec" aria-labelledby="ac-tl-h"><h3 class="ac-h" id="ac-tl-h">История</h3><ol class="ac-tl">' + (o.timeline || []).slice().reverse().map((t) =>
         '<li><span class="t-mono ac-muted">' + dt(t.at) + " " + tm(t.at) + '</span><span class="ac-tl-l">' + esc(t.label || (STATUS[t.status] || [t.status])[0]) + "</span>" + (t.note ? '<span class="ac-muted ac-tl-n">' + esc(t.note) + "</span>" : "") + "</li>").join("") + "</ol></section>" +
       '<div class="ac-acts">' + (o.can_pay ? '<button type="button" class="btn btn--accent btn--wide" data-ac-act="pay" data-ac-arg="' + esc(o.id) + '">Оплатить · ' + money(o.total) + "</button>" : "") +
@@ -949,7 +949,7 @@
     const sizes = p ? ["*"].concat(Object.keys(p.sizes)) : ["*"];
     const sz = f.size && sizes.indexOf(f.size) > -1 ? f.size : "*";
     const inStock = p && sz !== "*" && p.sizes[sz] > 0;
-    const ST = { pending: ["подтверди почту", "wait"], active: ["ждём", "ok"], notified: ["вернулось", "go"] };
+    const ST = { pending: ["подтверди почту", "wait"], active: ["ждем", "ok"], notified: ["вернулось", "go"] };
     return '<p class="ac-lead ac-lead--ink">Скажем, когда вещь или твой размер вернутся. Тем же каналом, что в&nbsp;«Уведомлениях».</p>' +
       (list.length ? '<ul class="ac-subs">' + list.map((s) => {
         const q = prod(s.product_id), st = ST[s.status] || [s.status, "ok"], back_ = q && (s.size === "*" ? anyStock(q) : q.sizes[s.size] > 0);
@@ -966,12 +966,12 @@
         return '<label class="ac-pill"><input type="radio" name="size" value="' + s + '"' + (s === sz ? " checked" : "") + ' data-ac-live="rs-s"><span>' + (s === "*" ? "любой" : s) + (out ? '<i class="ac-pill-x" aria-hidden="true"></i><span class="vh"> — нет</span>' : "") + "</span></label>";
       }).join("") + "</div></fieldset>" +
       (inStock ? '<p class="ac-hint">' + sz + ' есть прямо сейчас. <button type="button" class="ac-a" data-open-product="' + esc(pid) + '">Открыть вещь</button></p>' : "") +
-      errP("ac-e-restock") + '<button type="submit" class="btn btn--dark btn--wide">Сообщить, когда вернётся</button></form>' +
-      '<p class="ac-note">Перезапуск всего дропа&nbsp;— <button type="button" class="ac-a" data-ac-nav="next">в&nbsp;блоке «Разобрали&nbsp;— вернём»</button>; подписка оттуда тоже попадёт сюда.</p>';
+      errP("ac-e-restock") + '<button type="submit" class="btn btn--dark btn--wide">Сообщить, когда вернется</button></form>' +
+      '<p class="ac-note">Новости будущих дропов&nbsp;— отдельная подписка <button type="button" class="ac-a" data-ac-nav="next">в&nbsp;блоке «Следующий дроп»</button>.</p>';
   }
   function scrFavs() {
     const ids = favSet().filter(prod);
-    if (!ids.length) return '<div class="ac-empty">' + mascotHTML("account", "ac-mz--empty") + '<p class="ac-big">Пусто.</p><p class="ac-lead ac-lead--ink">Жми ♡ на&nbsp;вещи в&nbsp;дропе&nbsp;— соберётся здесь.</p><button type="button" class="btn btn--dark" data-ac-nav="drop">Смотреть дроп ' + ARROW + "</button></div>";
+    if (!ids.length) return '<div class="ac-empty">' + mascotHTML("account", "ac-mz--empty") + '<p class="ac-big">Пусто.</p><p class="ac-lead ac-lead--ink">Жми ♡ на&nbsp;вещи в&nbsp;дропе&nbsp;— соберется здесь.</p><button type="button" class="btn btn--dark" data-ac-nav="drop">Смотреть дроп ' + ARROW + "</button></div>";
     return '<ul class="ac-favs">' + ids.map((id) => {
       const p = prod(id), ok = anyStock(p);
       return '<li class="ac-fav"><button type="button" class="ac-fav-o" data-open-product="' + esc(id) + '">' + thumb(id, "ac-thumb--l") +
@@ -1011,9 +1011,9 @@
     const num = (k, label, unit, min, max) => field("ac-" + k, label, '<input class="ac-in ac-in--n" id="ac-' + k + '" name="' + k + '" type="number" inputmode="numeric" min="' + min + '" max="' + max + '" step="1" value="' + (s[k] == null ? "" : s[k]) + '" data-ac-live="size"><span class="ac-unit" aria-hidden="true">' + unit + "</span>");
     const pills = (name, list, cur) => '<div class="ac-pills">' + list.map((v) => '<label class="ac-pill"><input type="radio" name="' + name + '" value="' + v[0] + '"' + (v[0] === cur ? " checked" : "") + ' data-ac-live="size"><span>' + v[1] + "</span></label>").join("") + "</div>";
     const SZ = ["XS", "S", "M", "L", "XL", "XXL"].map((x) => [x, x]);
-    return '<p class="ac-lead ac-lead--ink">Заполни, что знаешь&nbsp;— подскажем размер по&nbsp;сетке каждой вещи. Всё необязательно.</p>' +
+    return '<p class="ac-lead ac-lead--ink">Заполни, что знаешь&nbsp;— подскажем размер по&nbsp;сетке каждой вещи. Все необязательно.</p>' +
       '<form class="ac-form" data-ac-form="sizes" novalidate><div class="ac-2">' + num("height_cm", "рост:", "см", 140, 220) + num("weight_kg", "вес:", "кг", 35, 200) +
-      num("chest_cm", "грудь:", "см", 60, 160) + num("waist_cm", "талия:", "см", 50, 160) + num("hips_cm", "бёдра:", "см", 60, 170) + num("inseam_cm", "шаг:", "см", 55, 100) + "</div>" +
+      num("chest_cm", "грудь:", "см", 60, 160) + num("waist_cm", "талия:", "см", 50, 160) + num("hips_cm", "бедра:", "см", 60, 170) + num("inseam_cm", "шаг:", "см", 55, 100) + "</div>" +
       '<fieldset class="ac-field"><legend class="ac-k">как любишь сидеть:</legend>' + pills("fit", FIT, s.fit) + "</fieldset>" +
       '<fieldset class="ac-field"><legend class="ac-k">обычно верх:</legend>' + pills("top", SZ, us.top) + "</fieldset>" +
       '<fieldset class="ac-field"><legend class="ac-k">обычно низ:</legend>' + pills("bottom", SZ.slice(1), us.bottom) + "</fieldset>" +
@@ -1089,7 +1089,7 @@
     const u = S.c.me || S.user || {};
     return '<section class="ac-sec ac-sec--0" aria-labelledby="ac-chn-h"><h3 class="ac-h" id="ac-chn-h">Каналы</h3><dl class="ac-dl">' +
       '<div><dt>почта</dt><dd>' + (av.email && av.email.available ? esc(av.email.address || "подключена") : '<span class="ac-muted">нет почты</span>') + '</dd><dd>' + (av.email && av.email.available ? "" : '<button type="button" class="ac-a" data-ac-go="contact" data-ac-arg="email">Добавить</button>') + "</dd></div>" +
-      '<div><dt>Telegram</dt><dd>' + (av.telegram && av.telegram.available ? "бот подключён" + (u.telegram && u.telegram.username ? " · @" + esc(u.telegram.username) : "") : '<span class="ac-muted">не подключён</span>') + "</dd><dd>" +
+      '<div><dt>Telegram</dt><dd>' + (av.telegram && av.telegram.available ? "бот подключен" + (u.telegram && u.telegram.username ? " · @" + esc(u.telegram.username) : "") : '<span class="ac-muted">не подключен</span>') + "</dd><dd>" +
       (av.telegram && av.telegram.available ? '<button type="button" class="ac-a" data-ac-act="tg-unlink">Отключить</button>' : '<button type="button" class="ac-a" data-ac-act="tg-link">Подключить бота</button>') + "</dd></div>" +
       '<div><dt>SMS</dt><dd>' + (av.sms && av.sms.available ? "доступны" : '<span class="ac-muted">пока нет</span>') + "</dd><dd></dd></div></dl></section>" +
       '<form class="ac-form" data-ac-form="notify" novalidate><table class="ac-mx"><caption class="vh">Что и куда присылать</caption><thead><tr><th scope="col"><span class="vh">Что</span></th>' +
@@ -1099,7 +1099,7 @@
         return '<tr><th scope="row"><span class="ac-mx-n">' + cat[1] + '</span><span class="t-mono ac-muted">' + cat[2] + "</span></th>" + chs.map((c) => {
           const can = av[c] && av[c].available, dis = !can || (adv && !mkOn);
           return '<td><input type="checkbox" class="ac-cb" name="' + cat[0] + ":" + c + '"' + (sel.indexOf(c) > -1 ? " checked" : "") + (dis ? " disabled" : "") +
-            ' aria-label="' + cat[1] + " — " + CH[c] + (!can ? " (канал не подключён)" : adv && !mkOn ? " (нужно согласие на рекламу)" : "") + '" data-ac-live="notif"></td>';
+            ' aria-label="' + cat[1] + " — " + CH[c] + (!can ? " (канал не подключен)" : adv && !mkOn ? " (нужно согласие на рекламу)" : "") + '" data-ac-live="notif"></td>';
         }).join("") + "</tr>";
       }).join("") + "</tbody></table>" +
       '<p class="ac-hint">Сервисные (статус заказа) выключить совсем нельзя&nbsp;— нужен хотя бы один канал. Что уходит в&nbsp;Telegram, дублируем на&nbsp;почту.</p>' +
@@ -1126,23 +1126,23 @@
         '<li><span class="t-mono ac-muted">' + dt(h.at) + " " + tm(h.at) + '</span><span class="ac-tl-l">' + (h.action === "grant" ? "дано" : h.action === "withdraw" ? "отозвано" : "истекло") + ": " + (CNAME[h.type] || h.type) +
         '</span><span class="t-mono ac-muted ac-tl-n">' + esc(h.version || "") + " · " + esc(h.method || "") + "</span></li>").join("") + "</ol></div></details>" : "") + "</section>" +
       '<section class="ac-sec" aria-labelledby="ac-ex-h"><h3 class="ac-h" id="ac-ex-h">Выгрузка данных</h3>' +
-      '<p class="ac-p">Всё, что знаем о&nbsp;тебе: профиль, адреса, заказы, подписки, согласия. Архив JSON + читаемая страница.</p>' +
-      (ex.status === "ready" ? '<p class="t-mono">готова · ссылка живёт до ' + dt(ex.expires_at) + " " + tm(ex.expires_at) + '</p><button type="button" class="btn btn--line btn--wide" data-ac-act="export-dl">Скачать</button>' :
-        ex.status === "queued" || ex.status === "processing" ? '<p class="t-mono">готовим с ' + dt(ex.requested_at) + "&nbsp;— пришлём ссылку на&nbsp;почту, обычно за&nbsp;пару минут</p>" :
+      '<p class="ac-p">Все, что знаем о&nbsp;тебе: профиль, адреса, заказы, подписки, согласия. Архив JSON + читаемая страница.</p>' +
+      (ex.status === "ready" ? '<p class="t-mono">готова · ссылка живет до ' + dt(ex.expires_at) + " " + tm(ex.expires_at) + '</p><button type="button" class="btn btn--line btn--wide" data-ac-act="export-dl">Скачать</button>' :
+        ex.status === "queued" || ex.status === "processing" ? '<p class="t-mono">готовим с ' + dt(ex.requested_at) + "&nbsp;— пришлем ссылку на&nbsp;почту, обычно за&nbsp;пару минут</p>" :
           '<button type="button" class="btn btn--line btn--wide" data-ac-act="export">Запросить выгрузку</button>') + "</section>" +
       '<section class="ac-sec" aria-labelledby="ac-ss-h"><h3 class="ac-h" id="ac-ss-h">Устройства</h3>' +
       '<button type="button" class="ac-a" data-ac-act="logout-all">Выйти на&nbsp;всех устройствах</button></section>' +
       '<section class="ac-sec ac-sec--danger" aria-labelledby="ac-dl-h2"><h3 class="ac-h" id="ac-dl-h2">Удалить кабинет</h3>' +
-      '<p class="ac-p">Сотрём профиль, адреса, избранное, подписки и&nbsp;размеры. Заказы и&nbsp;чеки оставим&nbsp;— так требует закон.</p>' +
+      '<p class="ac-p">Сотрем профиль, адреса, избранное, подписки и&nbsp;размеры. Заказы и&nbsp;чеки оставим&nbsp;— так требует закон.</p>' +
       '<button type="button" class="btn btn--ghost-dark btn--wide" data-ac-go="del">Удалить кабинет</button></section>' + errP("ac-e-privacy");
   }
   function scrDel() {
     const ds = S.c.deletion || {}, ret = ds.retained && ds.retained.length ? ds.retained : RETAINED;
     if (ds.status === "scheduled") return '<p class="ac-lead ac-lead--ink">Удаление уже запланировано на&nbsp;' + dLong(ds.purge_at) + '.</p><button type="button" class="btn btn--dark btn--wide" data-ac-act="undelete">Отменить удаление</button>';
-    return '<form class="ac-form" data-ac-form="del" novalidate><p class="ac-lead ac-lead--ink">Кабинет выключим сразу и&nbsp;выйдем со&nbsp;всех устройств. Сотрём через 7&nbsp;дней&nbsp;— до&nbsp;этого можно войти и&nbsp;передумать.</p>' +
-      '<dl class="ac-dl ac-dl--w"><div><dt>сотрём</dt><dd>профиль, контакты, адреса, избранное, подписки, размерный профиль, настройки</dd></div>' +
+    return '<form class="ac-form" data-ac-form="del" novalidate><p class="ac-lead ac-lead--ink">Кабинет выключим сразу и&nbsp;выйдем со&nbsp;всех устройств. Сотрем через 7&nbsp;дней&nbsp;— до&nbsp;этого можно войти и&nbsp;передумать.</p>' +
+      '<dl class="ac-dl ac-dl--w"><div><dt>сотрем</dt><dd>профиль, контакты, адреса, избранное, подписки, размерный профиль, настройки</dd></div>' +
       ret.map((r) => "<div><dt>оставим</dt><dd>" + esc(r.what) + ' <span class="ac-muted">— ' + esc(r.basis) + "</span></dd></div>").join("") + "</dl>" +
-      '<p class="ac-hint">Оплаченный и&nbsp;ещё не&nbsp;доставленный заказ удаление не&nbsp;отменит: кабинет сотрём после его завершения.</p>' +
+      '<p class="ac-hint">Оплаченный и&nbsp;еще не&nbsp;доставленный заказ удаление не&nbsp;отменит: кабинет сотрем после его завершения.</p>' +
       field("ac-why", "почему (если хочешь):", '<textarea class="ac-in ac-ta" id="ac-why" name="reason" maxlength="500" rows="2"></textarea>') +
       check("sure", "Понимаю: после " + dLong(new Date(Date.now() + 7 * 86400e3).toISOString()) + " вернуть кабинет нельзя", false, ' required aria-describedby="ac-e-del"') +
       errP("ac-e-del") + '<button type="submit" class="btn btn--dark btn--wide">Прислать код для удаления</button>' +
@@ -1187,8 +1187,8 @@
     if (!btn || !ch) return;
     let left = Math.max(0, Math.round((S.flow.sentAt + (ch.resend_after || 60) * 1000 - Date.now()) / 1000));
     const tick = () => {
-      if (left <= 0) { clearInterval(resendT); btn.disabled = false; btn.textContent = "Прислать код ещё раз"; return; }
-      btn.textContent = "Ещё раз через " + Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0"); left--;
+      if (left <= 0) { clearInterval(resendT); btn.disabled = false; btn.textContent = "Прислать код еще раз"; return; }
+      btn.textContent = "Еще раз через " + Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0"); left--;
     };
     tick(); resendT = setInterval(tick, 1000);
   }
@@ -1378,7 +1378,7 @@
     const doc = t.closest("[data-ac-doc]");
     if (doc) {
       e.preventDefault();
-      // политика — документ, а не согласие: в api берём ссылку из конфига (policyUrl), в демо — пересказ черновика A1
+      // политика — документ, а не согласие: в api берем ссылку из конфига (policyUrl), в демо — пересказ черновика A1
       if (doc.dataset.acDoc === "privacy_policy" && !A.demo) { if (CFG.policyUrl) W.open(CFG.policyUrl, "_blank", "noopener"); return; }
       keepForm(); go("doc", { type: doc.dataset.acDoc }); return;
     }
@@ -1400,17 +1400,17 @@
     const act = a.dataset.acAct, arg = a.dataset.acArg;
     if (act === "logout") { await busy(a, () => doLogout(false)); S.flow = {}; S.hist = []; go("bye", null, true); return; }
     if (act === "logout-all") { if (!W.confirm("Выйти на всех устройствах, включая это?")) return; await busy(a, () => doLogout(true)); go("bye", null, true); return; }
-    if (act === "oauth") { // VK ID / Яндекс ID: сервер отдаёт authorize_url, возврат — ?login=ok|consent (согласие спросим после)
+    if (act === "oauth") { // VK ID / Яндекс ID: сервер отдает authorize_url, возврат — ?login=ok|consent (согласие спросим после)
       const prov = arg === "yandex" ? "yandex" : "vk";
       return busy(a, async () => {
         try {
           const r = await A.call(prov === "yandex" ? "yandexStart" : "vkStart", null, { return_to: (CFG.returnPath || location.pathname) + "?lk=home" });
-          if (A.demo) { toast("Демо: здесь откроется " + (prov === "yandex" ? "Яндекс ID" : "VK ID") + " и вернёт обратно."); return afterLogin(await A.call("oauthDemo", { provider: prov }, { guest_cart: cartItems() })); }
+          if (A.demo) { toast("Демо: здесь откроется " + (prov === "yandex" ? "Яндекс ID" : "VK ID") + " и вернет обратно."); return afterLogin(await A.call("oauthDemo", { provider: prov }, { guest_cart: cartItems() })); }
           location.assign(r.authorize_url);
         } catch (er) { setErr("ac-e-login", errText(er)); }
       });
     }
-    if (act === "sms") return busy(a, async () => { // запасной канал, если звонок не дошёл
+    if (act === "sms") return busy(a, async () => { // запасной канал, если звонок не дошел
       try { const fl = S.flow; fl.challenge = await A.call("phoneStart", null, { phone: "+7" + phoneDigits(fl.phoneView), channel: "sms" }); fl.sentAt = Date.now(); toast("Отправили SMS."); render(); }
       catch (er) { setErr("ac-e-code", errText(er)); }
     });
@@ -1439,7 +1439,7 @@
       try { const r = await A.call("pay", { id: arg }); if (A.demo || /^demo:/.test(r.confirmation_url)) toast("Демо: здесь откроется оплата ЮKassa."); else location.assign(r.confirmation_url); }
       catch (er) { setErr("ac-e-order", errText(er)); }
     });
-    if (act === "size-clear") { if (!W.confirm("Стереть размерный профиль?")) return; return busy(a, async () => { try { await A.call("delSize"); S.c.size = null; await need("size"); toast("Стёрли."); render(); } catch (er) { toast(errText(er)); } }); }
+    if (act === "size-clear") { if (!W.confirm("Стереть размерный профиль?")) return; return busy(a, async () => { try { await A.call("delSize"); S.c.size = null; await need("size"); toast("Стерли."); render(); } catch (er) { toast(errText(er)); } }); }
     if (act === "addr-def") return busy(a, async () => { try { await A.call("updateAddress", { id: arg }, { is_default: true }); S.c.addresses = null; await need("addresses"); render(); } catch (er) { setErr("ac-e-addr", errText(er)); } });
     if (act === "addr-del") { if (!W.confirm("Удалить адрес?")) return; return busy(a, async () => { try { await A.call("deleteAddress", { id: arg }); S.c.addresses = null; await need("addresses"); toast("Удалили."); render(); } catch (er) { setErr("ac-e-addr", errText(er)); } }); }
     if (act === "find-pvz") {
@@ -1463,7 +1463,7 @@
     if (act === "tg-unlink") return busy(a, async () => { try { await A.call("tgUnlink"); S.c.notif = null; S.c.me = null; S.flow.notif = null; await need("notif"); await need("me"); render(); } catch (er) { setErr("ac-e-notify", errText(er)); } });
     if (act === "withdraw") {
       if (arg === "pd_processing") { if (!W.confirm("Без этого согласия кабинет вести нельзя: отзыв = удаление кабинета. Перейти к удалению?")) return; go("del"); return; }
-      return busy(a, async () => { try { await A.call("withdraw", { type: arg }); S.c.consents = null; S.c.notif = null; await need("consents"); toast("Отозвали. Рекламу больше не пришлём."); render(); } catch (er) { setErr("ac-e-privacy", errText(er)); } });
+      return busy(a, async () => { try { await A.call("withdraw", { type: arg }); S.c.consents = null; S.c.notif = null; await need("consents"); toast("Отозвали. Рекламу больше не пришлем."); render(); } catch (er) { setErr("ac-e-privacy", errText(er)); } });
     }
     if (act === "grant") return busy(a, async () => { try { await A.call("grant", null, { consents: [{ type: arg, version: (S.docs && S.docs[arg] && S.docs[arg].version) || "current", text_hash: S.docs && S.docs[arg] && S.docs[arg].text_hash, method: "button:lk_privacy" }] }); S.c.consents = null; await need("consents"); render(); } catch (er) { setErr("ac-e-privacy", errText(er)); } });
     if (act === "export") return busy(a, async () => { try { S.c.exp = await A.call("exportReq"); toast("Запрос принят."); render(); } catch (er) { setErr("ac-e-privacy", errText(er)); } });
@@ -1473,9 +1473,9 @@
       if (ex.download_url) location.assign(ex.download_url);
       return;
     }
-    if (act === "undelete") return busy(a, async () => { try { await A.call("cancelDeletion"); S.c.deletion = null; await loadSession(); toast("Удаление отменили. Кабинет живёт."); go("home", null, true); } catch (er) { toast(errText(er)); } });
+    if (act === "undelete") return busy(a, async () => { try { await A.call("cancelDeletion"); S.c.deletion = null; await loadSession(); toast("Удаление отменили. Кабинет живет."); go("home", null, true); } catch (er) { toast(errText(er)); } });
   }
-  // переходы на документ и обратно не теряют введённое
+  // переходы на документ и обратно не теряют введенное
   function keepForm() {
     const f = $("[data-ac-form]", body); if (!f) return;
     if (f.email) S.flow.email = f.email.value;
@@ -1484,7 +1484,7 @@
     if (f.mkt) S.flow.mkt = f.mkt.checked;
     if (f.channel) S.flow.channel = f.channel.value;
   }
-  function keepAddrRecipient(f) { /* поля перерисуются — сохраняем введённое в черновик адреса через value атрибуты */
+  function keepAddrRecipient(f) { /* поля перерисуются — сохраняем введенное в черновик адреса через value атрибуты */
     const fl = S.flow.addr; if (!fl) return;
     fl.draft = { r_name: f.r_name.value, r_phone: f.r_phone.value, label: f.label.value };
   }
@@ -1551,7 +1551,7 @@
   ov.addEventListener("focusin", (e) => { if (e.target.id === "ac-code") paintCells(e.target); });
   ov.addEventListener("focusout", (e) => { if (e.target.id === "ac-code") setTimeout(() => paintCells(e.target), 0); });
 
-  /* ---------- сердечко на карточках дропа и в карточке товара (вёрстку V2 не трогаем: кнопка поверх) ---------- */
+  /* ---------- сердечко на карточках дропа и в карточке товара (верстку V2 не трогаем: кнопка поверх) ---------- */
   d.addEventListener("click", (e) => {
     const b = e.target.closest && e.target.closest("[data-ac-fav]");
     if (!b) return;
@@ -1573,7 +1573,7 @@
   }
   injectCards();
 
-  /* ---------- «Разобрали — вернём»: формы соседей → кабинет ---------- */
+  /* ---------- «Разобрали — вернем»: формы соседей → кабинет ---------- */
   d.addEventListener("submit", (e) => {
     // форма «Сообщить» в карточке товара (shop.js сам ставит p.subs[size]); ловим после него — по пузырю
     if (!e.target.closest || !e.target.closest("[data-notify-form]") || !curProduct) return;
@@ -1584,8 +1584,9 @@
       if (t.length) restockAdd(t, !authed());
     }, 0);
   });
-  d.addEventListener("grinchin:subscribe", () => {
-    // блок #next: перезапуск дропа = все «разобранные» вещи, любой размер (своей цели «весь дроп» в контракте A1 пока нет)
+  d.addEventListener("grinchin:subscribe", (e) => {
+    if (e.detail && e.detail.topic === "next-drop") return;
+    // Совместимость со старыми формами перезапуска без topic; новости новых дропов не меняют ожидание товаров.
     const so = (GV.products || []).filter((p) => !anyStock(p));
     restockAdd((so.length ? so : GV.products || []).map((p) => ({ product_id: p.id, size: "*" })));
   });

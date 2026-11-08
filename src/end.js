@@ -1,6 +1,6 @@
 /* GRINCHIN v4 · финал страницы (V3; основа K5 v3) → window.GV.end
-   1) «Разобрали — вернём»: Telegram / почта, проверка, успех — zip-пакет и две ленты «прилепляются» крест-накрест,
-      маскот subscribe реагирует сам (mascot.js, по grinchin:subscribe). Сетевых запросов нет. Шлёт grinchin:subscribe {channel: 'telegram'|'email'}.
+   1) «Следующий дроп»: Telegram / почта, проверка, успех — zip-пакет,
+      маскот subscribe реагирует сам (mascot.js, по grinchin:subscribe). Сетевых запросов нет. Шлет grinchin:subscribe {channel: 'telegram'|'email'}.
    2) Подвал: ленивая бумага; заломы лого совмещены с фоном (лого «напечатано» на том же листе).
    3) 404 — разметка и маскот (mascot.js сам въезжает на grinchin:overlay {name:'404'}). */
 (function () {
@@ -40,7 +40,7 @@
         '<path class="nx-teel" d="M520,188 C532,226 562,246 600,246 C638,246 668,226 680,188 M374,204 L374,640 M826,204 L826,640 M300,566 C420,560 780,560 900,566"/>' +
         '<g transform="rotate(-5 600 560)"><rect x="508" y="512" width="184" height="92" rx="6" class="nx-ow"/><rect x="516" y="520" width="168" height="76" rx="3" class="nx-ow2"/>' +
           '<path class="nx-owa" d="M528,558 L640,558 L640,544 L672,560 L640,576 L640,562 L528,562 Z"/><text x="584" y="589" text-anchor="middle" class="nx-owt">ONE WAY</text></g>' +
-        // пакет: плёнка, кромка, zip, печать
+        // пакет: пленка, кромка, zip, печать
         '<rect x="214" y="78" width="772" height="620" rx="18" class="nx-film"/>' +
         '<rect x="214" y="78" width="772" height="620" rx="18" fill="url(#nxg)"/>' +
         '<path class="nx-zip" d="M222,128 L978,128 M222,141 L978,141"/>' +
@@ -80,9 +80,9 @@
     }
   }
 
-  // лента «прилепляется»: приподнята и чуть повёрнута → прижата; тень рождается с лентой и уходит под неё
-  // лента «прилепляется»: приподнята, чуть больше и довёрнута → прижата. Анимируем отдельные свойства translate/scale/rotate,
-  // а место и угол ленты держит её transform (они складываются, позиция не теряется)
+  // лента «прилепляется»: приподнята и чуть повернута → прижата; тень рождается с лентой и уходит под нее
+  // лента «прилепляется»: приподнята, чуть больше и довернута → прижата. Анимируем отдельные свойства translate/scale/rotate,
+  // а место и угол ленты держит ее transform (они складываются, позиция не теряется)
   function slap(el, delay, rot) {
     if (!el || !el.animate) return;
     var ease = "cubic-bezier(.25,1.15,.4,1)";
@@ -116,7 +116,7 @@
     if (!v) { setErr(EMPTY); return false; }
     if (!c.ok(v)) { setErr(c.bad); return false; }
     setErr("");
-    d.dispatchEvent(new CustomEvent("grinchin:subscribe", { detail: { channel: ch } }));
+    d.dispatchEvent(new CustomEvent("grinchin:subscribe", { detail: { channel: ch, topic: "next-drop" } }));
     showDone(ch);
     return true;
   }

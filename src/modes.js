@@ -1,8 +1,8 @@
 /* GRINCHIN v4 — переключатель режимов. Владелец: V1 (интерфейс как в v3, оси — SPEC_V4).
-   Состояние и API (GV.mode) ставит инлайн-скрипт в <head> index.html ещё до первой отрисовки; здесь — только интерфейс:
-   бирка «режим 1 2 3 4 · ⚙» в левом нижнем углу (вертикальная, живёт в поле страницы и не лезет на контент)
+   Состояние и API (GV.mode) ставит инлайн-скрипт в <head> index.html еще до первой отрисовки; здесь — только интерфейс:
+   бирка «режим 1 2 3 4 · ⚙» в левом нижнем углу (вертикальная, живет в поле страницы и не лезет на контент)
    и панель всех осей (<dialog>: фокус-ловушка, Esc и возврат фокуса — у браузера).
-   Ось без живого переключения → перезагрузка с &skip=1; панель после неё открывается снова на той же оси.
+   Ось без живого переключения → перезагрузка с &skip=1; панель после нее открывается снова на той же оси.
    ?clean=1 — бирки нет (html[data-clean]). */
 (function () {
   "use strict";
@@ -15,7 +15,7 @@
   var AX = [
     ["heroimg", "Hero — кто в кадре", { mascot: "сцена + маскот", scene: "только сцена", look: "лукбук-кадр" }],
     ["hero", "Hero — движение", { asphalt: "заголовок ложится на асфальт", static: "постер стоит" }],
-    ["g", "3D-знак G — материал (при маскоте в hero — белый винил)", { lime: "гладкий лайм", tape: "скотч с заломами", black: "чёрный глянец, лаймовый торец" }],
+    ["g", "3D-знак G — материал (при маскоте в hero — белый винил)", { lime: "гладкий лайм", tape: "скотч с заломами", black: "черный глянец, лаймовый торец" }],
     ["cards", "Обложка карточек", { photo: "фото на манекене", a: "рисунок: техкарта", b: "рисунок: маркер", c: "рисунок: деталь", d: "рисунок + пометка от руки" }],
     ["ghost", "Фото вещи при наведении", { on: "рисунок → фото", off: "только рисунок" }],
     ["size", "Выбор размера", { vector: "кресты", hand: "маркером" }],
@@ -25,7 +25,7 @@
     ["stickers", "Стикеры", { on: "акцентами", max: "щедрее", off: "нет" }],
     ["mascot", "Маскот", { grinchin: "Гринчин везде", quiet: "только в подвале", none: "без маскота" }],
     ["mzfx", "Маскот — живость", { calm: "спокойно", max: "анимации везде" }],
-    ["cart", "Корзина в шапке", { count: "счётчик после добавления", menu: "только в меню" }]
+    ["cart", "Корзина в шапке", { count: "счетчик после добавления", menu: "только в меню" }]
   ];
   if (M.axes) AX = AX.filter(function (a) { return M.axes[a[0]]; }).map(function (a) {
     var o = {}; Object.keys(a[2]).forEach(function (v) { if (M.axes[a[0]].indexOf(v) > -1) o[v] = a[2][v]; });
@@ -117,7 +117,7 @@
   function close() { if (dlg.open) dlg.close(); }
   dlg.addEventListener("close", function () { delete h.dataset.modePanel; });
   function remember(axis) { try { sessionStorage.setItem(REOPEN, axis || "*"); } catch (e) { /* без хранилища панель просто не откроется снова */ } }
-  // уйдём ли на перезагрузку: хоть одна меняемая ось не объявлена живой
+  // уйдем ли на перезагрузку: хоть одна меняемая ось не объявлена живой
   function willReload(target) {
     return Object.keys(target).some(function (a) { return M.get(a) !== target[a] && !M.isLive(a); });
   }
@@ -151,9 +151,9 @@
   d.addEventListener("grinchin:mode", sync);
 
   /* ---------- тап-зона 44 px у узкой бирки (телефон/планшет) ----------
-     Сама бирка 14 px — живёт в поле страницы (16 px) и не закрывает контент. Палец шире: тап в полосе 44 px от края
+     Сама бирка 14 px — живет в поле страницы (16 px) и не закрывает контент. Палец шире: тап в полосе 44 px от края
      на высоте бирки тоже открывает панель — НО только если под пальцем нет ничего нажимаемого (CTA, карточка, ссылка,
-     поле): им тап отдаётся как обычно. Отдельного слоя поверх страницы нет, поэтому рулон и прокрутка не задеты. */
+     поле): им тап отдается как обычно. Отдельного слоя поверх страницы нет, поэтому рулон и прокрутка не задеты. */
   var HIT = 44, PRESS = "a[href],button,input,select,textarea,label,summary,[role=button],[tabindex]:not([tabindex='-1']),article.card,dialog,.ov,#header,.mtag";
   function shown(el) {
     if (!el.getClientRects().length) return false;
@@ -182,7 +182,7 @@
     mrow.addEventListener("click", function (e) {
       e.preventDefault(); e.stopPropagation();
       if (GV.closeAll) GV.closeAll();
-      setTimeout(function () { open(); }, 0); // после того, как меню вернёт фокус бургеру — панель заберёт его себе
+      setTimeout(function () { open(); }, 0); // после того, как меню вернет фокус бургеру — панель заберет его себе
     });
     d.addEventListener("grinchin:mode", syncRow);
   }
@@ -195,7 +195,7 @@
     // у подвала (контакты, юридическая строка) бирку прячем: как только подвал показался снизу
     var ft = d.getElementById("footer"), end = ft;
     if (!ft) { end = d.createElement("div"); end.className = "mt-end"; end.setAttribute("aria-hidden", "true"); d.body.appendChild(end); }
-    // v4: и пока низ экрана (полоса бирки, ~200 px) занят блоком с подписями у левого края — рейл S1 (#rack) и всё с [data-mtag-avoid]
+    // v4: и пока низ экрана (полоса бирки, ~200 px) занят блоком с подписями у левого края — рейл S1 (#rack) и все с [data-mtag-avoid]
     var off = { foot: false, zone: false };
     function apply() { if (off.foot || off.zone) h.dataset.mtagOff = "1"; else delete h.dataset.mtagOff; }
     if ("IntersectionObserver" in window) {
@@ -205,7 +205,7 @@
       var zones = [].slice.call(d.querySelectorAll("#rack, [data-mtag-avoid]")), live = new Set(), raf = 0;
       var check = function () {
         raf = 0; var vh = innerHeight, hit = false;
-        // широкая бирка (desktop ≥1100) живёт в поле 34 px и подписям не мешает — прячем только узкую
+        // широкая бирка (desktop ≥1100) живет в поле 34 px и подписям не мешает — прячем только узкую
         if (innerWidth < 1100) live.forEach(function (el) { var r = el.getBoundingClientRect(); if (r.top < vh - 16 && r.bottom > vh - 200) hit = true; });
         if (hit !== off.zone) { off.zone = hit; apply(); }
       };

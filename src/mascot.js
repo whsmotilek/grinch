@@ -6,8 +6,8 @@
    Реакция «добавил в корзину» — GV.mascot.pop('cart-add'): всплывает у правого нижнего края, ~1,9 с.
 
    Плавность (v5): поза показывается ТОЛЬКО после декода картинки (img.decode) — без мигания пустого места и подгрузки
-   «на глазах»; въезд (enter) ждёт декод, а не играет по пустой коробке. Позы меню / корзины / «добавил» / «подписан»
-   предзагружаются и декодируются в простое после загрузки страницы — к открытию всё готово.
+   «на глазах»; въезд (enter) ждет декод, а не играет по пустой коробке. Позы меню / корзины / «добавил» / «подписан»
+   предзагружаются и декодируются в простое после загрузки страницы — к открытию все готово.
    Движение — только transform/opacity (WAAPI + CSS), мягкие easing. reduced-motion и ?shot=1 — статично (без покачивания).
 
    API (совместим с v4): mount(el,{pose}) → {set, react, hop, wiggle, enter, ready, destroy} · pop(pose, ms) · react(ev) ·
@@ -167,7 +167,7 @@
     animate(this.box, [{ transform: "none" }, { transform: "rotate(-3deg)" }, { transform: "rotate(2deg)" }, { transform: "rotate(-1deg)" }, { transform: "none" }],
       { duration: 900, easing: "ease-in-out", composite: "add" });
   };
-  // въезд: ждёт декод, затем играет; из-за правого края (меню) — точка опоры правый нижний угол
+  // въезд: ждет декод, затем играет; из-за правого края (меню) — точка опоры правый нижний угол
   Mascot.prototype.enter = function (from, delay) {
     var self = this; if (!this.box) return;
     var t0 = Date.now();
@@ -215,8 +215,13 @@
 
   /* ---------- «добавил в корзину»: выезд снизу справа, держится ~1,2 с, уезжает; всего ~1,9 с ---------- */
   var popEl = null, popAnim = null, popT = 0, popSeq = 0;
+  function stopPop() {
+    popSeq++; clearTimeout(popT);
+    if (popAnim) { popAnim.cancel(); popAnim = null; }
+    if (popEl) popEl.classList.remove("is-on");
+  }
   function pop(pose, ms) {
-    if (level() === 0 || axis() === "quiet") return;
+    if (level() === 0 || axis() === "quiet" || root.dataset.overlay === "cart") return;
     pose = poseOf(pose || "cart-add") || "cart-add"; ms = ms || 1900;
     if (!popEl) {
       popEl = d.createElement("div"); popEl.className = "mz-pop"; popEl.setAttribute("aria-hidden", "true");
@@ -283,6 +288,7 @@
     d.addEventListener("grinchin:subscribe", function () { each(function (m) { m.react("subscribe"); }); });
     d.addEventListener("grinchin:overlay", function (e) {
       var x = e.detail || {}; if (!x.open) return;
+      if (x.name === "cart") stopPop();
       var slot = x.name === "menu" ? "menu" : x.name === "404" ? "404" : x.name === "cart" ? "cart" : null;
       if (!slot) return;
       each(function (m) { m.enter(slot === "menu" ? "right" : "bottom", slot === "menu" ? 260 : 200); }, function (m) { return m.slot === slot; });

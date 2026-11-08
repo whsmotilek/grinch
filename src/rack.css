@@ -1,7 +1,7 @@
 /* GRINCHIN v4 · S1 · «Дроп на вешалках». Токены — из site/src/tokens.css (с запасными значениями).
-   Один зелёный объект на экран. v5 (H5): бирки на вешалках — нейтральные картонные (фокус — светлая, остальные — графит),
+   Один зеленый объект на экран. v5 (H5): бирки на вешалках — нейтральные картонные (фокус — светлая, остальные — графит),
    скотча здесь больше нет (он только в блоке #tape);
-   интерфейс модуля чёрно-белый. Анимации — только transform/opacity. */
+   интерфейс модуля черно-белый. Анимации — только transform/opacity. */
 .rk {
   --rk-h: min(100svh, 920px);
   /* левый/правый край — как у .wrap сайта (поле var(--gutter), контейнер до --maxw по центру) */
@@ -154,7 +154,7 @@
   .rk-cv, .rk-info > *, .rk-toast, .rk-hint { transition: none; }
 }
 
-/* вкладка «3D» в карточке товара: только сцена, размер задаёт контейнер карточки */
+/* вкладка «3D» в карточке товара: только сцена, размер задает контейнер карточки */
 .rk[data-ui="bare"] { background: transparent; height: 100%; min-height: 320px; }
 .rk[data-ui="bare"] .rk-pin { height: 100%; min-height: inherit; background: #0a0a0a; }
 .rk[data-ui="bare"] .rk-stage { position: absolute; inset: 0; height: auto; }
@@ -162,4 +162,4 @@
 .rk[data-ui="bare"] .rk-hint { bottom: 14px; }
 /* в ленте сайта: шапка липкая — сцена закрепляется под ней */
 .rk[data-drive="scroll"] .rk-pin { top: var(--header-h, 0px); height: calc(100svh - var(--header-h, 0px)); }
-.rk[data-drive="scroll"] { height: calc(100svh - var(--header-h, 0px) + (var(--rk-n, 8) - 1) * var(--rk-step, 45svh)); }
+.rk[data-drive="scroll"] { height: calc(100svh - var(--header-h, 0px) + (var(--rk-n, 8) - 1) * var(--rk-step, 30svh)); }

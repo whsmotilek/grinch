@@ -1,8 +1,8 @@
 /* GRINCHIN v4 · «Рулон-маршрут», мультяшный (V3; маршрут T1 v3.1, roll.js).
-   Лента — тайлы tile-lime/black (толстый чёрный контур, плоская заливка, белый пунктир-блик, печать GRiNCHiN);
-   рваные концы — спрайты end-* (с контуром и загнутым краем); загиб — чёткая складка (картинка из roll.js);
+   Лента — тайлы tile-lime/black (толстый черный контур, плоская заливка, белый пунктир-блик, печать GRiNCHiN);
+   рваные концы — спрайты end-* (с контуром и загнутым краем); загиб — четкая складка (картинка из roll.js);
    финал — крест tape-cross; на загибах — стикеры. Рулон — CSS-спрайт: тело сверху + торец roll(-black) эллипсом.
-   NB (T1): градиентов и размытых теней здесь нет — тени/складки roll.js печёт в маленькие картинки (--shade, --shadow,
+   NB (T1): градиентов и размытых теней здесь нет — тени/складки roll.js печет в маленькие картинки (--shade, --shadow,
    --fold, --mouth-in/out): компиляция шейдеров градиентов в программном растре (SwiftShader, CPU×4) давала остановки.
    Слой во всю высоту страницы поверх фонов секций и под шапкой/оверлеями; ничего не ловит. Только transform/opacity/clip-path. */
 #roll-stage{position:absolute;left:0;top:0;width:100%;height:0;overflow:clip;pointer-events:none;z-index:5;contain:layout style}
@@ -12,11 +12,11 @@ html[data-roll="off"] #roll-stage{display:none}
 .rl-pin{position:absolute;left:0;width:100%}
 .rl-pin-in{position:sticky;overflow:hidden}
 
-/* кусок ленты: стоит на месте; при раскрытии окно .rl-win едет назад, а .rl-tape — вперёд на ту же величину */
+/* кусок ленты: стоит на месте; при раскрытии окно .rl-win едет назад, а .rl-tape — вперед на ту же величину */
 .rl-run{position:absolute;transform-origin:0 50%;visibility:hidden}
 .rl-win{position:absolute;inset:0;overflow:hidden}
 .rl-run.is-live .rl-win,.rl-run.is-live .rl-tape{will-change:transform}
-/* тайл: высота = ширина ленты; жёсткая мультяшная тень — смещённая копия без размытия */
+/* тайл: высота = ширина ленты; жесткая мультяшная тень — смещенная копия без размытия */
 .rl-tape{position:absolute;left:0;background:var(--strip) 0 0 repeat-x;box-shadow:0 2px 0 rgb(0 0 0 / .32)}
 .rl--lime .rl-tape,.rl-css[data-col="lime"] .rl-css-tex{--strip:url("{{asset:img/v4/tape/tile-lime.webp}}")}
 .rl--black .rl-tape,.rl-css[data-col="black"] .rl-css-tex,.rl-x-tp{--strip:url("{{asset:img/v4/tape/tile-black-o.webp}}")}
@@ -28,7 +28,7 @@ html[data-roll="off"] #roll-stage{display:none}
 .rl-end--lime{--end:url("{{asset:img/v4/tape/end-lime.webp}}")}
 .rl-end--black{--end:url("{{asset:img/v4/tape/end-black-o.webp}}")}
 
-/* загиб 45°: второй слой ленты в тени + чёткая складка (направление — к внешнему углу) */
+/* загиб 45°: второй слой ленты в тени + четкая складка (направление — к внешнему углу) */
 .rl-fold{position:absolute;visibility:hidden;background:var(--fold) 0 0/100% 100% no-repeat}
 
 /* устье туннеля: край блока отбрасывает тень на ленту, уходящую под него */
@@ -39,10 +39,10 @@ html[data-roll="off"] #roll-stage{display:none}
 /* стикер на загибе (стиль B: белая обводка в картинке) */
 .rl-st{position:absolute;display:block;visibility:hidden;transform:rotate(var(--r));background:center/contain no-repeat}
 
-/* финал: крест tape-cross поверх конца ленты, «шлёпается» по прокрутке; тихий режим — чёрный рваный кусок поперёк */
+/* финал: крест tape-cross поверх конца ленты, «шлепается» по прокрутке; тихий режим — черный рваный кусок поперек */
 .rl-x{position:absolute;visibility:hidden;transform-origin:50% 50%;transform:rotate(var(--r))}
 .rl-x--cross{background:center/contain no-repeat}
-.rl-late .rl-x--cross{background-image:url("{{asset:img/v4/tape/cross.webp}}")}   /* грузится, когда рулон прошёл 55 % пути */
+.rl-late .rl-x--cross{background-image:url("{{asset:img/v4/tape/cross.webp}}")}   /* грузится, когда рулон прошел 55 % пути */
 .rl-x-tp{position:absolute;top:0;bottom:0;display:block;background:var(--strip) 0 0 repeat-x;box-shadow:0 2px 0 rgb(0 0 0 / .32)}
 
 /* рулон: CSS-спрайт в слое страницы (едет вместе с ней) */
@@ -51,7 +51,7 @@ html[data-roll="off"] #roll-stage{display:none}
 .rl-css>i{position:absolute;left:50%;top:50%;display:block}
 .rl-css-sh{width:calc(var(--rl) * 1.15);height:calc(var(--w) * 1.6);transform:translate(-50%,-50%) translate(2px,3px) rotate(var(--hd)) scale(var(--shs,1));
   background:var(--shadow) 0 0/100% 100% no-repeat}
-/* тело сверху: печать едет 2D-transform-ом (НЕ translate3d — см. T1: маска повёрнутого слоя на программном растре) */
+/* тело сверху: печать едет 2D-transform-ом (НЕ translate3d — см. T1: маска повернутого слоя на программном растре) */
 .rl-css-body{width:var(--rl);height:var(--w);transform:translate(-50%,-50%) rotate(var(--hd));overflow:hidden}
 .rl-css-tex{position:absolute;left:calc(-1 * var(--tile,40px));top:0;bottom:0;width:calc(100% + 2 * var(--tile,40px));
   background:var(--strip) 0 0/auto 100% repeat-x;transform:translate(var(--off,0),0)}
@@ -60,7 +60,7 @@ html[data-roll="off"] #roll-stage{display:none}
 .rl-css-face{width:var(--r0,48px);height:var(--r0,48px);will-change:transform;
   background:url("{{asset:img/v4/tape/roll.webp}}") center/100% 100% no-repeat}
 .rl-css[data-col="black"] .rl-css-face{background-image:url("{{asset:img/v4/tape/roll-black-o.webp}}")}
-/* лёг на торец: тело и его тень прячутся щелчком на середине (торец раскрывается в круг сам) */
+/* лег на торец: тело и его тень прячутся щелчком на середине (торец раскрывается в круг сам) */
 .rl-css[data-tip="1"] .rl-css-body{visibility:hidden}
 
 /* отладка ?rolldbg: препятствия */

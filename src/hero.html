@@ -1,8 +1,8 @@
-<!-- V1 · HERO v4. Фон — сцена hero-A1 (винил-диорама ночного перекрёстка, монохром), заголовок IGNORE THE SIGNS, подпись и CTA — живые слои.
+<!-- V1 · HERO v4. Фон — сцена hero-A1 (винил-диорама ночного перекрестка, монохром), заголовок IGNORE THE SIGNS, подпись и CTA — живые слои.
      Оси: data-hero (asphalt|static — движение при прокрутке), data-heroimg (mascot — сцена + маскот · scene — только сцена · look — лукбук-кадр).
-     #g3d — 3D-G справа (three-g.js). ОДИН ЗЕЛЁНЫЙ НА ЭКРАН: при маскоте лаймовый объект кадра — он, а G — белым глянцевым винилом
-     (материал «paint», как стрелки разметки на асфальте сцены) и меньше: ещё один знак улицы, который маскот игнорирует.
-     Чёрная G (v4, «ink») сливалась с ночным фоном — заменена. В режимах scene/look лайм снова у G.
+     #g3d — 3D-G справа (three-g.js). ОДИН ЗЕЛЕНЫЙ НА ЭКРАН: при маскоте лаймовый объект кадра — он, а G — белым глянцевым винилом
+     (материал «paint», как стрелки разметки на асфальте сцены) и меньше: еще один знак улицы, который маскот игнорирует.
+     Черная G (v4, «ink») сливалась с ночным фоном — заменена. В режимах scene/look лайм снова у G.
      Маскот hero: свой слот (data-mascot-slot="hero" + data-mascot-manual — mascot.js его не монтирует), видео из hf/mascot/final/anim:
      hero_crossout играет один раз → держит последний кадр (= поза hero) → hero_idle_wave по наведению/тапу и в простое. -->
 <section id="hero" class="hx" aria-labelledby="hero-title">
@@ -11,7 +11,7 @@
   <div class="hx-media-wrap" aria-hidden="true"><div id="hero-media" class="hx-media"></div></div>
   <!-- варианты кадра: в DOM попадает только нужный (до загрузки картинок), остальные не качаются -->
   <template id="hx-media-scene"><picture class="hx-pic hx-pic--scene">
-    <!-- телефон — только 720: сцена — тёмная дымка, разницы с 1080 на экране нет, а растр/загрузка в GPU вдвое легче (кадр ~100 мс на CPU×4 уходит) -->
+    <!-- телефон — только 720: сцена — темная дымка, разницы с 1080 на экране нет, а растр/загрузка в GPU вдвое легче (кадр ~100 мс на CPU×4 уходит) -->
     <source type="image/avif" media="(max-width: 767px)" srcset="{{asset:img/v4/hero/scene-m-720.avif}}">
     <source type="image/webp" media="(max-width: 767px)" srcset="{{asset:img/v4/hero/scene-m-720.webp}}">
     <source type="image/avif" srcset="{{asset:img/v4/hero/scene-1440.avif}} 1440w, {{asset:img/v4/hero/scene-2560.avif}} 2560w" sizes="100vw">
@@ -22,13 +22,13 @@
     <img src="{{asset:img/v4/hero/look-640.webp}}" srcset="{{asset:img/v4/hero/look-640.webp}} 640w, {{asset:img/v4/hero/look-1200.webp}} 1200w" sizes="(max-width: 767px) 80vw, 50vw"
          alt="" width="1200" height="1500" decoding="async" fetchpriority="high"></picture></template>
   <!-- маскот (только data-heroimg="mascot"): квадрат кадра видео. Позы в покое — из hf/mascot/final/poses (1739×2145), совмещены с кадром
-       видео по альфе (IoU 0,98–0,99) и отданы в 1080/1440: на DPR 2–3 без мыла. Видео 720 — только пока идёт зачёркивание.
+       видео по альфе (IoU 0,98–0,99) и отданы в 1080/1440: на DPR 2–3 без мыла. Видео 720 — только пока идет зачеркивание.
        Покой у знака (v4.1): цельный ролик 1080 «у знака» — маркер не отрывается от знака, поворот к зрителю, подмигнул, помахал свободной
        рукой и вернулся в позу (пинг-понг: первый кадр = последний = поза hero). Склейки «знак из одного видео + фигура из другого» больше нет. -->
   <template id="hx-mascot-t"><div class="hx-mascot" data-mascot-slot="hero" data-mascot-manual data-pose="hero">
-    <!-- v4.2 (M1): видимость слоёв — только data-pic (картинка-основа: first | hold) и data-live (видео, у которого РЕАЛЬНО идут кадры).
+    <!-- v4.2 (M1): видимость слоев — только data-pic (картинка-основа: first | hold) и data-live (видео, у которого РЕАЛЬНО идут кадры).
          Основа видна всегда, пока ни одно видео не «живое»; data-state — для API и проверок, на отрисовку не влияет.
-         sizes на телефоне 100vw: в вёрстке v4.2 квадрат кадра ≈ 98vw (на DPR 3 нужен 1080-кадр) -->
+         sizes на телефоне 100vw: в верстке v4.2 квадрат кадра ≈ 98vw (на DPR 3 нужен 1080-кадр) -->
     <div class="hm-box" data-state="still" data-pic="first">
       <span class="hm-shadow" aria-hidden="true"></span>
       <img class="hm-still" alt="" width="720" height="720" decoding="async" fetchpriority="high" draggable="false" sizes="(max-width: 767px) 100vw, (max-width: 1099px) 50vw, 40vw">
@@ -55,7 +55,7 @@
   <div class="hx-stage">
     <h1 id="hero-title" class="hx-title" lang="en"><span class="hx-ln"><span>Ignore</span></span> <span class="hx-ln"><span>the</span></span> <span class="hx-ln"><span>signs</span></span></h1>
   </div>
-  <p class="hx-sub">одежда для&nbsp;тех, кто не&nbsp;идёт по&nbsp;заданному маршруту</p>
+  <p class="hx-sub">одежда для&nbsp;тех, кто не&nbsp;идет по&nbsp;заданному маршруту</p>
   <div class="hx-foot" data-mtag-avoid><!-- data-mtag-avoid: на телефоне бирка режимов прячется, пока у края кнопка (375/412 почти касались) -->
     <a class="btn hx-cta" href="#drop" data-nav="drop">Смотреть дроп <span aria-hidden="true">↓</span></a>
   </div>
@@ -66,17 +66,17 @@
    Отрисовка: картинка-основа (data-pic: first — чистый знак до ролика · hold — итоговая поза) видна ВСЕГДА, пока ни одно видео
    не «живое». Видео становится видимым (data-live) только когда у него реально пошли кадры (requestVideoFrameCallback,
    без него — сдвиг currentTime), и снова прячется, как только кадры встали: пауза системой, фон вкладки, «назад» (bfcache),
-   сеть, ушёл с экрана. Прерванный ролик не досматриваем — сразу итоговая поза картинкой. Смена основы first → hold — только
+   сеть, ушел с экрана. Прерванный ролик не досматриваем — сразу итоговая поза картинкой. Смена основы first → hold — только
    после декода hold (пустого кадра между картинками не бывает).
    Почему: на iOS у видео, поставленного на паузу системой (фон, переход в Telegram и обратно, энергосбережение), слой
    бывает пустым — у альфа-видео «пустой» = прозрачный: маскот пропадал и оставался пропавшим (data-state залипал в idle).
    Состояния (data-state, для API/проверок): still → cross-wait → cross → hold ⇄ idle-wait → idle.
      still — до старта и после отказа (reduced-motion, ?shot=1, экономия трафика, слабое устройство, ошибка);
      cross — один раз hero_crossout (720); hold — поза 1080/1440 (= последний кадр ролика); idle — ролик «у знака» (1080, начало = конец = hold).
-   «У знака»: сам через 3,2 с после зачёркивания, по наведению мыши и по тапу; при mzfx=max — ещё раз в 9–12 с простоя.
+   «У знака»: сам через 3,2 с после зачеркивания, по наведению мыши и по тапу; при mzfx=max — еще раз в 9–12 с простоя.
    Автовоспроизведение запрещено (энергосбережение iOS: play() → NotAllowedError) — поза картинкой, ролик «у знака» — по тапу
    (жест пользователя автоплей разрешает).
-   Видео: Safari и любой браузер на iOS — HEVC с альфой (.mov, hvc1; цвет предумножен — под нулевой альфой чёрный, иначе iOS
+   Видео: Safari и любой браузер на iOS — HEVC с альфой (.mov, hvc1; цвет предумножен — под нулевой альфой черный, иначе iOS
    рисует «дымку» прямоугольником); остальные — VP9 с альфой (.webm). Программная графика / ≤2 ГБ / ≤2 ядра — без видео.
    API: GV.heroMascot = {state, play(), still()}; событие grinchin:hero-mascot {state}. */
 (function(){
@@ -141,7 +141,7 @@
     setTimeout(holdReady,1200);   // итоговая поза нужна при любом исходе — качаем заранее (после первого кадра страницы)
     go();
   }
-  /* play() сразу, без ожидания canplay: iOS не буферизует по preload="auto". Кадр не пришёл за 6 с — итоговая поза картинкой. */
+  /* play() сразу, без ожидания canplay: iOS не буферизует по preload="auto". Кадр не пришел за 6 с — итоговая поза картинкой. */
   function go(){
     if(st!=='still'||box.hasAttribute('data-fail')||!ready||!vis||!loaded||D.hidden)return;
     if(WEAK||softGL()){toStill();return;}
@@ -153,14 +153,14 @@
     guard=setTimeout(function(){if(st==='cross-wait'){stop(vc);toStill();}},6000);
   }
   vc.addEventListener('timeupdate',function k(){if(vc.currentTime>2){vc.removeEventListener('timeupdate',k);holdReady();}});
-  // конец зачёркивания: последний кадр видео стоит, пока поза не декодирована, потом подмена (кадры совпадают) и видео отпускаем
+  // конец зачеркивания: последний кадр видео стоит, пока поза не декодирована, потом подмена (кадры совпадают) и видео отпускаем
   vc.addEventListener('ended',function(){clearTimeout(guard);
     if(st!=='cross'&&st!=='cross-wait')return;
     var done=false,fin=function(ok){if(done||(st!=='cross'&&st!=='cross-wait'))return;done=true;
       if(ok)box.setAttribute('data-pic','hold');else toHoldPic();
       hide();set('hold');setTimeout(function(){release(vc);},400);schedule(3200);};
     holdReady().then(fin);
-    setTimeout(function(){fin(false);},1500);});   // декодер молчит 1,5 с — всё равно hold (основа — чистый знак, пока поза не готова)
+    setTimeout(function(){fin(false);},1500);});   // декодер молчит 1,5 с — все равно hold (основа — чистый знак, пока поза не готова)
   function schedule(ms){clearTimeout(T);if(blocked)return;T=setTimeout(function(){
     if(st!=='hold')return;
     if(vis&&!D.hidden&&(ANIM||autoN<1)){autoN++;idle();}else if(ANIM)schedule(4000);},ms);}
@@ -182,7 +182,7 @@
   [vc,vi].forEach(function(v){v.addEventListener('pause',function(){if(live===v&&!v.ended)abort();});});
   box.addEventListener('pointerenter',function(e){if(e.pointerType==='mouse')idle();});
   box.addEventListener('click',function(){idle();});
-  // вне экрана — ролик прерываем (поза), вернулся — ничего не доигрываем; первый показ ждёт видимости
+  // вне экрана — ролик прерываем (поза), вернулся — ничего не доигрываем; первый показ ждет видимости
   if('IntersectionObserver' in W)new IntersectionObserver(function(es){es.forEach(function(e){vis=e.isIntersecting;
     if(!vis){if(st!=='still'&&st!=='hold')abort();}
     else if(st==='still')go();
@@ -194,7 +194,7 @@
   W.addEventListener('pageshow',function(e){if(e.persisted){hide();if(st==='still')go();}});
   // старт: качаем после первого кадра страницы и сцены, играем после ready (прелоадер раскрыл сайт)
   function kick(){var s=D.querySelector('#hero-media img'),done=false;
-    if(GV.gl&&GV.gl.onOff)GV.gl.onOff(function(){if(softGL()&&st!=='still')toStill();});   // three-g.js уже подключён (DOMContentLoaded)
+    if(GV.gl&&GV.gl.onOff)GV.gl.onOff(function(){if(softGL()&&st!=='still')toStill();});   // three-g.js уже подключен (DOMContentLoaded)
     var f=function(){if(done)return;done=true;requestAnimationFrame(function(){setTimeout(load,60);});};
     if(s&&!s.complete){s.addEventListener('load',f,{once:true});s.addEventListener('error',f,{once:true});setTimeout(f,1500);}else f();}
   if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',kick,{once:true});else kick();
@@ -202,8 +202,8 @@
   if(h.getAttribute('data-ready')==='1')onReady();else D.addEventListener('grinchin:ready',onReady,{once:true});
 })();
 </script>
-<!-- бегущая лента (data-marquee="on"): одна, лайм/чёрная — куски настоящих лент (.tape-strip--lime с печатью GRiNCHiN
-     + .tape-strip--black с IGNORE THE SIGNS), постоянная скорость, только transform; ни на чём не лежит -->
+<!-- бегущая лента (data-marquee="on"): одна, лайм/черная — куски настоящих лент (.tape-strip--lime с печатью GRiNCHiN
+     + .tape-strip--black с IGNORE THE SIGNS), постоянная скорость, только transform; ни на чем не лежит -->
 <div class="hx-marquee" aria-hidden="true">
   <div class="hx-mq-band"><div class="hx-mq-track"><span class="hx-mq-unit"><i class="hx-mq-logo tape-strip tape-strip--lime"></i><b class="hx-mq-txt tape-strip tape-strip--black">Ignore the signs</b></span></div></div>
 </div>

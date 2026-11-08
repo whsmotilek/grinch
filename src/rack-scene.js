@@ -4,9 +4,9 @@
 
    RACK_LOAD(urls)        → {T, X}: three.js 0.186.1 + GLTFLoader, MeshoptDecoder, RoomEnvironment.
                             Аддоны импортируют голое 'three' — в воркере import map нет, поэтому их исходник
-                            переписывается на тот же Blob-URL ядра (один экземпляр three на всё).
+                            переписывается на тот же Blob-URL ядра (один экземпляр three на все).
    RACK_SCENE(T, X, o)    → сцена с интерфейсом сцен ENGINE: {scene, cam, apply(p, aspect)} + render/setup/load/info.
-                            o.renderer — чужой (общий) рендерер: так сцена встаёт в GV.gl без второго контекста;
+                            o.renderer — чужой (общий) рендерер: так сцена встает в GV.gl без второго контекста;
                             без него сцена заводит свой на o.canvas.
    Поза (p) целиком считается на главном потоке (физика, раскладка) — воркер ничего не помнит между кадрами,
    только ставит матрицы и рисует. Формат позы — в README. */
@@ -72,8 +72,8 @@
     let frames = 0, curW = 0, curH = 0;
 
     /* ── сцена, свет ──
-       Тёмная вещь на чёрном читается контровым светом: два холодных «рима» сзади-сбоку + верхний.
-       Ключ тёплый и умеренный, тон-маппинг Neutral — текстуры GLB не пересвечиваются. */
+       Темная вещь на черном читается контровым светом: два холодных «рима» сзади-сбоку + верхний.
+       Ключ теплый и умеренный, тон-маппинг Neutral — текстуры GLB не пересвечиваются. */
     const scene = new T.Scene();
     const pm = new T.PMREMGenerator(renderer);
     scene.environment = pm.fromScene(new X.RoomEnvironment(), 0.04).texture;
@@ -101,7 +101,7 @@
       clip: new T.MeshStandardMaterial({ color: 0x121212, metalness: 0.15, roughness: 0.45 }),
       ink: new T.MeshBasicMaterial({ color: 0x000000, side: T.BackSide, toneMapped: false }),
     };
-    /* Труба — почти горизонтальная длинная кромка, яркий блик на силуэте против чёрного фона: даже 4×MSAA оставляет
+    /* Труба — почти горизонтальная длинная кромка, яркий блик на силуэте против черного фона: даже 4×MSAA оставляет
        видимые ступени. Силуэт сглаживается аналитически: прозрачность по N·V с шириной в 1,5 пикселя (fwidth). */
     MAT.rail = MAT.chrome.clone();
     MAT.rail.transparent = true; MAT.rail.depthWrite = true;
@@ -117,7 +117,7 @@
       t.colorSpace = T.SRGBColorSpace; t.flipY = false; t.anisotropy = aniso; t.needsUpdate = true;
       return t;
     };
-    // мультяшный скотч (стиль B): плоский тон без тона-маппинга + чёрный контур «вывернутой оболочкой»
+    // мультяшный скотч (стиль B): плоский тон без тона-маппинга + черный контур «вывернутой оболочкой»
     const tapeMat = (map) => new T.MeshBasicMaterial({ map, toneMapped: false, side: T.DoubleSide, alphaTest: 0.5 });
     function band(r, h, mat) {
       const g = new T.Group();
@@ -125,7 +125,7 @@
       g.add(new T.Mesh(new T.CylinderGeometry(r * 1.32 + 0.0012, r * 1.32 + 0.0012, h + 0.0045, 24, 1, false), MAT.ink));
       return g;
     }
-    function flagGeo(w, h, dir) {   // хвост ленты: склеенные концы, лёгкая волна
+    function flagGeo(w, h, dir) {   // хвост ленты: склеенные концы, легкая волна
       const g = new T.PlaneGeometry(w, h, 10, 1), p = g.attributes.position;
       // dir=+1: хвост вправо от шейки (u=0 у шейки); dir=−1: влево (u=1 у шейки, текстура рисуется зеркальной формой)
       for (let i = 0; i < p.count; i++) { const x = p.getX(i) + w / 2, e = dir > 0 ? x : w - x; p.setX(i, dir > 0 ? x : x - w); p.setZ(i, 0.005 * Math.sin(e * 34) * Math.min(1, e * 30)); }
@@ -210,7 +210,7 @@
       it.rod.visible = d > 0.002; it.rod.scale.y = Math.max(d, 0.001); it.rod.position.y = -0.108 - d / 2;
       return +d.toFixed(3);
     }
-    // зажимы брюк — по настоящему поясу модели: ищем вершины верхних 4 см и берём край спереди/сзади и ширину
+    // зажимы брюк — по настоящему поясу модели: ищем вершины верхних 4 см и берем край спереди/сзади и ширину
     function fitClips(it) {
       if (!it.clips || !it.model) return;
       it.gar.updateMatrixWorld(true);
@@ -301,7 +301,7 @@
       const [fb, bb] = await Promise.all([bitmap(src[0]), src[1] ? bitmap(src[1]).catch(() => null) : null]);
       if (it.model) { fb.close && fb.close(); return { skipped: true }; }
       const w = (m.h * fb.width) / fb.height, g = new T.PlaneGeometry(w, m.h, 20, 1), p = g.attributes.position;
-      for (let i = 0; i < p.count; i++) { const u = (2 * p.getX(i)) / w; p.setZ(i, 0.06 * (1 - u * u)); }   // лёгкий объём
+      for (let i = 0; i < p.count; i++) { const u = (2 * p.getX(i)) / w; p.setZ(i, 0.06 * (1 - u * u)); }   // легкий объем
       g.computeVertexNormals();
       const grp = new T.Group(); grp.position.y = m.top - m.h / 2;
       const ft = texOf(fb);
@@ -321,7 +321,7 @@
       if (m.rotY) mdl.rotation.y = m.rotY;
       mdl.updateMatrixWorld(true);
       const box = new T.Box3().setFromObject(mdl), sz = box.getSize(new T.Vector3());
-      // конвенция (G1): метры, Y вверх, перёд +Z, плечи/пояс в y=0. Если файл ей явно не следует — раскладываем сами
+      // конвенция (G1): метры, Y вверх, перед +Z, плечи/пояс в y=0. Если файл ей явно не следует — раскладываем сами
       const conv = box.max.y > -0.06 && box.max.y < 0.36 && sz.y > 0.3 && sz.y < 1.9 && Math.abs((box.max.x + box.min.x) / 2) < 0.15;
       const place = m.place || 'check', wrap = new T.Group();
       wrap.add(mdl);
@@ -382,7 +382,7 @@
         (Array.isArray(m.material) ? m.material : [m.material]).forEach((mt) => { for (const k in mt) if (mt[k] && mt[k].isTexture) mt[k].dispose(); mt.dispose(); });
       });
     }
-    // на вешалке — лучшая из загруженных версий: полная (2048, ~290 тыс. треуг.) для вещи в фокусе, иначе лёгкая
+    // на вешалке — лучшая из загруженных версий: полная (2048, ~290 тыс. треуг.) для вещи в фокусе, иначе легкая
     async function show(it, auto) {
       const wrap = it.full || it.lod; if (!wrap) return null;
       if (it.model !== wrap) { if (it.model) it.gar.remove(it.model); it.model = wrap; it.gar.add(wrap); }
@@ -447,17 +447,17 @@
     function size(w, h) { w = Math.max(2, w | 0); h = Math.max(2, h | 0); if (w !== curW || h !== curH) { renderer.setSize(w, h, false); curW = w; curH = h; } }
     /* Сглаживание. Общий контекст GV.gl на DPR ≥ 2 создан без antialias — тонкая хромированная труба и крючки шли «лесенкой».
        Поэтому рейл рисуется в свой MSAA-буфер (WebGL2: 4 сэмпла, на больших буферах — 2; half-float, чтобы тон-маппинг
-       шёл после сглаживания), а на экран выводится одним квадом — с тон-маппингом Neutral и sRGB.
+       шел после сглаживания), а на экран выводится одним квадом — с тон-маппингом Neutral и sRGB.
        Контекст с antialias (свой рендерер прототипа на DPR 1) — рисуем напрямую. */
     const AA = { mode: 'ctx', rt: null, v: new T.Vector2() };
     try {
-      // свой буфер — всегда на WebGL2, даже если контекст со сглаживанием (DPR 1): сглаживание контекста идёт после
-      // нашего тон-маппинга только в своём буфере; плюс одинаковая картинка на любом DPR
+      // свой буфер — всегда на WebGL2, даже если контекст со сглаживанием (DPR 1): сглаживание контекста идет после
+      // нашего тон-маппинга только в своем буфере; плюс одинаковая картинка на любом DPR
       if (renderer.capabilities.isWebGL2 && !o.noMSAA) AA.mode = 'msaa';
     } catch (e) { /* noop */ }
     const hf = renderer.extensions.has('EXT_color_buffer_float') || renderer.extensions.has('EXT_color_buffer_half_float');
-    /* Тон-маппинг — до сглаживания, в каждом сэмпле. Иначе блик хрома (HDR ≫ 1) усредняется с чёрным фоном,
-       после тон-маппинга край снова белый — и «лесенка» остаётся. three.js в буфер тон-маппинг не пишет, поэтому
+    /* Тон-маппинг — до сглаживания, в каждом сэмпле. Иначе блик хрома (HDR ≫ 1) усредняется с черным фоном,
+       после тон-маппинга край снова белый — и «лесенка» остается. three.js в буфер тон-маппинг не пишет, поэтому
        в материалы рейла вшит тот же Neutral (формула three.js, экспозиция 1). */
     const NEUTRAL = 'vec3 rkNeutral(vec3 c){float x=min(c.r,min(c.g,c.b));float o=x<0.08?x-6.25*x*x:0.04;c-=o;float p=max(c.r,max(c.g,c.b));' +
       'if(p<0.76)return c;float d=0.24;float n=1.0-d*d/(p+d-0.76);c*=n/p;float g=1.0-1.0/(0.15*(p-n)+1.0);return mix(c,vec3(n),g);}\n';
@@ -487,7 +487,7 @@
       renderer.setRenderTarget(prev);
       blit.uniforms.tMap.value = AA.rt.texture;
     }
-    // общий рендерер (GV.gl) живёт без тон-маппинга — ставим свой на время кадра этой сцены и возвращаем
+    // общий рендерер (GV.gl) живет без тон-маппинга — ставим свой на время кадра этой сцены и возвращаем
     const TMS = { tm: 0, te: 1 };
     const tmOn = (r) => { TMS.tm = r.toneMapping; TMS.te = r.toneMappingExposure; r.toneMapping = T.NeutralToneMapping; r.toneMappingExposure = 1.0; };
     const tmOff = (r) => { r.toneMapping = TMS.tm; r.toneMappingExposure = TMS.te; };

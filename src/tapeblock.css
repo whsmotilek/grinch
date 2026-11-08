@@ -1,7 +1,7 @@
 /* GRINCHIN v5 · T1 · Блок скотча «IGNORE THE SIGNS» (#tape). Разметка — tapeblock.html, сцена и тайминг — tapeblock.js.
-   Высота секции = сцена (100svh) + ход 130svh; сцена липкая. Всё, что двигается, — только transform/opacity:
+   Высота секции = сцена (100svh) + ход 130svh; сцена липкая. Все, что двигается, — только transform/opacity:
    раскрытие ленты — два встречных translate (окно едет, лента внутри стоит), рулон — слои SVG (scale/rotate).
-   Без градиентов и размытых теней (программный растр, CPU×4): тени — жёсткие смещённые копии.
+   Без градиентов и размытых теней (программный растр, CPU×4): тени — жесткие смещенные копии.
    Статика (reduced-motion, ?shot=1, нет JS): секция = один экран, финальная композиция. */
 #tape.tb{position:relative;background:#0b0b0b;color:var(--c-white);height:230vh;height:230svh;overflow-x:clip;
   --th:120px;--ins:calc(var(--header-h) + 24px)}
@@ -21,7 +21,7 @@ html[data-shot="1"] #tape .tb-stage,html:not(.js) #tape .tb-stage{position:relat
 .tb-sign{width:var(--sz);height:var(--sz);margin:calc(var(--sz) * -.5) 0 0 calc(var(--sz) * -.5);will-change:transform}
 .tb-sign svg{display:block;width:100%;height:100%;overflow:visible}
 
-/* лента: кадр .tb-run повёрнут вдоль линии (начало координат — центр ленты в точке старта) */
+/* лента: кадр .tb-run повернут вдоль линии (начало координат — центр ленты в точке старта) */
 .tb-run{width:0;height:0;transform-origin:0 0}
 .tb-win{position:absolute;left:0;top:calc(var(--th) * -.5 - 14px);height:calc(var(--th) + 28px);width:var(--len);overflow:hidden;will-change:transform}
 .tb-strip,.tb-shd{position:absolute;left:0;top:14px;height:var(--th);width:var(--len);will-change:transform}
@@ -38,7 +38,7 @@ html[data-shot="1"] #tape .tb-stage,html:not(.js) #tape .tb-stage{position:relat
 .tb-txt i{display:block;flex:none;width:calc(var(--th) * .26);height:calc(var(--th) * .26);background:currentColor;
   clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%)}
 .tb-run--piece .tb-txt{width:100%;justify-content:center}
-/* рваные концы (спрайт 120×256 = высота ленты), левый — зеркально; при перевёрнутой печати — и по вертикали */
+/* рваные концы (спрайт 120×256 = высота ленты), левый — зеркально; при перевернутой печати — и по вертикали */
 .tb-end{position:absolute;top:calc(var(--th) * -.5);width:calc(var(--th) * .47);height:var(--th);background:var(--end) 0 0/100% 100% no-repeat;
   transform-origin:0 50%}
 .tb-end--l{transform-origin:50% 50%}
@@ -58,7 +58,7 @@ html[data-shot="1"] #tape .tb-stage,html:not(.js) #tape .tb-stage{position:relat
 .tb-count b{font-weight:700;color:var(--c-white)}
 .tb-cap{font:500 clamp(1rem,1.25vw,1.25rem)/1.35 var(--font-text);color:var(--c-white);max-width:22em}
 .tb-copy .tb-cap{position:absolute}
-/* заголовок: без JS — крупно; с разложенной сценой его роль играет печать на ленте (сам он остаётся для скринридеров) */
+/* заголовок: без JS — крупно; с разложенной сценой его роль играет печать на ленте (сам он остается для скринридеров) */
 .tb-title{left:var(--gutter);top:50%;transform:translateY(-50%);font:900 clamp(2.5rem,8vw,7rem)/.9 var(--font-display);color:var(--c-white)}
 #tape.is-ready .tb-title{position:absolute!important;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 
@@ -74,6 +74,6 @@ html[data-shot="1"] #tape .tb-stage,html:not(.js) #tape .tb-stage{position:relat
 #tape[data-tb-lay="ma"] .tb-copy .tb-cap{right:var(--gutter);bottom:calc(28px + env(safe-area-inset-bottom));max-width:none;font-size:1.0625rem}
 /* телефон b: крест занимает низ экрана — весь текст сверху, над лентой */
 #tape[data-tb-lay="mb"] .tb-copy .tb-cap{top:calc(var(--ins) + 3.3em);bottom:auto;right:var(--gutter);max-width:17em;font-size:1rem}
-/* подпись проявляется к финалу (JS ведёт opacity/transform); в статике видна сразу */
+/* подпись проявляется к финалу (JS ведет opacity/transform); в статике видна сразу */
 #tape.is-ready .tb-copy .tb-cap{will-change:opacity,transform}
 #tape[data-tb-lay="mb"] .tb-run--lime .tb-txt{font-size:calc(var(--th) * .35)}

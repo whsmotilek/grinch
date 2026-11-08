@@ -2,18 +2,18 @@
    ============================================================================================================
    ЛЕНТЫ — СИСТЕМА (для всех модулей: K4 hero/бегущая лента, K5 подписка/подвал — пользуйтесь этими классами)
    Материал — НАСТОЯЩИЙ скан мятой ленты (assets/brand_raster/old/p-009-058), печать — новое лого GRiNCHiN
-   (только буквы), как на упаковке (Grinchin2.pdf стр. 12). Генератор: img/tape/_tape.py. Лента не едет и не растёт —
-   её один раз ПРИЛЕПЛЯЮТ. Никогда поверх текста, кнопок, лиц и вещей. Лайм — один зелёный объект на экран.
+   (только буквы), как на упаковке (Grinchin2.pdf стр. 12). Генератор: img/tape/_tape.py. Лента не едет и не растет —
+   ее один раз ПРИЛЕПЛЯЮТ. Никогда поверх текста, кнопок, лиц и вещей. Лайм — один зеленый объект на экран.
 
    Кусок:  <span class="tape tape--lime tape--1" data-stick aria-hidden="true" style="--w:160px; --rot:-6deg"></span>
      .tape            абсолютный, pointer-events:none; родитель — position:relative
-     .tape--lime      лайм #8ED308, чёрная печать GRiNCHiN (на бумаге и на чёрном)
-     .tape--black     чёрная, лаймовая печать (на светлом; на чёрном фоне видна по бликам и печати)
+     .tape--lime      лайм #8ED308, черная печать GRiNCHiN (на бумаге и на черном)
+     .tape--black     черная, лаймовая печать (на светлом; на черном фоне видна по бликам и печати)
      .tape--1         кусок целиком: оба конца рваные, диагональный залом            760×227
      .tape--2         рваный конец слева, срез ножом справа                         600×289
      .tape--3         срез ножом слева, рваный конец справа                         600×270
      переменные: --w длина (высота — из пропорции), --rot угол, --origin точка поворота, --tx/--ty сдвиг до поворота,
-                 --flip -1 — зеркально по X. Тень «подъёма» (.14 лайм / .2 чёрная) и кромочная тень ЗАПЕЧЕНЫ в *-lift.webp
+                 --flip -1 — зеркально по X. Тень «подъема» (.14 лайм / .2 черная) и кромочная тень ЗАПЕЧЕНЫ в *-lift.webp
                  (T3 v3.1: CSS-фильтры blur/drop-shadow на кусках давали кадры 60–160 мс на телефоне); --lift больше не читается
      data-stick       прилепится сам один раз при входе в экран (после grinchin:ready). GV.art.watchTapes() подхватывает
                       новые куски (вызовите после вставки разметки); вручную: GV.art.stick(el) → Promise.
@@ -34,7 +34,7 @@
   pointer-events:none; user-select:none; transform-origin:var(--origin);
   transform:translate(var(--tx),var(--ty)) rotate(var(--rot)) scaleX(var(--flip));
 }
-/* одна картинка без filter: кусок + тень «подъёма» (было ::before brightness(0) blur(7px), opacity .14/.2, translateY(5px)
+/* одна картинка без filter: кусок + тень «подъема» (было ::before brightness(0) blur(7px), opacity .14/.2, translateY(5px)
    scale(1.01)) + кромочная тень (было drop-shadow(0 .5px .6px .32)). Поля под размытие — отрицательный inset в % от куска
    (генератор: v3/v31/T3/_tools/bake_tapes.py, размеры полей — из него) */
 .tape::after{content:""; position:absolute; inset:var(--pad); background:none center/100% 100% no-repeat}
@@ -92,7 +92,7 @@
 .art-legend text{font-family:var(--font-mono); font-size:9.5px; letter-spacing:.03em; fill:#141414; text-transform:uppercase}
 .art-legend-n{font-weight:700}
 
-/* пометка от руки: стрелка с бумажной подложкой (читается и на чёрном дениме) */
+/* пометка от руки: стрелка с бумажной подложкой (читается и на черном дениме) */
 .art-line,.art-tip{fill:none; stroke-linecap:round; stroke-linejoin:round}
 .art-halo{stroke:var(--c-paper); stroke-width:4.6}
 .art-ink{stroke:#141414; stroke-width:1.5}
@@ -147,7 +147,7 @@
   .card:hover .art--d .art-tip,.card:focus-within .art--d .art-tip{opacity:1; transition:opacity .08s linear .54s}
   .card:hover .art--d .art-code,.card:focus-within .art--d .art-code{opacity:1}
   .card:hover .art--d .art-base{transform:translateY(-4px)}
-  /* лаймовая плашка под доступными размерами — как на бирке; буква чёрная (лайм только заливкой под чёрным) */
+  /* лаймовая плашка под доступными размерами — как на бирке; буква черная (лайм только заливкой под черным) */
   html[data-cards="d"] .card .szt--quick .szt-c{background:linear-gradient(var(--c-green),var(--c-green)) center/0 0 no-repeat;
     transition:background-size .25s var(--ease-out)}
   html[data-cards="d"] .card:hover .szt--quick .szt-c:not(.is-n):not([aria-disabled="true"]){background-size:min(36px, calc(100% - 10px)) 24px}
@@ -171,8 +171,8 @@
 html[data-shot="1"] .art *{transition:none!important; animation:none!important}
 
 /* ---------------- «ОБРАЗЫ» ----------------
-   Чёрная стена с мятой бумагой (как v1), отпечатки в белом поле наклонены, подписи ровные и на одной линии.
-   Desktop — 4 отпечатка разной высоты «стеной»; mobile — свайп со счётчиком и scroll-snap-stop. */
+   Черная стена с мятой бумагой (как v1), отпечатки в белом поле наклонены, подписи ровные и на одной линии.
+   Desktop — 4 отпечатка разной высоты «стеной»; mobile — свайп со счетчиком и scroll-snap-stop. */
 #looks{position:relative; isolation:isolate; overflow:hidden; background:var(--c-black); color:var(--c-white);
   padding:clamp(64px, 8vw, 120px) 0 clamp(72px, 9vw, 128px)}
 #looks .lk-wall{position:absolute; inset:0; z-index:-1; pointer-events:none; opacity:.09;
@@ -190,10 +190,10 @@ html[data-shot="1"] .art *{transition:none!important; animation:none!important}
 #looks .lk-look[data-look="02"]{padding-top:0}
 #looks .lk-look[data-look="03"]{padding-top:clamp(56px, 7vw, 112px)}
 #looks .lk-look[data-look="04"]{padding-top:clamp(24px, 3.4vw, 56px)}
-/* will-change: отпечаток — свой слой. Иначе после «падения» (transition transform) слой снимается и повёрнутый отпечаток
-   с фото перерастрируется в общий слой (на телефоне 60–270 мс); в своём слое он растрится один раз без поворота */
+/* will-change: отпечаток — свой слой. Иначе после «падения» (transition transform) слой снимается и повернутый отпечаток
+   с фото перерастрируется в общий слой (на телефоне 60–270 мс); в своем слое он растрится один раз без поворота */
 #looks .lk-print{position:relative; background:#fff; padding:12px 12px 48px; transform:rotate(var(--r, 0deg)); will-change:transform}
-/* тень под отпечатком — градиентом, не box-shadow: размытая тень на повёрнутом блоке на телефоне стоила 50–130 мс растра
+/* тень под отпечатком — градиентом, не box-shadow: размытая тень на повернутом блоке на телефоне стоила 50–130 мс растра
    (T3 v3.1). Профиль как у прежней 0 22px 34px -22px rgb(0 0 0/.9): у кромки .45, через 17 px .14, к 34 px — ноль */
 #looks .lk-print::before{content:""; position:absolute; left:14px; right:14px; top:100%; height:34px; pointer-events:none;
   background:linear-gradient(rgb(0 0 0 / .45), rgb(0 0 0 / .14) 50%, rgb(0 0 0 / 0))}
@@ -221,7 +221,7 @@ html[data-tape="black"] #looks .tape--toon-lime{--ar:430/131; --src:url("{{asset
 /* номер образа — на нижнем поле полароида, крупно и чуть криво, как подписано от руки */
 #looks .lk-no{position:absolute; left:14px; bottom:9px; font:900 1.125rem/1 var(--font-display); letter-spacing:-.03em; color:#000;
   transform:rotate(-3deg); transform-origin:0 100%; pointer-events:none}
-/* стикеры: белые варианты (лайм на экране — только скотч ’02), шлёпаются после скотча; ось data-stickers on|max|off */
+/* стикеры: белые варианты (лайм на экране — только скотч ’02), шлепаются после скотча; ось data-stickers on|max|off */
 #looks .lk-stk{position:absolute; z-index:4; display:block; width:clamp(62px, 5.4vw, 92px); pointer-events:none; transform:rotate(var(--sr, 10deg))}
 #looks .lk-stk img{display:block; width:100%; height:auto}
 #looks .lk-stk--br{right:-20px; bottom:-18px; --sr:12deg}
@@ -261,7 +261,7 @@ html[data-shot="1"] #looks .lk-print{transition:none}
 
 @media (max-width:767px){
   #looks .lk-count{display:block}
-  /* v4.2 (M3): фактура стены тает к низу — следом дверь-постер на чистом чёрном, без жёсткого шва по фактуре */
+  /* v4.2 (M3): фактура стены тает к низу — следом дверь-постер на чистом черном, без жесткого шва по фактуре */
   #looks .lk-wall{-webkit-mask-image:linear-gradient(180deg,#000 calc(100% - 140px),transparent);mask-image:linear-gradient(180deg,#000 calc(100% - 140px),transparent)}
   /* overflow-y:hidden — иначе 3 px вертикального «переполнения» (наклон отпечатков, стикеры) делали ленту вертикальным
      скроллером: свайп вниз, начатый на фото, прилипал к ней и страница не ехала (аудит v4.1) */

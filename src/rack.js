@@ -3,10 +3,10 @@
    · rail  — «Рейл»: хромированная труба через экран с выгибом к зрителю; 8 вещей на вешалках (верх — плечики
              с крючком, низ — брючная с зажимами). Свайп/драг/колесо по X/стрелки двигают вещи по трубе, вещь
              в фокусе стоит на выгибе (ближе всех) и медленно вращается, соседи покачиваются от разгона.
-   · chain — «Цепь»: одна вещь на цепи с карабином, обмотанным лаймовым скотчем; драг раскручивает её
+   · chain — «Цепь»: одна вещь на цепи с карабином, обмотанным лаймовым скотчем; драг раскручивает ее
              (вертлюг с трением), смена вещи — старая уезжает вверх, новая спускается и пружинит.
              v5 (C1): в блоке страницы — только «Рейл», переключателя «Рейл · Цепь» нет (opts.switch, по умолчанию false);
-             «Цепь» живёт только во вкладке «3D» карточки товара (mountProduct, ui=bare).
+             «Цепь» живет только во вкладке «3D» карточки товара (mountProduct, ui=bare).
    Здесь — данные, раскладка, вся физика (поза считается тут, воркер только рисует), жесты, подписи, очередь загрузки.
    3D — rack-scene.js (в Web Worker, один WebGL-контекст; в сайте — общий GV.gl, см. README).
    API: GV.rack.mount(el, opts) → экземпляр {go, next, prev, focus, concept, stats, bench, destroy}. */
@@ -31,7 +31,7 @@
   };
   const LIME = '#8ED308';
 
-  /* Как висит каждая вещь. h — высота заглушки/модели при авто-раскладке, top — где её верх относительно
+  /* Как висит каждая вещь. h — высота заглушки/модели при авто-раскладке, top — где ее верх относительно
      «плеч/пояса» (y=0: капюшон выше плеч), back — есть фото спины. */
   const KIND = {
     'jeans-restart': { part: 'bottom', h: 1.08, top: 0.0 },
@@ -314,7 +314,7 @@ self.onmessage = async (ev) => {
     opts = Object.assign({ concept: 'rail', drive: 'drag', ui: 'full', switch: false, start: null, products: W.GV_PRODUCTS || [], drop: W.GV_DROP || {}, title: 'Дроп на вешалках' }, opts || {});
     opts.models = Object.assign({}, ASSETS.models, opts.models || {});
     opts.stubs = Object.assign({}, ASSETS.stubs, opts.stubs || {});
-    const BARE = opts.ui === 'bare';   // вкладка «3D» в карточке: только сцена, подпись даёт карточка
+    const BARE = opts.ui === 'bare';   // вкладка «3D» в карточке: только сцена, подпись дает карточка
     // порядок на рейле (отзыв v4.1): джинсы → футболки → верх → костюм целиком; номер на скотче — место на рейле
     const PR = opts.products.slice().sort((a, b) => rank(a.id) - rank(b.id)), N = PR.length;
     const items = PR.map((p, i) => Object.assign({ id: p.id, n: i + 1, i }, KIND[p.id] || { part: /джинс|брюк|штан/i.test(p.type) ? 'bottom' : 'top', h: 0.8, top: 0.05 }));
@@ -390,8 +390,8 @@ self.onmessage = async (ev) => {
         $('.rk-state').textContent = sold ? 'разобрали' : p.state === 'preorder' ? 'предзаказ · отправка с ' + (opts.drop.shipFrom || '—') : '';
         $('.rk-price').textContent = money(p.price);
         const add = $('.rk-add');
-        add.disabled = sold; add.textContent = sold ? 'Разобрали' : 'В корзину';
-        add.setAttribute('aria-label', sold ? p.name + ' — разобрали' : 'В корзину: ' + p.name + ', ' + money(p.price));
+        add.disabled = false; add.textContent = sold ? 'Сообщить' : 'В корзину';
+        add.setAttribute('aria-label', sold ? 'Сообщить, когда появится: ' + p.name : 'В корзину: ' + p.name + ', ' + money(p.price));
         info.dataset.id = p.id;
         idx.forEach((b, k) => { b.classList.toggle('is-on', k === i); b.setAttribute('aria-current', k === i ? 'true' : 'false'); });
         // без WebGL: ряд фото на CSS-рейке, вещь в фокусе по центру
@@ -474,9 +474,9 @@ self.onmessage = async (ev) => {
     }
     /* «Цепь»: смена вещи строго по очереди — текущая уезжает вверх за кадр, и только потом спускается следующая.
        Повторные нажатия не накладываются: запоминается последняя цель (S.want), спускающаяся вещь разворачивается вверх.
-       Следующая спускается, когда её лёгкая модель уже загружена (или через 1,5 с — с фото-заглушкой): разбор GLB и
+       Следующая спускается, когда ее легкая модель уже загружена (или через 1,5 с — с фото-заглушкой): разбор GLB и
        загрузка текстур не попадают в анимацию. Полное качество — только после остановки (settle по 'hang'). */
-    // высота, на которой вещь целиком над кадром (верх кадра в «Цепи» ≈ +0,3 м): уходит до неё и спускается с неё — без пустых пауз
+    // высота, на которой вещь целиком над кадром (верх кадра в «Цепи» ≈ +0,3 м): уходит до нее и спускается с нее — без пустых пауз
     const exitDy = (i) => 0.5 - bottomOf(Math.max(0, i));
     function modelReady(i) {
       const id = items[i].id, md = opts.models[id];
@@ -500,7 +500,7 @@ self.onmessage = async (ev) => {
     function stepChain(dt) {
       let busy = false;
       const auto = autoOn();
-      // ожидание: прежняя вещь ушла, следующая ещё грузится (до 1,5 с)
+      // ожидание: прежняя вещь ушла, следующая еще грузится (до 1,5 с)
       const g0 = S.rig[0];
       if ((g0.idx < 0 || g0.st === 'off') && S.want >= 0 && g0.idx !== S.want) {
         if (modelReady(S.want) || now() - (S.waitAt || 0) > 1500) rigSpawn(); else busy = true;
@@ -515,7 +515,7 @@ self.onmessage = async (ev) => {
           busy = true;
           return;
         }
-        if (g.st === 'down') {   // спуск на пружине цепи: мягкий перелёт и раскачка
+        if (g.st === 'down') {   // спуск на пружине цепи: мягкий перелет и раскачка
           const w = 5.6, a = w * w * (0 - g.dy) - 2 * 0.42 * w * g.dyv;
           g.dyv += a * dt; g.dy += g.dyv * dt;
           if (!g.hit && g.dy < 0.03) { g.hit = true; g.szv += 0.1; g.sxv -= 0.05; }
@@ -622,7 +622,11 @@ self.onmessage = async (ev) => {
     $('.rk-add').addEventListener('click', () => {
       const p = PR[S.focus];
       el.dispatchEvent(new CustomEvent('grinchin:rack-add', { bubbles: true, detail: { id: p.id } }));
-      if (typeof GV.open === 'function') { GV.open('product', p.id); return; }   // в сайте — карточка с выбором размера
+      if (typeof GV.open === 'function') {
+        GV.open('product', p.id);
+        if (p.state === 'soldout' && GV.productNotify) GV.productNotify();
+        return;
+      }
       toast('«' + p.name + '» — в корзину (прототип)');
     });
     function toast(s) { const t = $('.rk-toast'); t.textContent = s; t.classList.add('is-on'); clearTimeout(S.toastT); S.toastT = setTimeout(() => t.classList.remove('is-on'), 2200); }
@@ -673,7 +677,7 @@ self.onmessage = async (ev) => {
         else {
           const pxItem = (SP() / (2 * S.cam.halfW)) * S.w, v = -vx / pxItem, to = clamp(Math.round(S.r + v * 0.22), 0, N - 1);
           S.rv = v; S.rt = to;
-          if (opts.drive === 'scroll') go(to);   // в ленте свайп листает тем же путём, что и прокрутка: страница доезжает до вещи
+          if (opts.drive === 'scroll') go(to);   // в ленте свайп листает тем же путем, что и прокрутка: страница доезжает до вещи
         }
         S.drag = null; poke();
         return;
@@ -705,7 +709,7 @@ self.onmessage = async (ev) => {
       poke();
     }, { passive: false });
 
-    /* ── прокрутка страницы ведёт рейл (drive: 'scroll' — блок «Дроп на вешалках» в ленте сайта) ── */
+    /* ── прокрутка страницы ведет рейл (drive: 'scroll' — блок «Дроп на вешалках» в ленте сайта) ── */
     function onScroll() {
       if (opts.drive !== 'scroll') return;
       const rc = el.getBoundingClientRect(), pin = $('.rk-pin'), off = parseFloat(getComputedStyle(pin).top) || 0, total = el.offsetHeight - pin.offsetHeight;
@@ -757,7 +761,7 @@ self.onmessage = async (ev) => {
       if (S.visible) { start(); wake(); }
     }, { rootMargin: '200px 0px' }) : null;
     if (io) io.observe(stage); else { S.visible = true; }
-    // прогрев: за ~2 экрана до блока поднимаем движок и грузим первые модели (в простое), рисовать начнём при входе
+    // прогрев: за ~2 экрана до блока поднимаем движок и грузим первые модели (в простое), рисовать начнем при входе
     const idleRun = (f) => (W.requestIdleCallback ? W.requestIdleCallback(f, { timeout: 1200 }) : setTimeout(f, 60));
     const ioWarm = W.IntersectionObserver ? new IntersectionObserver((es) => {
       if (!es[es.length - 1].isIntersecting || S.warm) return;
@@ -771,15 +775,15 @@ self.onmessage = async (ev) => {
     if (GV.gl && typeof GV.gl.onOff === 'function') GV.gl.onOff(() => { if (HUB.kind === 'shared' || HUB.st === 'idle') { el.dataset.gl = 'off'; delete el.dataset.glwait; S.why = 'gl: ' + (GV.gl.why || 'off'); fbFocus(S.focus); } });
     else if (Q.has('nogl')) { el.dataset.gl = 'off'; requestAnimationFrame(() => fbFocus(S.focus)); }
     D.addEventListener('visibilitychange', () => { if (!D.hidden) wake(); });
-    // карточка/корзина/меню поверх страницы — блок на странице замирает (вкладка «3D» в карточке при этом живёт)
+    // карточка/корзина/меню поверх страницы — блок на странице замирает (вкладка «3D» в карточке при этом живет)
     function onOverlay(e) { if (BARE) return; S.paused = !!(e.detail && e.detail.open); if (!S.paused) wake(); }
     D.addEventListener('grinchin:overlay', onOverlay);
     RMQ.addEventListener && RMQ.addEventListener('change', () => { el.dataset.rm = RM() ? '1' : '0'; wake(); });
     el.dataset.rm = RM() ? '1' : '0';
 
     /* ── движок и ленивая загрузка ── */
-    // Проявление 3D: ждём, пока у вещи в фокусе есть модель (или 1,5 с), рисуем 2 кадра под CSS-рейлом и
-    // перекрёстно гасим его (opacity, 0,45 с). Классы CSS не меняем до конца перехода — стили остаются как есть.
+    // Проявление 3D: ждем, пока у вещи в фокусе есть модель (или 1,5 с), рисуем 2 кадра под CSS-рейлом и
+    // перекрестно гасим его (opacity, 0,45 с). Классы CSS не меняем до конца перехода — стили остаются как есть.
     function reveal() {
       if (S.revealed || S.dead) return;
       const f = items[S.focus].id, L = HUB.load;
@@ -821,7 +825,7 @@ self.onmessage = async (ev) => {
       return out;
     }
     const md = (i) => opts.models[items[i].id];
-    // какие полные модели держать: фокус; на десктопе — ещё соседей, если уже загружены (память телефона бережём)
+    // какие полные модели держать: фокус; на десктопе — еще соседей, если уже загружены (память телефона бережем)
     function fullKeep() {
       if (S.dead) return [];
       const f = S.focus, keep = [items[f].id];
@@ -871,7 +875,7 @@ self.onmessage = async (ev) => {
         const b = await inst.stats();
         return a && b ? +(((b.frames - a.frames) * 1000) / (now() - t0)).toFixed(1) : null;
       },
-      // движок общий и остаётся жить (его держит сайт / другие экземпляры); экземпляр только отписывается
+      // движок общий и остается жить (его держит сайт / другие экземпляры); экземпляр только отписывается
       destroy: () => {
         S.dead = true; LOOP.fns.delete(frame); HUB.insts.delete(api); clearTimeout(S.fullT); hubFullGC();
         if (ro) ro.disconnect(); if (io) io.disconnect(); if (io2) io2.disconnect(); if (ioWarm) ioWarm.disconnect(); W.removeEventListener('scroll', onScroll); D.removeEventListener('grinchin:overlay', onOverlay);
@@ -887,7 +891,7 @@ self.onmessage = async (ev) => {
   const ASSETS = { models: {}, stubs: {} };
   (() => {
     const M = {
-      // [лёгкая, лёгкая-2, полная, полная-2]: лёгкие — tools/lod.sh (~73 тыс. треуг., 1024), полные — модели G1 как есть (2048)
+      // [легкая, легкая-2, полная, полная-2]: легкие — tools/lod.sh (~73 тыс. треуг., 1024), полные — модели G1 как есть (2048)
       'jeans-restart': ['{{asset:img/v4/3d/jeans-restart.glb}}', null, '{{asset:img/v4/3d/full/jeans-restart.glb}}'],
       'suit-detour': ['{{asset:img/v4/3d/suit-detour-top.glb}}', '{{asset:img/v4/3d/suit-detour-pants.glb}}', '{{asset:img/v4/3d/full/suit-detour-top.glb}}', '{{asset:img/v4/3d/full/suit-detour-pants.glb}}'],
       'jeans-scribble': ['{{asset:img/v4/3d/jeans-scribble.glb}}', null, '{{asset:img/v4/3d/full/jeans-scribble.glb}}'],
@@ -907,7 +911,7 @@ self.onmessage = async (ev) => {
       'tee-blank': ['{{asset:img/v4/3d/stubs/tee-blank.webp}}'],
       'longsleeve-blank': ['{{asset:img/v4/3d/stubs/longsleeve-blank.webp}}'],
     };
-    const abs = (u) => { try { return new URL(u, location.href).href; } catch (e) { return u; } };   // воркер живёт на blob: — нужны абсолютные адреса
+    const abs = (u) => { try { return new URL(u, location.href).href; } catch (e) { return u; } };   // воркер живет на blob: — нужны абсолютные адреса
     const U = (x) => (x && A(x) ? abs(A(x)) : undefined);
     for (const id in M) { const u = U(M[id][0]); if (u) ASSETS.models[id] = { url: u, url2: U(M[id][1]), full: U(M[id][2]), full2: U(M[id][3]) }; }
     for (const id in S) { const u = A(S[id][0]); if (u) ASSETS.stubs[id] = [abs(u), S[id][1] && A(S[id][1]) ? abs(A(S[id][1])) : null]; }

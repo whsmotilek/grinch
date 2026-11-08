@@ -3,7 +3,7 @@
       Desktop: блок резервирует высоту (CSS, без pin-спейсера — CLS 0), внутри sticky-кадр; прокрутка
       оборачивает знак на столбе: лицевая «ONE WAY ←» → ребро → оборот (оцинковка, стикер GRiNCHiN, скотч) →
       лицевая, где стрелка уже смотрит в другую сторону, и баллоном проявляется OR ANOTHER.
-      Mobile (≤767): без sticky, оборот проигрывается один раз при входе в кадр (2,4 с), тап — ещё раз.
+      Mobile (≤767): без sticky, оборот проигрывается один раз при входе в кадр (2,4 с), тап — еще раз.
    2) Рулон ленты (v3.1) переехал в roll.js: катится по всей странице (ось data-roll = page|quiet|off),
       блок-асфальт #roll-stage убран. Сцену 'roll' рисует тот же движок three-g.js.
    Сцену рисует ОДИН контекст WebGL из three-g.js (GV.gl): строятся лениво, когда блок подходит к экрану,
@@ -82,7 +82,7 @@
         '<div class="k2-sign__cap">' +
           '<p class="k2-sign__kicker">ONE WAY <i>or</i> ANOTHER</p>' +
           '<p class="k2-sign__l k2-sign__l1">Знак показывает одну&nbsp;дорогу.</p>' +
-          '<p class="k2-sign__l k2-sign__l2">Мы знаем ещё&nbsp;одну.</p>' +
+          '<p class="k2-sign__l k2-sign__l2">Мы знаем еще&nbsp;одну.</p>' +
         '</div>' +
         '<div class="k2-sign__view" role="img" aria-label="Дорожный знак ONE WAY со стрелкой влево оборачивается на столбе: на обороте стикер GRiNCHiN и кусок ленты, после оборота стрелка смотрит вправо, а сверху баллоном написано OR ANOTHER">' +
           `<img class="k2-sign__still k2-sign__still--a" data-ph data-src="${STILL.a}" alt="" width="900" height="1000" decoding="async">` +
@@ -123,7 +123,7 @@
       if (!M.mob || M.play >= 0 || RMQ.matches) return;
       M.play = now(); M.played = false; gl().wake();
     }
-    // mobile: проиграть при входе (знак наполовину в кадре); тап по знаку — ещё раз
+    // mobile: проиграть при входе (знак наполовину в кадре); тап по знаку — еще раз
     if (W.IntersectionObserver) new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting && M.mob && !M.played) playOnce(); }, { threshold: 0.55 }).observe(view);
     view.addEventListener('click', () => { if (M.mob && M.played) playOnce(); });
     watch(S, root);

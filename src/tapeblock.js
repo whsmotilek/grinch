@@ -1,16 +1,16 @@
 /* GRINCHIN v5 · T1 · Блок скотча «IGNORE THE SIGNS» (#tape) → window.GV.tapeblock
    Сцена: мультяшный рулон катится и раскатывает лайм-ленту со слоганом, по пути заклеивает (знак вздрагивает под лентой)
    и сбивает (знак отрывается и улетает) дорожные знаки; в конце — обрыв (рваный конец), лента «прихлопывается» с качанием,
-   чёрная лента ложится крест-накрест, как на упаковке. Счётчик «проигнорировано знаков» тикает по ходу.
+   черная лента ложится крест-накрест, как на упаковке. Счетчик «проигнорировано знаков» тикает по ходу.
    Варианты (?tape=a|b, по умолчанию — DEF):
-     a — «прямо»: desktop — лента поперёк экрана, рулон доезжает и встаёт с покачиванием, короткий чёрный кусок крестом на STOP;
+     a — «прямо»: desktop — лента поперек экрана, рулон доезжает и встает с покачиванием, короткий черный кусок крестом на STOP;
          телефон — лента вертикально, рулон катится вниз и после обрыва падает из кадра.
      b — «диагональ сверху вниз»: лента с левого верха в правый низ, рулон разгоняется под уклон, после обрыва улетает;
-         чёрная лента раскатывается по второй диагонали — крест на весь экран, STOP в перекрестье.
+         черная лента раскатывается по второй диагонали — крест на весь экран, STOP в перекрестье.
    Физика: угол = путь/радиус, рулон худеет: R² = rc² + (R0² − rc²)(1 − s/Lc) → угол = 2(R0 − R)/B (замкнутая формула).
-   Крупное движение (рулон, раскрытие, полёт сбитого знака, подпись) — функция прогресса прокрутки (обратимо);
+   Крупное движение (рулон, раскрытие, полет сбитого знака, подпись) — функция прогресса прокрутки (обратимо);
    «удары» (вздрагивание знаков, шлепок ленты, покачивание рулона, толчок кадра) — пружины во времени, запускаются при
-   пересечении порога вперёд. Прогресс прокрутки сглажен (инерция ~0,1 с) — сцена дотягивает после остановки пальца.
+   пересечении порога вперед. Прогресс прокрутки сглажен (инерция ~0,1 с) — сцена дотягивает после остановки пальца.
    Рендер: только transform/opacity, свой rAF только пока блок в кадре и что-то движется.
    Статика (reduced-motion, ?shot=1): финальная композиция, ничего не движется. Отладка: ?tbp=0..1 — заморозить прогресс. */
 (() => {
@@ -42,7 +42,7 @@
   const op = (e, v) => { v = f3(v); if (e._o !== v) { e._o = v; e.style.opacity = v; } };
 
   /* ═════════════ 1. ГРАФИКА ═════════════ */
-  // знаки — монохром (единственный зелёный объект сцены — лента с рулоном), стиль стикеров: белая вырубка, жирный контур
+  // знаки — монохром (единственный зеленый объект сцены — лента с рулоном), стиль стикеров: белая вырубка, жирный контур
   const PAPER = '#F4F3F3', INK = '#0b0b0b';
   const oct = (r) => { let p = ''; for (let i = 0; i < 8; i++) { const a = (Math.PI / 8) + i * Math.PI / 4; p += (i ? 'L' : 'M') + f1(100 + r * Math.cos(a)) + ' ' + f1(100 + r * Math.sin(a)); } return p + 'Z'; };
   const gloss = '<path d="M46 66 Q58 42 84 34" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity=".85"/><path d="M42 82 l-1 7" stroke="#fff" stroke-width="6" stroke-linecap="round" opacity=".85"/>';
@@ -74,7 +74,7 @@
 
   /* ═════════════ 2. КОМПОЗИЦИИ ═════════════ */
   // Линия ленты: через точки A (вход в экран) и B; s — путь по линии от p0 (за краем экрана на R0+80). Знаки: t — доля пути
-  // от A до точки обрыва (у лайма) / до B (у чёрной), off — смещение поперёк ленты в её ширинах, sz — размер в ширинах.
+  // от A до точки обрыва (у лайма) / до B (у черной), off — смещение поперек ленты в ее ширинах, sz — размер в ширинах.
   function compose(w, h) {
     const mob = w < 768;
     const k = VAR + (mob ? 'm' : 'd');
@@ -141,7 +141,7 @@
     }
     c.rc = c.R0 * RC / 100;
     c.Rend = c.R0 * 0.74;
-    // ёмкость рулона: к обрыву радиус ровно Rend
+    // емкость рулона: к обрыву радиус ровно Rend
     const q = (c.Rend * c.Rend - c.rc * c.rc) / (c.R0 * c.R0 - c.rc * c.rc);
     c.Lc = (c.L.sT) / (1 - q);
     c.Bk = (c.R0 * c.R0 - c.rc * c.rc) / c.Lc;
@@ -155,12 +155,12 @@
         g.s = on.sA + g.t * (on === c.L ? c.L.sT - c.L.sA : c.K.LAB);
         [g.x, g.y] = on.at(g.s, (g.off || 0) * c.th);
       }
-      // какие ленты реально ложатся на знак: проекция центра на линию и расстояние до неё
+      // какие ленты реально ложатся на знак: проекция центра на линию и расстояние до нее
       const pr = (Ln) => { const dx = g.x - Ln.x0, dy = g.y - Ln.y0; return [dx * Ln.cs + dy * Ln.sn, Math.abs(-dx * Ln.sn + dy * Ln.cs)]; };
       [g.sL, g.dL] = pr(c.L); g.tL = g.dL < g.px * 0.42 + c.th * 0.5 && g.sL < c.L.sT + g.px * 0.3;
       if (c.K) { [g.sK, g.dK] = pr(c.K); g.tK = g.dK < g.px * 0.42 + c.th * 0.5; }
     });
-    // где должна кончиться целая фраза на лайме: (a) у обрыва; (b) перед перекрестьем — до чёрной ленты
+    // где должна кончиться целая фраза на лайме: (a) у обрыва; (b) перед перекрестьем — до черной ленты
     c.L.txtEnd = c.K ? c.xs - c.th * 0.85 : c.L.sT - c.th * 0.32;
     if (c.txtStart != null) c.L.txtAt = c.L.sA + c.txtStart * c.th;   // телефон b: фраза целиком от края экрана
     // тайминг (доли прогресса)
@@ -202,7 +202,7 @@
     e.L = tapeDom('lime');
     e.L.endR = mk('i', 'tb-end', e.L.run);
     fillText(e.L, 'IGNORE THE SIGNS', c.L.len);
-    // чёрная: длинная по второй диагонали (b) или короткий кусок крестом на STOP (a)
+    // черная: длинная по второй диагонали (b) или короткий кусок крестом на STOP (a)
     if (c.K) {
       e.K = tapeDom('black');
       e.K.lead = mk('i', 'tb-end', e.K.run);
@@ -216,7 +216,7 @@
     e.signs.forEach((S) => { if (!S.el.parentNode) world.appendChild(S.el); });
     // рулон (поверх лент)
     const roll = mk('div', 'tb-a tb-roll', world);
-    // слой — div с SVG внутри: трансформируем div (у корневого <svg> Safari берёт transform-origin 0 0)
+    // слой — div с SVG внутри: трансформируем div (у корневого <svg> Safari берет transform-origin 0 0)
     const layer = (inner, par) => { const d = mk('div', 'tb-rl', par); d.innerHTML = svg(inner, VB); return d; };
     e.rUnder = layer(ROLL.under, roll);
     e.spin = mk('div', 'tb-spin', roll);
@@ -243,7 +243,7 @@
     sec.style.setProperty('--th', f1(C.th) + 'px');
     build();
     const c = C, e = E;
-    // лайм-лента: кадр в точке старта, повёрнут вдоль линии
+    // лайм-лента: кадр в точке старта, повернут вдоль линии
     const setRun = (T, Ln) => {
       T.run.style.setProperty('--len', f1(Ln.len) + 'px');
       T.base = `translate(${f1(Ln.x0)}px,${f1(Ln.y0)}px) rotate(${f3(Ln.ang)}deg)`;
@@ -259,7 +259,7 @@
       e.K.run.style.setProperty('--th', f1(tb) + 'px');
       [e.K.cx, e.K.cy] = p.line != null ? c.L.at(st.sL, p.line * c.th) : [st.x, st.y];   // по центру знака или на лайме напротив него
       e.K.ang = p.ang; e.K.len = len;
-      // где кусок пересекает лайм: туда ставим звёздочку-разделитель печати — крест не съедает слово слогана
+      // где кусок пересекает лайм: туда ставим звездочку-разделитель печати — крест не съедает слово слогана
       const pc = Math.cos(p.ang / DEG), ps = Math.sin(p.ang / DEG), Ln = c.L, den = Ln.cs * ps - Ln.sn * pc;
       c.L.sepAt = Math.abs(den) < 1e-6 ? st.sL : ((e.K.cx - Ln.x0) * ps - (e.K.cy - Ln.y0) * pc) / den;
       tf(e.K.endL, `translate(${f1(-tb * 0.47 + 1)}px,0) scaleX(-1)`);
@@ -267,7 +267,7 @@
       fillText(e.K, 'GRINCHIN', len, true);
       tf(e.K.win, 'none'); tf(e.K.strip, 'none');
     }
-    // рулон: размер слоёв
+    // рулон: размер слоев
     e.roll.style.setProperty('--rs', f1(c.R0 * 2.3) + 'px');
     measureText();
     sec.classList.add('is-ready');
@@ -280,7 +280,7 @@
     const per = sp[2].offsetLeft - sp[0].offsetLeft, pw = sp[0].offsetWidth;
     if (!per || !pw) return;
     T.ph = per;
-    // начало фразы: (a) звёздочка — на пересечении с чёрным куском; (b, телефон) от края экрана; (b) фраза кончается перед перекрестьем
+    // начало фразы: (a) звездочка — на пересечении с черным куском; (b, телефон) от края экрана; (b) фраза кончается перед перекрестьем
     const want = C.L.sepAt != null ? C.L.sepAt - (per - pw) / 2 - pw : C.L.txtAt != null ? C.L.txtAt : C.L.txtEnd - pw;
     let off = want % per; if (off > 0) off -= per;
     T.txt.style.transform = `translateX(${f1(off)}px)`;
@@ -327,9 +327,9 @@
     const yo = -c.side * (Rr - c.th * 0.5);
     [rx, ry] = Ln.at(Math.min(s, sTear + (c.end === 'stop' ? 1e9 : 0)), yo);
     rot = spinAt(s);
-    if (c.end === 'fly' && p > P.tear) {   // обрыв → полёт: скорость вдоль ленты + тяжесть вниз
+    if (c.end === 'fly' && p > P.tear) {   // обрыв → полет: скорость вдоль ленты + тяжесть вниз
       const u = (p - P.tear) / (P.fly - P.tear);
-      const v = sTear * 1.58 / (P.tear - P.r0) * (P.fly - P.tear);   // px за отрезок полёта
+      const v = sTear * 1.58 / (P.tear - P.r0) * (P.fly - P.tear);   // px за отрезок полета
       const g = c.h * 1.5;
       rx += Ln.cs * v * u; ry += Ln.sn * v * u + 0.5 * g * u * u - c.th * 0.5 * u;
       rot += (v * u / c.Rend) * DEG * c.side * 0.9;
@@ -350,13 +350,13 @@
     const r = clamp(s + c.R0 * RI / 100 * 0.95, 0, sTear), Lw = Ln.len;
     tf(e.L.win, `translate(${f1(r - Lw)}px,0)`);
     tf(e.L.strip, `translate(${f1(Lw - r)}px,0)`);
-    // обрыв: рваный конец показывается, когда рулон ушёл с него; щелчок — короткая пружина
+    // обрыв: рваный конец показывается, когда рулон ушел с него; щелчок — короткая пружина
     const torn = c.end === 'stop' ? s > sTear + 2 : p > P.tear + 0.004;
     trig('tear', torn, t);
     const sn = spring(age('tear'), 7, 380);
     op(e.L.endR, torn ? 1 : 0);
     tf(e.L.endR, `translate(${f1(sTear - 1 - sn * 5)}px,0) scaleX(${f3(1 + sn * 0.25)})`);
-    // шлепок: до него лента «не прижата» (тень дальше), после — прижата, всё качнулось
+    // шлепок: до него лента «не прижата» (тень дальше), после — прижата, все качнулось
     trig('slap', p >= P.slap, t);
     const sl = spring(age('slap'), 2.4, 700);
     const pressed = ev.slapOn ? 1 - Math.exp(-age('slap') / 90) : 0;
@@ -364,7 +364,7 @@
     const piv = Math.min(r, sTear) * 0.5 + Ln.sA * 0.5;   // ось качания — середина видимой ленты
     if (sl) tf(e.L.run, `${e.L.base} translate(${f1(piv)}px,0) rotate(${f3(sl * 0.9)}deg) scale(${f3(1 + Math.abs(sl) * 0.012)}) translate(${f1(-piv)}px,0)`);
     else tf(e.L.run, e.L.base);
-    // — чёрная —
+    // — черная —
     let kr = 0;
     if (c.K) {
       kr = c.K.len * eIO(lin(P.kRev[0], P.kRev[1], p));
@@ -382,7 +382,7 @@
       if (ks) tf(e.K.run, `${e.K.base} translate(${f1(kpiv)}px,0) rotate(${f3(ks * 0.8)}deg) translate(${f1(-kpiv)}px,0)`);
       else tf(e.K.run, e.K.base);
     } else {
-      // кусок крестом: влетает, бьёт (overshoot), прижимается
+      // кусок крестом: влетает, бьет (overshoot), прижимается
       const on = p >= P.blk;
       trig('blk', on, t);
       const a = age('blk'), u = on ? clamp(a / 420, 0, 1) : 0;
@@ -421,7 +421,7 @@
         if (!taped && S.done) S.done = 0;
         if (taped) n++;
         let sh = spring(still ? 1e9 : t - S.shake, 9, 520);
-        // шлепки лент и удар чёрного куска — вздрагивают все заклеенные
+        // шлепки лент и удар черного куска — вздрагивают все заклеенные
         if (S.done) sh += spring(age('slap'), 8, 420) * 0.6;
         if (g.k === 'stop') { sh += spring(still || !ev.bump ? 1e9 : t - ev.bump, 10, 520) * 1.2; sh += spring(age('kslap'), 9, 480); }
         rr += sh * 4.5; k = 1 - Math.abs(sh) * 0.03;
@@ -432,7 +432,7 @@
     if (nEl && nEl._n !== n) { nEl._n = n; nEl.textContent = n; }
     // — подпись к финалу —
     if (capEl) { const u = eOut(lin(P.cap[0], P.cap[1], p), 3); op(capEl, u); tf(capEl, `translate(0,${f1((1 - u) * 18)}px)`); }
-    // — «камера»: медленный наезд всё время хода + толчок при ударе чёрного куска —
+    // — «камера»: медленный наезд все время хода + толчок при ударе черного куска —
     const bump = C.K ? spring(age('kslap'), 6, 300) : spring(still || !ev.bump ? 1e9 : t - ev.bump, 6, 300);
     tf(world, `scale(${f3(1 + 0.03 * p)}) translate(0,${f1(-6 * p + bump * 3)}px)`);
   }

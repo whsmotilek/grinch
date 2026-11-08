@@ -1,7 +1,7 @@
 /* H5 · v5 HERO «маскот у гаража» (hero5.html). Геометрия кадра — переменные --h5-* из hero5-vars.css (генерируются).
    Вписывание: ширина кадра W = max(экран, min(высота × пропорция, экран × --h5-crop)) — на альбомном экране обычный cover,
    на телефоне кадр не шире 1,5 экрана (иначе 4:5 теряет две трети), недостающая высота — сверху, кадр прижат к низу,
-   верх кадра чёрный и уходит в фон hero. Позиция — «по фокусу» (--h5-fx/fy) с упором в края. Те же формулы в transform-origin
+   верх кадра черный и уходит в фон hero. Позиция — «по фокусу» (--h5-fx/fy) с упором в края. Те же формулы в transform-origin
    не нужны: точку рта считает JS по рамке <img> (getBoundingClientRect), а не по CSS.
    Движется только transform/opacity (+ путь SVG улыбки на переходе). Стык с #tape: сцена гаснет в #0b0b0b (фон блока скотча). */
 /* hero = липкая сцена (.h5-stick, один экран) + ход --h5-out для перехода «свет гаснет» → #tape (hero5.js):
@@ -33,7 +33,7 @@ html[data-shot="1"] #hero.h5,html:not(.js) #hero.h5{--h5-out:0px;height:var(--st
    cold (/5/) — холодный белый, warm (/6/) — янтарь. Рот и тьма (#0b0b0b) у обеих одинаковые. */
 :root{--lt-glow:226,236,255;--lt-glow2:214,228,255;--lt-flash:236,243,255;--lt-flash2:228,238,255;--lt-pale:#ecf2ea}
 html[data-light="warm"]{--lt-glow:255,184,96;--lt-glow2:255,160,64;--lt-flash:255,210,140;--lt-flash2:255,176,90;--lt-pale:#f6e3bd}
-/* v51 СВЕТ НА СЛОЯХ (iOS-дружелюбно): движутся только transform/opacity, всё растрируется один раз.
+/* v51 СВЕТ НА СЛОЯХ (iOS-дружелюбно): движутся только transform/opacity, все растрируется один раз.
    .h5-curtain — «тьма»: #0b0b0b с мягким верхним краем (24 % высоты шторки), высота 132 % сцены. Свет горит — шторка уехала
    вниз за край (translateY 100 %), темно — стоит на месте (translateY −24,24 %: край над сценой). «Стекание света» = шторка едет вниз.
    .h5-lit — над тьмой, в рамке кадра: конус (кадр в луче лампы, альфа), дымка лампы, пере-свет; по умолчанию конус и пере-свет 0.
@@ -56,21 +56,21 @@ html[data-light="warm"] .h5-glow{background:radial-gradient(closest-side,rgba(va
 .h5-mz-b{width:100%;height:100%;transform-origin:50% 100%}
 .h5-mz-i{display:block;width:100%;height:100%}
 
-/* низ — в цвет блока скотча (#0b0b0b), верх — лёгкая тень под шапкой (подпись дропа читается на любом кадре) */
+/* низ — в цвет блока скотча (#0b0b0b), верх — легкая тень под шапкой (подпись дропа читается на любом кадре) */
 .h5-shade{position:absolute;left:0;right:0;bottom:-1px;height:30%;pointer-events:none;z-index:1;
   background:linear-gradient(180deg,rgba(11,11,11,0),rgba(11,11,11,.5) 52%,rgba(11,11,11,.9) 82%,#0b0b0b)}
 .h5-shade::before{content:"";position:absolute;left:0;right:0;bottom:calc(333% - 1px);height:60%;
   background:linear-gradient(180deg,rgba(11,11,11,.55),rgba(11,11,11,0))}
-/* v51: на альбоме тень только в левом углу под подписью дропа — лампа по центру остаётся светлой */
+/* v51: на альбоме тень только в левом углу под подписью дропа — лампа по центру остается светлой */
 @media (min-aspect-ratio:10001/10000){.h5-shade::before{right:auto;width:42%;background:radial-gradient(ellipse 100% 100% at 0 0,rgba(11,11,11,.6),rgba(11,11,11,0) 70%)}}
 /* верх кадра (на телефоне кадр ниже экрана и прижат к низу) — растворяется в фоне hero: края картинки не видно */
 @media (max-aspect-ratio:1/1){.h5-frame::before,.h5-lit::before{content:"";position:absolute;z-index:1;left:0;right:0;top:-1px;height:14%;pointer-events:none;
   background:linear-gradient(180deg,#0b0b0b,rgba(11,11,11,.6) 40%,rgba(11,11,11,0))}}
-/* «выход из темноты» (заставка) и затемнение при уходе вниз к #tape — один слой, opacity ведёт JS */
+/* «выход из темноты» (заставка) и затемнение при уходе вниз к #tape — один слой, opacity ведет JS */
 .h5-dim{position:absolute;inset:0;background:#0b0b0b;opacity:0;pointer-events:none;z-index:1}
 
 /* «Чеширский кот»: поверх затемнения — блики глаз (слой из кадра) и улыбка (контур рта с кадра, SVG в координатах сцены);
-   улыбка вытягивается в ленту с печатью. Всё — opacity/transform, путь SVG пересчитывает JS только во время перехода */
+   улыбка вытягивается в ленту с печатью. Все — opacity/transform, путь SVG пересчитывает JS только во время перехода */
 .h5-ches{position:absolute;inset:0;z-index:2;pointer-events:none;visibility:hidden}
 .h5-ches.is-on{visibility:visible}
 .h5-eyes{position:absolute;left:var(--h5-ex);top:var(--h5-ey);width:var(--h5-ew);height:var(--h5-eh);opacity:0;transform-origin:50% 55%;will-change:transform,opacity}
@@ -108,7 +108,7 @@ html[data-light="warm"] .h5-glow{background:radial-gradient(closest-side,rgba(va
 /* телефон боком: кнопка по содержимому */
 @media (max-width:767px) and (orientation:landscape){.h5-foot{right:auto}.h5-cta{padding:0 28px}}
 
-/* появление интерфейса после раскрытия заставки (opacity/transform — без сдвигов вёрстки) */
+/* появление интерфейса после раскрытия заставки (opacity/transform — без сдвигов верстки) */
 .h5-ui{transition:opacity .5s .1s,transform .7s .1s var(--e-out)}
 html:is([data-loader="full"],[data-loader="quick"],[data-loader="page"],[data-loader="fade"]):not([data-hero-in]) #hero .h5-ui{opacity:0;transform:translateY(12px)}
 

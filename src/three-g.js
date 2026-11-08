@@ -1,8 +1,8 @@
 /* GRINCHIN v3 · K2 · 3D. Один WebGL-контекст на страницу → window.GV.gl (движок) и window.GV.g (знак G в hero).
    Сцены движка: 'g' — новая рубленая G со стрелкой (grinchin_new.svg, путь M203.1,342.8…, экструзия),
    'sign' — дорожный знак ONE WAY or ANOTHER на столбе (рулон ленты в v4 — CSS-спрайт V3, 3D-сцены рулона нет).
-   Сцены sign/roll ведёт scenes.js; они строятся, только если включены осью (data-brand="sign", data-roll="on")
-   и их блок подошёл к экрану.
+   Сцены sign/roll ведет scenes.js; они строятся, только если включены осью (data-brand="sign", data-roll="on")
+   и их блок подошел к экрану.
 
    Техника (уроки v1 → v2, R2 §2.1):
    · three.js 0.186.1 импортируется в Web Worker; рендер в OffscreenCanvas. В воркере ОДИН контекст WebGL,
@@ -10,16 +10,16 @@
      transferFromImageBitmap() прямо в холст сцены. Холсты лежат в разметке и прокручиваются вместе
      со страницей (без «плавания» относительно контента), контекст при этом один.
    · Импорт three и компиляция шейдеров (compileAsync) идут во время прелоадера; G не ждут — до готовности
-     в #g3d стоит SVG того же контура, подмена — перекрёстным затуханием.
+     в #g3d стоит SVG того же контура, подмена — перекрестным затуханием.
    · Нет WebGL в OffscreenCanvas (Safari < 17) → тот же движок на главном потоке в requestIdleCallback,
      кадр копируется в холсты сцен через drawImage. Программный WebGL (SwiftShader/llvmpipe) или нет WebGL
      вообще, reduced-motion, слабое устройство → SVG-знак и статичные кадры сцен.
    · Рендер — только при изменении позы и только если сцена видна (IntersectionObserver). В покое 0 кадров.
      Один общий цикл (gsap.ticker, без него — rAF), сглаживание по dt: x += (t−x)·(1−e^(−λ·dt)).
    · DPR ≤ 2, буфер — по реальному прямоугольнику сцены.
-   · Вид «как у v1» без тяжёлого MeshPhysical+PMREM: matcap запечён из материала v1 (img/3d/_bake.html →
-     m-*.jpg), в рантайме — дешёвый MeshMatcapMaterial. Ось data-g: lime (гладкий лак), tape (скотч:
-     сатин + нормаль-карта полос и заломов + тон полос), black (чёрный глянец, лаймовый торец).
+   · Вид «как у v1» без тяжелого MeshPhysical+PMREM: matcap запечен из материала v1 (img/3d/_bake.html →
+     m-*.jpg), в рантайме — дешевый MeshMatcapMaterial. Ось data-g: lime (гладкий лак), tape (скотч:
+     сатин + нормаль-карта полос и заломов + тон полос), black (черный глянец, лаймовый торец).
    Отладка: ?nogl — без WebGL; ?glmain — WebGL на главном потоке; ?soft — разрешить программный WebGL. */
 (() => {
   'use strict';
@@ -62,11 +62,11 @@
   const idle = (f, to) => (W.requestIdleCallback ? W.requestIdleCallback(f, { timeout: to || 1500 }) : setTimeout(f, 60));
   const abs = (u) => { try { return new URL(u, location.href).href; } catch (e) { return u; } };
   // v4.1 (V1): маскот в hero — он лаймовый объект кадра, G — белый глянцевый винил, как стрелки разметки на асфальте сцены
-  // (paint) при любом значении оси g. Чёрный «ink» v4 сливался с ночным фоном — отклонён.
+  // (paint) при любом значении оси g. Черный «ink» v4 сливался с ночным фоном — отклонен.
   const matOf = () => { if (R.dataset.heroimg === 'mascot') return 'paint'; const m = R.dataset.g; return m === 'lime' || m === 'black' || m === 'tape' ? m : 'tape'; };
 
   /* ═════════════════════ АРТ: процедурные текстуры (воркер и главный поток) ═════════════════════
-     Самодостаточная функция: в воркер уходит её исходник. Шрифтов нет — буквы знака нарисованы штрихами
+     Самодостаточная функция: в воркер уходит ее исходник. Шрифтов нет — буквы знака нарисованы штрихами
      по скелету (как трафарет дорожного знака), граффити — тем же способом «от руки». */
   function ART(cv2d, LOGO, BOX) {
     const TAU = Math.PI * 2, LIME = '#8ED308';
@@ -125,10 +125,10 @@
         }
         g.restore();
       };
-      pass('#1d3300', sw, cap * 0.05, cap * 0.06, 0);           // тень-объём баллона
+      pass('#1d3300', sw, cap * 0.05, cap * 0.06, 0);           // тень-объем баллона
       pass(LIME, sw, 0, 0, cap * 0.12);                          // напыление с ореолом
       pass('#c9f56b', sw * 0.32, -cap * 0.03, -cap * 0.035, 0);  // блик
-      g.save(); g.fillStyle = LIME; g.strokeStyle = LIME; g.lineCap = 'round';   // подтёки
+      g.save(); g.fillStyle = LIME; g.strokeStyle = LIME; g.lineCap = 'round';   // подтеки
       for (const [L, lx, ly, , k] of pos) {
         const n = 1 + ((r() * 2.2) | 0);
         for (let j = 0; j < n; j++) {
@@ -142,7 +142,7 @@
     }
     const W_ = 768, H_ = 972;
     const rrect = (g, x, y, w, h, r) => { g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
-    // лицевая сторона знака: световозвращающая плёнка, рамка, ONE WAY, стрелка (dir −1 ←, +1 →)
+    // лицевая сторона знака: световозвращающая пленка, рамка, ONE WAY, стрелка (dir −1 ←, +1 →)
     function signFace(dir) {
       const c = cv2d(W_, H_), g = c.getContext('2d'), r = rng(31 + dir);
       g.fillStyle = '#f2f2ec'; g.fillRect(0, 0, W_, H_);
@@ -154,7 +154,7 @@
       signWord(g, 'WAY', W_ / 2, 362, 196, 0.17, 0.08);
       g.save(); g.translate(W_ / 2, 778); g.scale(dir > 0 ? 1 : -1, 1); g.fillStyle = '#0c0c0c';
       g.beginPath(); g.moveTo(300, 0); g.lineTo(150, -104); g.lineTo(150, -40); g.lineTo(-300, -40); g.lineTo(-300, 40); g.lineTo(150, 40); g.lineTo(150, 104); g.closePath(); g.fill(); g.restore();
-      g.globalCompositeOperation = 'multiply';                  // грязь у краёв — знак стоит на улице
+      g.globalCompositeOperation = 'multiply';                  // грязь у краев — знак стоит на улице
       for (let k = 0; k < 40; k++) { const x = r() * W_, y = r() < 0.5 ? r() * 90 : H_ - r() * 90; g.fillStyle = `rgba(150,140,120,${0.05 + r() * 0.08})`; g.beginPath(); g.ellipse(x, y, 10 + r() * 60, 4 + r() * 16, r() * 3, 0, TAU); g.fill(); }
       g.globalCompositeOperation = 'source-over';
       return c;
@@ -196,26 +196,26 @@
       const lh2 = 46; let x = -196; while (x < 190) x += logo(g, x, -lh2 / 2 - 1, lh2, 'rgba(11,11,11,.88)') + 36;
       for (let k = 0; k < 14; k++) { g.strokeStyle = r() < 0.5 ? 'rgba(255,255,255,.35)' : 'rgba(0,40,0,.3)'; g.lineWidth = 1 + r(); const px = -200 + r() * 400; g.beginPath(); g.moveTo(px, -40); g.lineTo(px + (r() - 0.5) * 30, 38); g.stroke(); }
       g.restore();
-      // v4.1 (V1): изнанка не «пустая доска» — чёрный спрей поверх металла: стрелка в обход, каракули, второй стикер внизу
+      // v4.1 (V1): изнанка не «пустая доска» — черный спрей поверх металла: стрелка в обход, каракули, второй стикер внизу
       g.save(); g.lineCap = 'round'; g.lineJoin = 'round';
       const spray = (pts, w, a) => { for (let k = 0; k < 3; k++) { g.strokeStyle = `rgba(14,14,14,${a * (k ? 0.18 : 0.85)})`; g.lineWidth = w * (1 + k * 0.9);
         g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]); g.stroke(); } };
       // стрелка «в обход» через всю изнанку
       spray([[W_ * 0.12, H_ * 0.84], [W_ * 0.3, H_ * 0.78], [W_ * 0.42, H_ * 0.62], [W_ * 0.38, H_ * 0.5], [W_ * 0.52, H_ * 0.46], [W_ * 0.82, H_ * 0.3]], 18, 1);
       spray([[W_ * 0.7, H_ * 0.24], [W_ * 0.84, H_ * 0.29], [W_ * 0.77, H_ * 0.42]], 18, 1);
-      // счёт-зачёркивание и каракули в углах
+      // счет-зачеркивание и каракули в углах
       for (let k = 0; k < 4; k++) spray([[W_ * (0.62 + k * 0.045), H_ * 0.88], [W_ * (0.63 + k * 0.045), H_ * 0.78]], 7, 0.9);
       spray([[W_ * 0.6, H_ * 0.8], [W_ * 0.82, H_ * 0.86]], 7, 0.9);
       spray([[W_ * 0.1, H_ * 0.12], [W_ * 0.2, H_ * 0.08], [W_ * 0.16, H_ * 0.18], [W_ * 0.28, H_ * 0.14]], 6, 0.7);
-      // стикер внизу слева: белая плашка, логотип чёрным
+      // стикер внизу слева: белая плашка, логотип черным
       g.translate(W_ * 0.27, H_ * 0.62); g.rotate(0.12);
       g.fillStyle = 'rgba(0,0,0,.22)'; g.fillRect(-104, -30, 214, 66); g.fillStyle = '#f2f2ec'; g.fillRect(-108, -36, 214, 66);
       const lh3 = 40; logo(g, -lh3 * LOGO_AR / 2, -lh3 / 2 - 3, lh3, '#0b0b0b');
       g.restore();
       return c;
     }
-    // фирменная лента: лайм, логотипы чёрным, продольные волокна и непрокрас
-    // скотч: полосы внахлёст + заломы → высота → нормали (Собель); тайлится
+    // фирменная лента: лайм, логотипы черным, продольные волокна и непрокрас
+    // скотч: полосы внахлест + заломы → высота → нормали (Собель); тайлится
     function tapeNormal(N, seed, crease) {
       const c = cv2d(N, N), g = c.getContext('2d', { willReadFrequently: true }), r = rng(seed);
       g.fillStyle = '#808080'; g.fillRect(0, 0, N, N);
@@ -243,7 +243,7 @@
       g.putImageData(out, 0, 0);
       return c;
     }
-    // тон скотча (умножается на matcap): полосы чуть светлее/темнее, тёмные кромки
+    // тон скотча (умножается на matcap): полосы чуть светлее/темнее, темные кромки
     function tapeTint(N, seed) {
       const c = cv2d(N, N), g = c.getContext('2d'), r = rng(seed);
       g.fillStyle = '#f2f2f2'; g.fillRect(0, 0, N, N);
@@ -258,7 +258,7 @@
   function ENGINE(T, canvas, o) {
     const TAU = Math.PI * 2;
     const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
-    const cv2d = (w, h) => {   // на главном потоке — обычный холст: OffscreenCanvas как источник текстуры в старом Safari ненадёжен
+    const cv2d = (w, h) => {   // на главном потоке — обычный холст: OffscreenCanvas как источник текстуры в старом Safari ненадежен
       if (!o.dom && typeof OffscreenCanvas !== 'undefined') return new OffscreenCanvas(w, h);
       const c = document.createElement('canvas'); c.width = w; c.height = h; return c;
     };
@@ -305,7 +305,7 @@
       }
       return out;
     }
-    async function loadMC(url) {   // matcap → холст (flipY у холста надёжен везде, у ImageBitmap — нет)
+    async function loadMC(url) {   // matcap → холст (flipY у холста надежен везде, у ImageBitmap — нет)
       const b = await (await fetch(url)).blob(), bmp = await createImageBitmap(b);
       const c = cv2d(bmp.width, bmp.height); c.getContext('2d').drawImage(bmp, 0, 0); if (bmp.close) bmp.close();
       return ctex(c, true);
@@ -406,7 +406,7 @@
       const cl1 = new T.Mesh(clampG, steel); cl1.position.set(0, PH * 0.34, -TH / 2 - 0.06);
       const cl2 = new T.Mesh(clampG, steel); cl2.position.set(0, -PH * 0.34, -TH / 2 - 0.06);
       const sign = new T.Group(); sign.add(edge, lipF, lipB, front, gr, bk, post, cl1, cl2); scene.add(sign);
-      // при compileAsync граффити должно быть видимым, иначе его программа соберётся на первом кадре оборота
+      // при compileAsync граффити должно быть видимым, иначе его программа соберется на первом кадре оборота
       gr.visible = true;
       const cam = new T.PerspectiveCamera(28, 1, 0.1, 60);
       return {
@@ -476,7 +476,7 @@ async function load1(url) {
     return await import(URL.createObjectURL(new Blob([src.split(IMP).join('from"' + core + '"')], { type: 'text/javascript' })));
   } catch (e) { return import(url); }
 }
-async function load(urls) {   // cdnjs → jsdelivr → ещё раз cdnjs через секунду
+async function load(urls) {   // cdnjs → jsdelivr → еще раз cdnjs через секунду
   let err = null;
   for (const u of [urls[0], urls[1], urls[0]]) {
     try { return await load1(u); } catch (e) { err = e; await new Promise((r) => setTimeout(r, 900)); }
@@ -581,7 +581,7 @@ self.onmessage = async (ev) => {
     startHub();
     if (HUB.st === 'ok') go(); else if (HUB.st === 'loading') HUB.wait.push(go);
   }
-  // вид — холст сцены в разметке; в воркер передаётся при первом кадре (до этого его можно убрать без следа)
+  // вид — холст сцены в разметке; в воркер передается при первом кадре (до этого его можно убрать без следа)
   function view(kind, canvas) {
     const id = ++HUB.uid, v = { id, kind, canvas, sent: false, x2d: null };
     v.pose = (p, w, h) => {
@@ -633,7 +633,7 @@ self.onmessage = async (ev) => {
     },
     // хук внешних сцен (S1 «Дроп на вешалках»): та же WebGL-сцена в том же воркере/контексте.
     // ext(kind, src) — исходник фабрики «(T, {renderer}) → сцена»; вызывать, когда state() === 'ok', до needScene(kind).
-    // xmsg(kind, m, transfer) → Promise — сообщение сцене (её метод msg), например загрузка модели.
+    // xmsg(kind, m, transfer) → Promise — сообщение сцене (ее метод msg), например загрузка модели.
     ext: (kind, src) => {
       if (HUB.kind === 'worker' && HUB.wk) HUB.wk.postMessage({ t: 'ext', kind, src });
       else HUB.ext[kind] = (0, eval)('(' + src + ')');
@@ -650,7 +650,7 @@ self.onmessage = async (ev) => {
   /* ═════════════════════ ЗНАК G в hero (#g3d) ═════════════════════
      Поведение v1: следит за курсором — только наклон (rx/ry), без поворота по Z (иначе G не читается);
      драг/свайп по знаку крутит его с инерцией и пружиной домой; на телефоне — гироскоп по кнопке.
-     Рождается на месте, когда прелоадер раскрыл сайт. Прокрутка hero слегка «кладёт» знак назад. */
+     Рождается на месте, когда прелоадер раскрыл сайт. Прокрутка hero слегка «кладет» знак назад. */
   const NEUTRAL = { rx: 0.08, ry: -0.24 };
   const S = {
     started: false, birthT: -1e9, mode: 'none',
@@ -702,10 +702,10 @@ self.onmessage = async (ev) => {
     if (!host) return;
     const r = host.getBoundingClientRect(), sy = W.scrollY || 0;
     S.vw = R.clientWidth || innerWidth; S.vh = innerHeight;
-    // размер буфера — по раскладке (offset*), а не по rect: K4 масштабирует обёртку .hx-g при прокрутке
-    S.hidden = getComputedStyle(host).visibility === 'hidden';   // K4 может спрятать обёртку — тогда не рендерим
+    // размер буфера — по раскладке (offset*), а не по rect: K4 масштабирует обертку .hx-g при прокрутке
+    S.hidden = getComputedStyle(host).visibility === 'hidden';   // K4 может спрятать обертку — тогда не рендерим
     S.w = host.offsetWidth || r.width; S.h = host.offsetHeight || r.height; S.cx = r.left + r.width / 2; S.cy = r.top + sy + r.height / 2;
-    // DPR ≤ 2, но маленькой G (телефон, режим маскота: ~130×130 CSS px) — до 3: буфер всё равно крошечный, а на DPR 3 без этого мыло
+    // DPR ≤ 2, но маленькой G (телефон, режим маскота: ~130×130 CSS px) — до 3: буфер все равно крошечный, а на DPR 3 без этого мыло
     S.dpr = Math.min(W.devicePixelRatio || 1, S.w * S.h < 100000 ? 3 : 2);
     const hero = D.getElementById('hero');
     if (hero) { const hr = hero.getBoundingClientRect(); S.heroTop = hr.top + sy; S.heroH = Math.max(1, hr.height); }
@@ -735,7 +735,7 @@ self.onmessage = async (ev) => {
   function onUp(e) { if (S.drag && S.drag.id === e.pointerId) { S.drag = null; GV.gl.wake(); } }
   function onTilt(e) {
     if (e.beta == null || !S.gyro) return;
-    // квантуем: дрожь руки не должна держать рендер включённым
+    // квантуем: дрожь руки не должна держать рендер включенным
     const rx = Math.round(clamp((e.beta - 45) / 40, -1, 1) * 0.32 * 50) / 50;
     const ry = Math.round(clamp(e.gamma / 35, -1, 1) * 0.6 * 50) / 50;
     if (rx !== S.gyro.rx || ry !== S.gyro.ry) { S.gyro.rx = rx; S.gyro.ry = ry; GV.gl.wake(); }
@@ -746,7 +746,7 @@ self.onmessage = async (ev) => {
     if (RMQ.matches || SHOT) return T;
     if (FINEQ.matches && S.px >= 0) {
       const dx = S.px - S.cx, dy = S.py - (S.cy - sy);
-      T.ry += clamp(dx / (S.vw * 0.55), -1, 1) * 0.5;    // ≤ ±0,5 рад: буква остаётся буквой, торец — акцентом
+      T.ry += clamp(dx / (S.vw * 0.55), -1, 1) * 0.5;    // ≤ ±0,5 рад: буква остается буквой, торец — акцентом
       T.rx += clamp(dy / (S.vh * 0.55), -1, 1) * 0.3;
     }
     if (S.gyro) { T.rx += S.gyro.rx; T.ry += S.gyro.ry; }
@@ -786,7 +786,7 @@ self.onmessage = async (ev) => {
     if (!ok) { toSVG(why); return; }
     S.mode = 'gl'; GV.g.mode = 'gl'; S.last = null;
     if (!box) return;
-    // шейдеры готовы до раскрытия — канвас рождается сам; позже — перекрёстное затухание с SVG
+    // шейдеры готовы до раскрытия — канвас рождается сам; позже — перекрестное затухание с SVG
     if (S.started) box.classList.add('is-xfade');
     box.dataset.mode = 'gl';
     buildGyro(); GV.gl.wake();
@@ -806,7 +806,7 @@ self.onmessage = async (ev) => {
   let booted = false;
   function boot() {
     if (booted) return; booted = true;
-    if (!build()) { GV.gl.start(); return; }
+    if (!build()) return; // В hero v5 нет G: движок запустит первая видимая 3D-сцена.
     measure();
     S.overlay = R.hasAttribute('data-overlay');
     box.dataset.mat = matOf();
@@ -838,7 +838,7 @@ self.onmessage = async (ev) => {
     D.addEventListener('grinchin:gl-mat', () => { S.last = null; GV.gl.wake(); });
     const ld = R.getAttribute('data-loader');
     if (SHOT || ld === 'off' || ld === 'done' || R.getAttribute('data-ready') === '1') begin();
-    setTimeout(begin, 6000);                // прелоадер не прислал ready — не ждём вечно
+    setTimeout(begin, 6000);                // прелоадер не прислал ready — не ждем вечно
   }
 
   D.addEventListener('grinchin:ready', () => { boot(); begin(); });

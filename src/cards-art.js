@@ -1,7 +1,7 @@
 /* GRINCHIN v4 — нарисованные вещи, галерея товара, «Образы», ленты. Владелец: V2 (v3 — K3).
    v4: ghost-фото поверх обложки ставит shop.js (.card-ghost); «Образы» — полароиды look-1..4 с мультяшным скотчем и стикерами. Глобально — только GV.art.
 
-   Каталог: K1 после рендера карточки зовёт GV.art.render(cardEl, product, style) — арт ложится в .card-media
+   Каталог: K1 после рендера карточки зовет GV.art.render(cardEl, product, style) — арт ложится в .card-media
    первым слоем (запасные <img class="card-img"> K1 убираются). Если K1 не позвал (порядок скриптов, перерисовка
    сетки) — модуль сам дорисует все article.card[data-id] без арта (при загрузке и по MutationObserver на #drop).
    Стиль — ось data-cards на <html>: a техкарта · b маркер · c деталь · d техкарта + пометка от руки при наведении.
@@ -15,8 +15,8 @@
    Галерея товара: GV.art.gallery(product, style) → [{type:'svg', html, alt}, …, {type:'img', src, alt}]:
      1 — рисунок в выбранном стиле (у d пометка дорисовывается один раз при показе кадра),
      2 — деталь крупно (лупа). Фото (product.photos) K1 ставит следом сам.
-   GV.art.caption(product) → серая строка под галереей, пока фото нет («рисунки · фото после съёмки дропа») или "".
-   «Образы»: ленты [data-stick] лепятся один раз при входе в экран, после grinchin:ready; счётчик свайпа;
+   GV.art.caption(product) → серая строка под галереей, пока фото нет («рисунки · фото после съемки дропа») или "".
+   «Образы»: ленты [data-stick] лепятся один раз при входе в экран, после grinchin:ready; счетчик свайпа;
    подписи a[data-product] синхронизируются с GV_PRODUCTS, клик открывает карточку товара (GV.open). */
 (function () {
   "use strict";
@@ -27,7 +27,7 @@
   var canHover = mm("(hover: hover) and (pointer: fine)");
 
 /*<gen> — пишет src/img/_gen.py, руками не править */
-var DATA = {"jeans-restart":{"callouts":[[162,148,"RESTART. — столбиком, от руки"],[175,348,"стрелка и «Let it B» по штанине"],[290,400,"широкая прямая, чёрный варёный"]],"note":{"x":301.7,"y":119.6,"w":89.6,"h":41.6,"arrow":"m336 163-1 7-1 6-1 7-1 7-2 6-2 7-2 6-2 7-3 7-3 6-3 7-3 6-4 6-4 6-4 6-4 6-4 6-5 5-4 5-5 6-5 5-4 4-5 5-5 5-5 4-5 3-5 4-5 4-7 3-6 4-7 3-6 2-6 2-6 2h-9l-8-1","tip":"M192 345L184 337L194 335","text":"ignore the signs"},"loupe":[131,223],"src":{"flat":"{{asset:img/jeans-restart-1.svg}}","b":"{{asset:img/art/jeans-restart-b.svg}}","c":"{{asset:img/art/jeans-restart-c.svg}}","detail":"{{asset:img/jeans-restart-2.svg}}","note":"{{asset:img/art/jeans-restart-n.svg}}"}},"suit-detour":{"callouts":[[131,122,"дуги-вставки: беж, лес, олива"],[264,206,"резинка по низу и на манжетах"],[168,339,"брюки комплектом, лампас-дуга"]],"note":{"x":296.3,"y":95.7,"w":82.8,"h":19.3,"arrow":"m328 117-2 7-4 5-6 4-7 2-8 1h-9l-8-2-9-3-8-3-8-4","tip":"M265 134L259 124L270 125","text":"в объезд"},"loupe":[206,204],"src":{"flat":"{{asset:img/suit-detour-1.svg}}","b":"{{asset:img/art/suit-detour-b.svg}}","c":"{{asset:img/art/suit-detour-c.svg}}","detail":"{{asset:img/suit-detour-2.svg}}","note":"{{asset:img/art/suit-detour-n.svg}}"}},"jeans-scribble":{"callouts":[[155,191,"каракули — вышивка нитью"],[245,308,"варка: двух одинаковых пар нет"],[290,407,"широкий, объём по бедру"]],"note":{"x":291.5,"y":118.9,"w":100.5,"h":43.3,"arrow":"m329 164-2 11-2 6-2 6-3 6-3 6-3 5-4 6-4 4-5 5-4 5-5 4-9 6-10 4-9 1-8-3","tip":"M262 246L256 236L267 236","text":"вышивка, не маркер"},"loupe":[131,272],"src":{"flat":"{{asset:img/jeans-scribble-1.svg}}","b":"{{asset:img/art/jeans-scribble-b.svg}}","c":"{{asset:img/art/jeans-scribble-c.svg}}","detail":"{{asset:img/jeans-scribble-2.svg}}","note":"{{asset:img/art/jeans-scribble-n.svg}}"}},"hoodie-crack":{"callouts":[[181,282,"трещины — принт по всей спине"],[243,248,"вафельное полотно, распыление"],[107,248,"чёрная вставка, спущенное плечо"]],"note":{"x":297.0,"y":149.3,"w":85.7,"h":24.6,"arrow":"m329 176-1 8-1 8-2 8-2 9-3 8-3 8-4 8-3 7-4 8-4 7-4 6-4 6-5 5-5 4-9 6-9 2-7-2","tip":"M264 292L258 282L269 283","text":"трещины"},"loupe":[157,337],"src":{"flat":"{{asset:img/hoodie-crack-1.svg}}","b":"{{asset:img/art/hoodie-crack-b.svg}}","c":"{{asset:img/art/hoodie-crack-c.svg}}","detail":"{{asset:img/hoodie-crack-2.svg}}","note":"{{asset:img/art/hoodie-crack-n.svg}}"}},"jacket-biker":{"callouts":[[200,159,"капюшон пришит"],[222,348,"две молнии, кнопки на лацканах"],[263,423,"ремень с металлической пряжкой"]],"note":{"x":283.8,"y":230.5,"w":108.2,"h":43.3,"arrow":"m324 276v7l-1 7-1 7-1 8-1 7-2 7-1 7-2 7-2 8-1 6-2 7-2 7-3 6-2 6-3 6-4 8-4 8-4 6-5 6-8 9-8 3-7-1","tip":"M266 428L260 418L271 419","text":"ремень с пряжкой"},"loupe":[190,300],"src":{"flat":"{{asset:img/jacket-biker-1.svg}}","b":"{{asset:img/art/jacket-biker-b.svg}}","c":"{{asset:img/art/jacket-biker-c.svg}}","detail":"{{asset:img/jacket-biker-2.svg}}","note":"{{asset:img/art/jacket-biker-n.svg}}"}},"jeans-redline":{"callouts":[[166,172,"крест строчкой на карманах"],[290,281,"красная строчка по всем швам"],[132,281,"бары у колена"]],"note":{"x":273.1,"y":127.0,"w":118.9,"h":41.3,"arrow":"m318 170-2 8-2 7-4 7-5 6-6 4-6 4-6 2-6 1-6-1-5-4","tip":"M274 214L270 204L281 206","text":"за линию — можно"},"loupe":[133,240],"src":{"flat":"{{asset:img/jeans-redline-1.svg}}","b":"{{asset:img/art/jeans-redline-b.svg}}","c":"{{asset:img/art/jeans-redline-c.svg}}","detail":"{{asset:img/jeans-redline-2.svg}}","note":"{{asset:img/art/jeans-redline-n.svg}}"}},"tee-blank":{"callouts":[[140,398,"жаккардовая G у подола"],[200,128,"рибана на горловине"],[286,317,"плотный хлопок, свободный крой"]],"note":{"x":283.0,"y":284.4,"w":84.9,"h":20.3,"arrow":"m315 307-2 7-1 7-5 7-5 7-4 4-5 5-4 5-6 4-6 4-5 5-7 4-7 4-6 4-7 3-7 3-8 3-7 3-7 2-8 3-7 1-7 2-8 2h-6l-7 1-7 1-7-1-6-1h-6","tip":"M155 403L147 396L157 393","text":"только G"},"loupe":[112,421],"src":{"flat":"{{asset:img/tee-blank-1.svg}}","b":"{{asset:img/art/tee-blank-b.svg}}","c":"{{asset:img/art/tee-blank-c.svg}}","detail":"{{asset:img/tee-blank-2.svg}}","note":"{{asset:img/art/tee-blank-n.svg}}"}},"longsleeve-blank":{"callouts":[[301,394,"длинная манжета в рубчик"],[142,398,"жаккардовая G у подола"],[200,128,"плотный хлопок"]],"note":{"x":297.9,"y":235.3,"w":94.1,"h":45.2,"arrow":"m334 283-1 8-1 9-2 8-1 9-1 8-1 9-2 8-1 8-2 7-2 7-1 7-2 6-3 10-4 6-3 3-4-2","tip":"M305 405L303 394L313 399","text":"манжета в рубчик"},"loupe":[113,421],"src":{"flat":"{{asset:img/longsleeve-blank-1.svg}}","b":"{{asset:img/art/longsleeve-blank-b.svg}}","c":"{{asset:img/art/longsleeve-blank-c.svg}}","detail":"{{asset:img/longsleeve-blank-2.svg}}","note":"{{asset:img/art/longsleeve-blank-n.svg}}"}}};
+var DATA = {"jeans-restart":{"callouts":[[162,148,"RESTART. — столбиком, от руки"],[175,348,"стрелка и «Let it B» по штанине"],[290,400,"широкая прямая, черный вареный"]],"note":{"x":301.7,"y":119.6,"w":89.6,"h":41.6,"arrow":"m336 163-1 7-1 6-1 7-1 7-2 6-2 7-2 6-2 7-3 7-3 6-3 7-3 6-4 6-4 6-4 6-4 6-4 6-5 5-4 5-5 6-5 5-4 4-5 5-5 5-5 4-5 3-5 4-5 4-7 3-6 4-7 3-6 2-6 2-6 2h-9l-8-1","tip":"M192 345L184 337L194 335","text":"ignore the signs"},"loupe":[131,223],"src":{"flat":"{{asset:img/jeans-restart-1.svg}}","b":"{{asset:img/art/jeans-restart-b.svg}}","c":"{{asset:img/art/jeans-restart-c.svg}}","detail":"{{asset:img/jeans-restart-2.svg}}","note":"{{asset:img/art/jeans-restart-n.svg}}"}},"suit-detour":{"callouts":[[131,122,"дуги-вставки: беж, лес, олива"],[264,206,"резинка по низу и на манжетах"],[168,339,"брюки комплектом, лампас-дуга"]],"note":{"x":296.3,"y":95.7,"w":82.8,"h":19.3,"arrow":"m328 117-2 7-4 5-6 4-7 2-8 1h-9l-8-2-9-3-8-3-8-4","tip":"M265 134L259 124L270 125","text":"в объезд"},"loupe":[206,204],"src":{"flat":"{{asset:img/suit-detour-1.svg}}","b":"{{asset:img/art/suit-detour-b.svg}}","c":"{{asset:img/art/suit-detour-c.svg}}","detail":"{{asset:img/suit-detour-2.svg}}","note":"{{asset:img/art/suit-detour-n.svg}}"}},"jeans-scribble":{"callouts":[[155,191,"каракули — вышивка нитью"],[245,308,"варка: двух одинаковых пар нет"],[290,407,"широкий, объем по бедру"]],"note":{"x":291.5,"y":118.9,"w":100.5,"h":43.3,"arrow":"m329 164-2 11-2 6-2 6-3 6-3 6-3 5-4 6-4 4-5 5-4 5-5 4-9 6-10 4-9 1-8-3","tip":"M262 246L256 236L267 236","text":"вышивка, не маркер"},"loupe":[131,272],"src":{"flat":"{{asset:img/jeans-scribble-1.svg}}","b":"{{asset:img/art/jeans-scribble-b.svg}}","c":"{{asset:img/art/jeans-scribble-c.svg}}","detail":"{{asset:img/jeans-scribble-2.svg}}","note":"{{asset:img/art/jeans-scribble-n.svg}}"}},"hoodie-crack":{"callouts":[[181,282,"трещины — принт по всей спине"],[243,248,"вафельное полотно, распыление"],[107,248,"черная вставка, спущенное плечо"]],"note":{"x":297.0,"y":149.3,"w":85.7,"h":24.6,"arrow":"m329 176-1 8-1 8-2 8-2 9-3 8-3 8-4 8-3 7-4 8-4 7-4 6-4 6-5 5-5 4-9 6-9 2-7-2","tip":"M264 292L258 282L269 283","text":"трещины"},"loupe":[157,337],"src":{"flat":"{{asset:img/hoodie-crack-1.svg}}","b":"{{asset:img/art/hoodie-crack-b.svg}}","c":"{{asset:img/art/hoodie-crack-c.svg}}","detail":"{{asset:img/hoodie-crack-2.svg}}","note":"{{asset:img/art/hoodie-crack-n.svg}}"}},"jacket-biker":{"callouts":[[200,159,"капюшон пришит"],[222,348,"две молнии, кнопки на лацканах"],[263,423,"ремень с металлической пряжкой"]],"note":{"x":283.8,"y":230.5,"w":108.2,"h":43.3,"arrow":"m324 276v7l-1 7-1 7-1 8-1 7-2 7-1 7-2 7-2 8-1 6-2 7-2 7-3 6-2 6-3 6-4 8-4 8-4 6-5 6-8 9-8 3-7-1","tip":"M266 428L260 418L271 419","text":"ремень с пряжкой"},"loupe":[190,300],"src":{"flat":"{{asset:img/jacket-biker-1.svg}}","b":"{{asset:img/art/jacket-biker-b.svg}}","c":"{{asset:img/art/jacket-biker-c.svg}}","detail":"{{asset:img/jacket-biker-2.svg}}","note":"{{asset:img/art/jacket-biker-n.svg}}"}},"jeans-redline":{"callouts":[[166,172,"крест строчкой на карманах"],[290,281,"красная строчка по всем швам"],[132,281,"бары у колена"]],"note":{"x":273.1,"y":127.0,"w":118.9,"h":41.3,"arrow":"m318 170-2 8-2 7-4 7-5 6-6 4-6 4-6 2-6 1-6-1-5-4","tip":"M274 214L270 204L281 206","text":"за линию — можно"},"loupe":[133,240],"src":{"flat":"{{asset:img/jeans-redline-1.svg}}","b":"{{asset:img/art/jeans-redline-b.svg}}","c":"{{asset:img/art/jeans-redline-c.svg}}","detail":"{{asset:img/jeans-redline-2.svg}}","note":"{{asset:img/art/jeans-redline-n.svg}}"}},"tee-blank":{"callouts":[[140,398,"жаккардовая G у подола"],[200,128,"рибана на горловине"],[286,317,"плотный хлопок, свободный крой"]],"note":{"x":283.0,"y":284.4,"w":84.9,"h":20.3,"arrow":"m315 307-2 7-1 7-5 7-5 7-4 4-5 5-4 5-6 4-6 4-5 5-7 4-7 4-6 4-7 3-7 3-8 3-7 3-7 2-8 3-7 1-7 2-8 2h-6l-7 1-7 1-7-1-6-1h-6","tip":"M155 403L147 396L157 393","text":"только G"},"loupe":[112,421],"src":{"flat":"{{asset:img/tee-blank-1.svg}}","b":"{{asset:img/art/tee-blank-b.svg}}","c":"{{asset:img/art/tee-blank-c.svg}}","detail":"{{asset:img/tee-blank-2.svg}}","note":"{{asset:img/art/tee-blank-n.svg}}"}},"longsleeve-blank":{"callouts":[[301,394,"длинная манжета в рубчик"],[142,398,"жаккардовая G у подола"],[200,128,"плотный хлопок"]],"note":{"x":297.9,"y":235.3,"w":94.1,"h":45.2,"arrow":"m334 283-1 8-1 9-2 8-1 9-1 8-1 9-2 8-1 8-2 7-2 7-1 7-2 6-3 10-4 6-3 3-4-2","tip":"M305 405L303 394L313 399","text":"манжета в рубчик"},"loupe":[113,421],"src":{"flat":"{{asset:img/longsleeve-blank-1.svg}}","b":"{{asset:img/art/longsleeve-blank-b.svg}}","c":"{{asset:img/art/longsleeve-blank-c.svg}}","detail":"{{asset:img/longsleeve-blank-2.svg}}","note":"{{asset:img/art/longsleeve-blank-n.svg}}"}}};
 var TAG = {src:"{{asset:img/art/tag.svg}}", x:334, y:286, r:6, w:40, h:112};
 /*</gen>*/
 /*<raster> — пишет v4/build/V2/_tools/raster_art.py, руками не править */
@@ -167,8 +167,8 @@ var RASTER = {
       '<path class="art-line art-halo" d="' + n.arrow + '" pathLength="1"/>' +
       '<path class="art-line art-ink" d="' + n.arrow + '" pathLength="1"/>' +
       '<path class="art-tip art-halo" d="' + n.tip + '"/><path class="art-tip art-ink" d="' + n.tip + '"/></svg>' +
-      // буквы пометки: «дописываются» шторкой на transform (обёртка с overflow едет вправо, картинка — навстречу):
-      // clip-path по картинке-SVG перерастрировал её каждый кадр (T3 v3.1: 50–100 мс растра на телефоне)
+      // буквы пометки: «дописываются» шторкой на transform (обертка с overflow едет вправо, картинка — навстречу):
+      // clip-path по картинке-SVG перерастрировал ее каждый кадр (T3 v3.1: 50–100 мс растра на телефоне)
       '<span class="art-note art-mark" aria-hidden="true" ' +
       'style="left:' + pct(n.x, 400) + ";top:" + pct(n.y, 500) + ";width:" + pct(n.w, 400) + '">' +
       '<span class="art-note-c"><img src="' + d.src.note + '" alt="" decoding="async"></span></span>';
@@ -248,7 +248,7 @@ var RASTER = {
 
   function render(cardEl, product, style) {
     if (!cardEl) return false;
-    // v4.1: обложка «photo» — фото рисует shop.js, рисунок на карточку не кладём (в галерее он остаётся)
+    // v4.1: обложка «photo» — фото рисует shop.js, рисунок на карточку не кладем (в галерее он остается)
     if ((style || root.getAttribute("data-cards")) === "photo" && window.GV_PHOTOS && window.GV_PHOTOS[cardEl.getAttribute("data-id")]) return false;
     var p = product || byId(cardEl.getAttribute("data-id"));
     var media = cardEl.querySelector(".card-media");
@@ -296,7 +296,7 @@ var RASTER = {
     // v4: есть фото «призрачный манекен» (GV_PHOTOS) — честная подпись о том, что это за кадры
     // v4.1: служебную подпись про демо-кадры покупателю не показываем (аудит) — кадры подписаны ярлыками сами
     if (window.GV_PHOTOS && window.GV_PHOTOS[p.id]) return "";
-    return p.photos && p.photos.length ? "" : "рисунки · фото после съёмки дропа";
+    return p.photos && p.photos.length ? "" : "рисунки · фото после съемки дропа";
   }
 
   /* ---------- ленты: «прилепить» один раз ---------- */
@@ -313,7 +313,7 @@ var RASTER = {
         var onEnd = function (e) { if (e.target === el) fin(); };
         el.addEventListener("animationend", onEnd);
         el.classList.add("is-stuck", "is-landing");
-        t = setTimeout(fin, 800);              // страховка: вкладка в фоне, animationend не пришёл
+        t = setTimeout(fin, 800);              // страховка: вкладка в фоне, animationend не пришел
       };
       opts.delay ? setTimeout(go, opts.delay) : go();
     });
@@ -348,7 +348,7 @@ var RASTER = {
     });
   }
   document.addEventListener("grinchin:ready", function () { ready = true; flush(); });
-  setTimeout(function () { if (!ready) { ready = true; flush(); } }, 6000);   // ready не пришёл — ленты не держим
+  setTimeout(function () { if (!ready) { ready = true; flush(); } }, 6000);   // ready не пришел — ленты не держим
 
   /* ---------- «Образы» ---------- */
   function syncNames() {
@@ -372,7 +372,7 @@ var RASTER = {
     };
     rail.addEventListener("scroll", function () { if (!raf) raf = requestAnimationFrame(upd); }, { passive: true });
   }
-  /* отпечаток падает на стену (transform/opacity, один раз), лента «шлёпает» после посадки */
+  /* отпечаток падает на стену (transform/opacity, один раз), лента «шлепает» после посадки */
   /* фото образов: data-srcset → srcset при подходе к блоку (за ~1 экран), не раньше */
   function looksLoad(lk) {
     [].forEach.call(lk.querySelectorAll(".lk-photo [data-srcset]"), function (el) {
@@ -386,12 +386,12 @@ var RASTER = {
     if (!("IntersectionObserver" in window)) looks.forEach(looksLoad);
     else {
       var ldIO = new IntersectionObserver(function (es) {
-        // блок подошёл — грузим все четыре: на телефоне 3-й и 4-й спрятаны в ленте-свайпе (её обрезка не знает rootMargin)
+        // блок подошел — грузим все четыре: на телефоне 3-й и 4-й спрятаны в ленте-свайпе (ее обрезка не знает rootMargin)
         if (es.some(function (e) { return e.isIntersecting; })) { ldIO.disconnect(); looks.forEach(looksLoad); }
       }, { rootMargin: "100% 100% 100% 100%" });
       looks.forEach(function (lk) { ldIO.observe(lk); });
     }
-    // v4: стикеры шлёпаются после скотча (видимые по оси data-stickers; скрытые display:none — их не трогаем)
+    // v4: стикеры шлепаются после скотча (видимые по оси data-stickers; скрытые display:none — их не трогаем)
     var stickers = function (lk, now) {
       [].forEach.call(lk.querySelectorAll(".lk-stk"), function (s, k) {
         if (!s.getClientRects().length) return;
@@ -431,7 +431,7 @@ var RASTER = {
     setTimeout(go, 6100);
   }
 
-  /* клик по вещи в подписи образа: карточка товара, если K1 её даёт; иначе — якорь #drop */
+  /* клик по вещи в подписи образа: карточка товара, если K1 ее дает; иначе — якорь #drop */
   function looksLinks() {
     var sec = document.getElementById("looks");
     if (!sec) return;

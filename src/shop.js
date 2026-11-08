@@ -1,15 +1,15 @@
 /* GRINCHIN v4 — каркас и магазин. Владелец: V2 (v3 — K1).
    v4: карточка дропа — рисунок K3 + ghost-фото вещи («призрачный манекен», GV_PHOTOS): desktop — наведение, телефон — удержание
    или свайп по обложке (точки «рисунок · фото»), бейдж «3D» на фото. Карточка товара: вкладки «Кадры | 3D», галерея
-   рисунок → перед → спина → бок → образ на модели, точки + счётчик, зум (двойной тап / клик), 3D — GV.rack.mountProduct (S1).
+   рисунок → перед → спина → бок → образ на модели, точки + счетчик, зум (двойной тап / клик), 3D — GV.rack.mountProduct (S1).
    Новые хуки: GV.productTab('photo'|'3d'), ?open=product:<id>:3d, событие grinchin:product-view {id, view}. База — shop.js v2 (перенос почти дословный, R2 §1.4–1.5).
    window.GV: open/close оверлеев (стек, фокус-ловушка, Esc, inert, блокировка скролла, свайп шитов), корзина,
    навигация (свой плавный скролл, без wipe), тост над кнопкой. Рендер сетки дропа, карточки товара, корзины, меню.
-   Выбор размера — «бирка»: тап по размеру → остальные зачёркиваются каскадом, выбранный обводится (R4 §3.6);
+   Выбор размера — «бирка»: тап по размеру → остальные зачеркиваются каскадом, выбранный обводится (R4 §3.6);
    стиль штриха — ось html[data-size] = vector | hand (живая: переключается без перезагрузки, только CSS).
    Корзина в шапке — ось html[data-cart] = count | menu (живая). Заполненность корзины — html[data-bag] = full | empty.
    Арт карточек — K3: GV.art.render(card, p, style) и GV.art.gallery(p, style); без GV.art — эскиз <img>.
-   События: шлём grinchin:cart {count,items} / :add {id,size} / :overlay {name,open} / :navigate {target};
+   События: шлем grinchin:cart {count,items} / :add {id,size} / :overlay {name,open} / :navigate {target};
    слушаем grinchin:ready (после него — ?open=…).
    Query: ?shot=1 — без анимаций; &open=product:<id>|cart|sizes|menu|404; &cart=demo — две вещи в корзине. */
 (function () {
@@ -30,7 +30,7 @@
   var canHover = mq("(hover: hover) and (pointer: fine)");
   var isPhone = function () { return mq("(max-width: 767px)"); };
 
-  // игры больше нет (SPEC_V3): у тех, кто играл в v1, чистим её ключи
+  // игры больше нет (SPEC_V3): у тех, кто играл в v1, чистим ее ключи
   try { localStorage.removeItem("grinchin:gather:v1"); localStorage.removeItem("grinchin:gather:invited"); } catch (e) { /* без хранилища */ }
   // оси, которые этот модуль рисует сам и умеет менять на лету (только CSS)
   if (GV.mode) { GV.mode.live("size"); GV.mode.live("cart"); GV.mode.live("ghost"); }
@@ -47,10 +47,10 @@
   /* неразрывные пробелы: после коротких слов, перед тире, в «с 01.12», «187 см», «2–7 дней» */
   function typo(t) {
     return String(t)
-      .replace(/(^|[\s(«])([А-Яа-яЁёA-Za-z]{1,2})\s+/g, "$1$2 ")
-      .replace(/(^|[\s(«])([А-Яа-яЁёA-Za-z]{1,2})\s+/g, "$1$2 ")
+      .replace(/(^|[\s(«])([А-Яа-яЕеA-Za-z]{1,2})\s+/g, "$1$2 ")
+      .replace(/(^|[\s(«])([А-Яа-яЕеA-Za-z]{1,2})\s+/g, "$1$2 ")
       .replace(/\s+—/g, " —")
-      .replace(/(\d)\s+(?=(см|дней|дня|г\/м²|oz|₽)(?![А-Яа-яё]))/g, "$1 ");
+      .replace(/(\d)\s+(?=(см|дней|дня|г\/м²|oz|₽)(?![А-Яа-яе]))/g, "$1 ");
   }
   GV.typo = typo;
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
@@ -71,7 +71,7 @@
   }
   function shipText(p) { return anyStock(p) ? "предзаказ · отправка с " + DROP.shipFrom : "разобрали"; }
   var ARROW = GV.arrow = '<svg class="gl" viewBox="0 0 16 12" aria-hidden="true" focusable="false"><path d="M0 6h14.5M9.5 1l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
-  // грустная улыбка пустой корзины (фолбэк, если маскота нет): дуга знака, перевёрнутая
+  // грустная улыбка пустой корзины (фолбэк, если маскота нет): дуга знака, перевернутая
   var SMILE_SVG = '<svg viewBox="0 0 96 28" aria-hidden="true" focusable="false"><path d="M3 25C20 8 34 4 48 4s28 4 45 21" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>';
 
   /* ---------- бирка размеров: штрихи (R4 §3.6, прототип research/motion/proto/size.html) ----------
@@ -95,7 +95,7 @@
       '<g class="stk-v">' + XV.map(function (x, k) { return pth("x", x, k); }).join("") + pth("o", OV_V, 0) + pth("n", NV, 0) + "</g>" +
       '<g class="stk-h">' + h.map(function (x, k) { return pth("x", x, k); }).join("") + pth("o", OV_H, 0) + pth("n", NH, 0) + "</g></svg>";
   }
-  /* Зачеркнуть всё, кроме sel (sel=null — бирка чистая). Каскад слева направо: штрих 0,18 с, шаг 0,07 с, обводка с 0,25 с.
+  /* Зачеркнуть все, кроме sel (sel=null — бирка чистая). Каскад слева направо: штрих 0,18 с, шаг 0,07 с, обводка с 0,25 с.
      Передумал — старая обводка стирается за 0,12 с, на старом размере сразу появляется штрих, новый обводится. */
   function strikeTo(box, sel) {
     var cells = $$("[data-sz]", box), prev = box.dataset.sel || "";
@@ -124,7 +124,7 @@
   }
   GV.sizeTag = { strokes: strokes, strike: strikeTo };
 
-  /* ---------- тост: в открытой карточке встаёт над кнопкой покупки ---------- */
+  /* ---------- тост: в открытой карточке встает над кнопкой покупки ---------- */
   var toastEl = d.getElementById("toast"), toastT;
   /* В карточке товара тост не висит над описанием (T4): он ложится ровно на кнопку покупки — это место, куда смотрит палец,
      и под ним нет текста. opts.sheetQuiet — в карточке только объявить скринридеру (кнопка сама уже говорит «В корзине ✓»). */
@@ -162,7 +162,7 @@
   } else if (!isShot) {
     try { items = (JSON.parse(localStorage.getItem(KEY)) || []).filter(valid); } catch (e) { items = []; }
   }
-  function save() { if (isShot) return; try { localStorage.setItem(KEY, JSON.stringify(items)); } catch (e) { /* без хранилища — живём в памяти */ } }
+  function save() { if (isShot) return; try { localStorage.setItem(KEY, JSON.stringify(items)); } catch (e) { /* без хранилища — живем в памяти */ } }
   function keyOf(i) { return i.id + "|" + i.size; }
   function count() { return items.reduce(function (a, i) { return a + i.qty; }, 0); }
   function total() { return items.reduce(function (a, i) { return a + byId[i.id].price * i.qty; }, 0); }
@@ -174,7 +174,7 @@
     var btn = $(".hd-cart");
     if (btn) {
       btn.setAttribute("aria-label", "Корзина, товаров: " + c);
-      // «шлепок» счётчика при добавлении (первое появление играет CSS-анимация показа)
+      // «шлепок» счетчика при добавлении (первое появление играет CSS-анимация показа)
       if (lastCount > 0 && c > lastCount && !instant()) { btn.classList.remove("is-bump"); void btn.offsetWidth; btn.classList.add("is-bump"); }
     }
     lastCount = c;
@@ -228,7 +228,7 @@
       '<img src="' + srcOf(set.webp, 800) + '" srcset="' + set.webp + '" sizes="' + sizes + '" alt="' + esc(alt) + '" width="' + (w || 800) + '" height="' + (h || 1000) + '" decoding="async"' +
       (lazy ? ' loading="lazy"' : "") + "></picture>";
   }
-  // маленькое превью (С этим, корзина): фото-перёд, если есть; иначе эскиз
+  // маленькое превью (С этим, корзина): фото-перед, если есть; иначе эскиз
   function thumbHTML(p) {
     var f = PH[p.id] && PH[p.id].front;
     return f ? pictureHTML(f, "120px", "", "", true) : '<img src="' + p.img[0] + '" alt="" width="800" height="1000" loading="lazy" decoding="async">';
@@ -305,7 +305,7 @@
     var idle = function () { (window.requestIdleCallback || function (f) { setTimeout(f, 200); })(start, { timeout: 1500 }); };
     if (d.readyState === "complete") idle(); else window.addEventListener("load", idle, { once: true });
   }
-  // обложка карточки: рисунок K3, если модуль подключён; иначе (или при ошибке) — эскиз
+  // обложка карточки: рисунок K3, если модуль подключен; иначе (или при ошибке) — эскиз
   function paintArt(card) {
     var p = byId[card.dataset.id], media = $(".card-media", card), A = GV.art;
     if (!p || !media || !A || typeof A.render !== "function" || (photoMode() && PH[p.id])) return;
@@ -423,7 +423,7 @@
     var card = e.target.closest(".card");
     if (card) {
       e.stopPropagation();
-      var ob = $(".card-open", card); if (ob && d.activeElement !== ob) ob.focus({ preventScroll: true }); // сюда вернётся фокус
+      var ob = $(".card-open", card); if (ob && d.activeElement !== ob) ob.focus({ preventScroll: true }); // сюда вернется фокус
       GV.open("product", card.dataset.id);
       if (e.target.closest("[data-card-3d]")) GV.productTab("3d");
     }
@@ -445,12 +445,12 @@
   /* ---------- карточка товара (шит) ---------- */
   var sheetBody = $("[data-ps-body]");
   var cur = { id: null, size: null };
-  // v5 (C1): блок «Образы» отключён в index.html → кадр «образ на модели» и ссылка «Из образа» в карточке не показываются.
+  // v5 (C1): блок «Образы» отключен в index.html → кадр «образ на модели» и ссылка «Из образа» в карточке не показываются.
   // Вернут блок (#looks на странице) — вернутся сами.
   var LOOKS_ON = !!d.getElementById("looks");
   function lookOf(p) { return LOOKS_ON ? LOOKS.filter(function (l) { return (l.items || []).indexOf(p.id) > -1; })[0] : null; }
   /* галерея v4: рисунок (K3, первый кадр GV.art.gallery) → ghost перед → спина → бок → образ на модели (если вещь в образе).
-     Деталь-лупа K3 в v4 не показываем: её место заняли фото. */
+     Деталь-лупа K3 в v4 не показываем: ее место заняли фото. */
   var GAL_SIZES = "(max-width: 767px) 100vw, (max-width: 1119px) 52vw, 590px";
   function galleryOf(p) {
     var g = [], art = null;
@@ -463,7 +463,7 @@
     });
     var lk = lookOf(p);
     if (lk && LOOKP[lk.n]) g.push({ type: "photo", set: LOOKP[lk.n], alt: lk.alt || (p.name + " — на модели"), tag: "образ ’" + lk.n, look: true });
-    if (photoFirst) g.push(drawn);          // фото-режим: рисунок — последним кадром (сохранён, но не главный)
+    if (photoFirst) g.push(drawn);          // фото-режим: рисунок — последним кадром (сохранен, но не главный)
     var seen = {};
     (p.photos || []).forEach(function (src, i) { if (!seen[src]) { seen[src] = 1; g.push({ type: "img", src: src, alt: p.name + " — фото " + (i + 1) }); } });
     return g;
@@ -489,7 +489,7 @@
       (has3d ? '<div class="ps-3d" id="ps-pane-3d" role="tabpanel" aria-labelledby="ps-tab-3d" hidden>' +
         '<div class="ps-3d-mount" data-rack-product="' + p.id + '"></div>' +
         '<div class="ps-3d-ph" data-ps-3d-ph><div class="ps-3d-art">' + ((gal.filter(function (s) { return s.type === "svg"; })[0] || {}).html || "") + "</div>" +
-        '<p class="ps-3d-msg" data-ps-3d-msg>Вешаем на вешалку…</p></div></div>' : "") +   // подсказку «крути» даёт сам S1
+        '<p class="ps-3d-msg" data-ps-3d-msg>Вешаем на вешалку…</p></div></div>' : "") +   // подсказку «крути» дает сам S1
       (n > 1 ? thumbsHTML(gal) : "") +
       "</div>";
   }
@@ -597,7 +597,7 @@
     }[mode];
     btn.textContent = label;
     btn.dataset.mode = mode === "notify-all" ? "notify" : mode;
-    btn.setAttribute("aria-disabled", mode === "pick" || mode === "subscribed" ? "true" : "false");
+    btn.setAttribute("aria-disabled", mode === "subscribed" ? "true" : "false");
   }
   function showNotify(on, focus) {
     var box = $("[data-ps-notify]", sheetBody), p = sheetProduct();
@@ -606,6 +606,13 @@
     if (on) $("[data-notify-head]", box).textContent = anyStock(p) ? (cur.size || "Размер") + " — нет." : "Разобрали.";
     if (on && focus) { var inp = $("input", box); if (inp) inp.focus(); }
   }
+  GV.productNotify = function () {
+    var p = sheetProduct();
+    if (!p || anyStock(p)) return;
+    showNotify(true, true);
+    var box = $("[data-ps-notify]", sheetBody);
+    if (box) box.scrollIntoView({ block: "center", behavior: "auto" });
+  };
   var doneT;
   function pickSize(s) {
     var p = sheetProduct(), box = $(".szt--sheet", sheetBody);
@@ -677,7 +684,7 @@
     clearTimeout(rackWait); rackWait = 0;
     var box = sheetBody && $(".ps-3d-mount", sheetBody);
     if (rackH) {
-      try { if (typeof rackH.destroy === "function") rackH.destroy(); else if (typeof rackH.unmount === "function") rackH.unmount(); } catch (e) { /* модуль S1 сам разберётся */ }
+      try { if (typeof rackH.destroy === "function") rackH.destroy(); else if (typeof rackH.unmount === "function") rackH.unmount(); } catch (e) { /* модуль S1 сам разберется */ }
     } else if (box && box.dataset.mounted && GV.rack && typeof GV.rack.unmountProduct === "function") { try { GV.rack.unmountProduct(box); } catch (e) { /* — */ } }
     rackH = null;
     if (box) { delete box.dataset.mounted; box.innerHTML = ""; }
@@ -701,7 +708,7 @@
         } catch (e) { if (msg) msg.textContent = "3D не открылось. Листай кадры."; pane.classList.add("is-stub"); }
         return;
       }
-      // модуля пока нет: ждём до ~8 с (вдруг грузится), потом честная заглушка
+      // модуля пока нет: ждем до ~8 с (вдруг грузится), потом честная заглушка
       if (++tries <= 16) { rackWait = setTimeout(attempt, 500); return; }
       if (msg) msg.textContent = "3D скоро. Пока листай кадры.";
       pane.classList.add("is-stub");
@@ -826,7 +833,7 @@
   }
   function mountMascot(slot, opts) {
     if (!slot || slot.children.length || !GV.mascot || typeof GV.mascot.mount !== "function") return;
-    try { GV.mascot.mount(slot, opts); } catch (e) { /* маскот — украшение, корзина живёт без него */ }
+    try { GV.mascot.mount(slot, opts); } catch (e) { /* маскот — украшение, корзина живет без него */ }
   }
   function renderCart() {
     if (!cartBody) return;
@@ -860,7 +867,7 @@
       '<div class="cart-foot">' +
       '<dl class="kv cart-sum"><div><dt>доставка:</dt><dd>при оформлении</dd></div>' +
       '<div class="cart-total"><dt>итого:</dt><dd>' + money(total()) + "</dd></div></dl>" +
-      (pre ? '<p class="t-mono cart-pre">Отправим всё вместе с ' + DROP.shipFrom + ".</p>" : "") +
+      (pre ? '<p class="t-mono cart-pre">Отправим все вместе с ' + DROP.shipFrom + ".</p>" : "") +
       (cartDemo ?
         '<div class="cart-demo" tabindex="-1"><p>Оплата откроется к старту продаж. Корзина сохранится.</p>' +
         '<button type="button" class="btn btn--line btn--wide" data-nav="next">Сообщить о старте</button></div>' :
@@ -891,7 +898,7 @@
         GV.cart.remove(key);
         var f = $(".ci-remove, .cart-empty .btn", cartBody); if (f) f.focus();
       };
-      // строку зачёркивает штрих бирки (0,15 с), потом она схлопывается (R4 §3.7)
+      // строку зачеркивает штрих бирки (0,15 с), потом она схлопывается (R4 §3.7)
       if (instant() || !li) done();
       else { li.classList.add("is-removing"); r.disabled = true; setTimeout(done, 340); }
       return;
@@ -913,7 +920,7 @@
   function setInert() {
     var on = stack.length > 0;
     $$("body > :not(.ov):not(script):not(template):not(#toast):not(#loader):not(dialog)").forEach(function (el) { el.inert = on; });
-    // меню открыто — шапка остаётся живой: лого виден, бургер стал крестиком и закрывает меню
+    // меню открыто — шапка остается живой: лого виден, бургер стал крестиком и закрывает меню
     if (header && stackTop() === "menu") header.inert = false;
     Object.keys(OV).forEach(function (n) {
       var el = d.getElementById(OV[n]);
@@ -999,7 +1006,7 @@
       return true;
     }
     if (!STACKABLE[name] && stack.length) {
-      // замена (меню → корзина, корзина → карточка): фокус потом вернём туда, откуда открывали первый
+      // замена (меню → корзина, корзина → карточка): фокус потом вернем туда, откуда открывали первый
       opener = stack[0].opener;
       while (stack.length) popOne(false);
     }
@@ -1028,7 +1035,7 @@
     var el = stack[stack.length - 1].el;
     var vis = function (x) { return x.getClientRects().length && !x.closest("[hidden]"); };
     var f = $$(FOCUSABLE, el).filter(vis);
-    // в ловушке меню — ещё и шапка (лого, счётчик, бургер-крестик)
+    // в ловушке меню — еще и шапка (лого, счетчик, бургер-крестик)
     if (stackTop() === "menu" && header) f = $$(FOCUSABLE, header).filter(vis).concat(f);
     if (!f.length) { e.preventDefault(); return; }
     var first = f[0], last = f[f.length - 1], a = d.activeElement;
@@ -1038,7 +1045,7 @@
     else if (!e.shiftKey && a === last) { e.preventDefault(); first.focus(); }
   });
 
-  /* ---------- меню: текущий раздел обведён от руки (тем же штрихом, что выбранный размер) ---------- */
+  /* ---------- меню: текущий раздел обведен от руки (тем же штрихом, что выбранный размер) ---------- */
   var MENU_O = "M14 34C10 18 52 6 104 7C160 8 194 18 193 31C192 46 150 55 98 55C44 55 8 47 9 33C10 22 40 14 76 11";
   var menuEl = d.getElementById("site-menu"), here = null;
   // разделы меню, которые подсвечиваются при прокрутке (v5: «Образы»/«О бренде» убраны → рейл и знак ONE WAY)
@@ -1136,7 +1143,7 @@
     }
     scrollRaf = requestAnimationFrame(step);
   };
-  // v5 (C1): старые якоря отключённых блоков ведут на соседей, а не в «Тупик.» (#looks → дроп, #about → знак ONE WAY)
+  // v5 (C1): старые якоря отключенных блоков ведут на соседей, а не в «Тупик.» (#looks → дроп, #about → знак ONE WAY)
   var ALIAS = { looks: "drop", about: "oneway" };
   function alias(id) { return !d.getElementById(id) && ALIAS[id] && d.getElementById(ALIAS[id]) ? ALIAS[id] : id; }
   // верх элемента без transform-ов (reveal-анимации соседей сдвигают блоки translateY во время перехода)
@@ -1189,7 +1196,7 @@
   var logo = d.getElementById("logo");
   if (logo) logo.addEventListener("click", function (e) { e.preventDefault(); GV.navigate("hero"); });
 
-  /* ---------- подписка «Разобрали — вернём»: запасной обработчик, если модуль K5 (GV.end) её не взял ---------- */
+  /* ---------- подписка «Разобрали — вернем»: запасной обработчик, если модуль K5 (GV.end) ее не взял ---------- */
   setTimeout(function () {
     var sub = $("[data-sub]");
     if (!sub || GV.end || sub.dataset.owner) return;
@@ -1215,7 +1222,7 @@
       var done = $("[data-sub-done]", sub), dt = $("[data-sub-done-text]", sub);
       if (dt) dt.textContent = c.done;
       if (done) { done.hidden = false; done.focus(); }
-      emit("grinchin:subscribe", { channel: ch() });
+      emit("grinchin:subscribe", { channel: ch(), topic: "next-drop" });
     });
   }, 0);
 
@@ -1240,7 +1247,7 @@
     var h = (location.hash || "").slice(1);
     if (h && !d.getElementById(h) && !stack.length) { if (alias(h) !== h) GV.navigate(h); else GV.open("404"); }
   });
-  // shot: после разбора всей страницы — иначе соседние модули (GV.art, GV.rack) ещё не объявлены
+  // shot: после разбора всей страницы — иначе соседние модули (GV.art, GV.rack) еще не объявлены
   if (isShot) { if (d.readyState === "loading") d.addEventListener("DOMContentLoaded", function () { setTimeout(applyOpen, 0); }, { once: true }); else setTimeout(applyOpen, 0); }
   else {
     d.addEventListener("grinchin:ready", applyOpen, { once: true });

@@ -3,7 +3,7 @@
    Карточка товара: вкладки «Кадры | 3D», подписи кадров, точки, зум, 3D-панель (монтирует S1 — GV.rack.mountProduct).
    Только transform/opacity в переходах; фото — в кадре 4:5 той же коробки, что и рисунок (CLS нет). */
 
-/* #roll-stage (рулон) — размеры и показ по оси data-roll задаёт его владелец; здесь правил нет намеренно */
+/* #roll-stage (рулон) — размеры и показ по оси data-roll задает его владелец; здесь правил нет намеренно */
 
 /* ---------------- каталог v4.1: обложка — фото «на манекене» (ось cards=photo) ----------------
    Все кадры приведены к одной студии (normalize.py): фон #EAE9E7 с мягким светом к центру, вещь по центру, 80 % высоты
@@ -25,7 +25,7 @@ html[data-cards="photo"] .card-media{background:var(--studio)}
 .card-ghost.is-armed{will-change:opacity}
 .card-ghost .cg-pic{position:absolute; inset:0; display:block}
 .card-ghost img{display:block; width:100%; height:100%; object-fit:cover; transform:scale(1.04); transition:transform .7s var(--ease-out)}
-/* бейдж «3D» — белый стикер с чёрным контуром (не лайм: зелёный на экране уже занят) */
+/* бейдж «3D» — белый стикер с черным контуром (не лайм: зеленый на экране уже занят) */
 .card-3d{position:absolute; top:10px; right:10px; display:block; padding:6px 9px 5px; border:2px solid #000; border-radius:999px;
   background:#fff; color:#000; font:800 .6875rem/1 var(--font-display); letter-spacing:.02em; pointer-events:none;
   box-shadow:0 0 0 2.5px #fff; transform:rotate(-7deg) scale(.86); transition:transform .3s var(--ease-snap) .12s}
@@ -94,7 +94,7 @@ html[data-ghost="off"] .card-ghost,html[data-ghost="off"] .card-pg{display:none}
 }
 @media (max-width:379px){ .ps-tabs-k{display:none} }
 
-/* 3D: чёрная студия; S1 монтирует сцену в .ps-3d-mount. Пока модуля нет — рисунок и подпись */
+/* 3D: черная студия; S1 монтирует сцену в .ps-3d-mount. Пока модуля нет — рисунок и подпись */
 .ps-3d{position:relative; aspect-ratio:4/5; background:#0c0c0c; color:#fff; overflow:hidden}
 .ps-3d[hidden]{display:none}
 .ps-3d-mount{position:absolute; inset:0; touch-action:none}
@@ -156,11 +156,11 @@ html[data-cards="photo"] .card[data-state="soldout"] .card-media{opacity:.82}
   .ps-panel .sheet-bar{position:sticky; top:0; left:auto; right:0; float:right; height:0; min-height:0; padding:0; overflow:visible; z-index:6; align-items:flex-start; background:none}
   .ps-panel .sheet-bar .ov-x{margin:14px 14px 0 0; background:var(--c-paper); border-radius:50%}
 }
-/* бирка в шите: без «дырки» слева — её читали как лишний размер */
+/* бирка в шите: без «дырки» слева — ее читали как лишний размер */
 .szt--sheet{grid-template-columns:repeat(var(--n,5),minmax(0,1fr)); padding-right:0}
 .szt--sheet .szt-hole{display:none}
 
-/* быстрые размеры на карточке каталога: светлая бирка поверх фото — легче, буквы с запасом, штрихи чёрные */
+/* быстрые размеры на карточке каталога: светлая бирка поверх фото — легче, буквы с запасом, штрихи черные */
 @media (hover:hover) and (pointer:fine){
   .card .szt--quick{height:38px; margin:0 12px 12px; padding:0 4px; background:rgb(255 255 255 / .94); color:#000; border-radius:999px;
     box-shadow:inset 0 0 0 1px rgb(0 0 0 / .14)}
@@ -168,7 +168,7 @@ html[data-cards="photo"] .card[data-state="soldout"] .card-media{opacity:.82}
   .card .szt--quick .szt-c{border-radius:999px; margin:4px 1px}
   .card .szt--quick .szt-c:not([aria-disabled="true"]):hover{background:#000}
   .card .szt--quick .szt-c:not([aria-disabled="true"]):hover .szt-l{color:#fff}
-  /* в тонкой бирке штрихи SVG сплющивались в каракулю: зачёркивание — одна ровная линия (transform), буква читается */
+  /* в тонкой бирке штрихи SVG сплющивались в каракулю: зачеркивание — одна ровная линия (transform), буква читается */
   .card .szt--quick .stk .x,.card .szt--quick .stk .n{display:none}
   .card .szt--quick .stk .o{stroke:#000}
   .card .szt--quick .stk-h .o{stroke-width:2.6}
